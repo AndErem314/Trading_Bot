@@ -5,6 +5,7 @@ import ccxt
 import pandas as pd
 import sqlite3
 import os
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -21,7 +22,30 @@ class DataFetcher:
             'sandbox': False,
         })
     
-    def fetch_ohlcv(self, symbol: str, timeframe: str, since: Optional[int] = None, limit: int = 1000) -> pd.DataFrame:
+    def fetch_all_historical_ohlcv(self, symbol: str, timeframe: str, start_time: int, limit: int = 1000) -> pd.DataFrame:
+        """Fetch all historical OHLCV data from start_time to current time."""
+        all_data = []
+        since = start_time
+        while True:
+            try:
+                ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, since, limit)
+                if not ohlcv:
+                    break
+                df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                all_data.append(df)
+                since = df['timestamp'].iloc[-1] + 1
+                time.sleep(self.exchange.rateLimit / 1000)
+            except Exception as e:
+                print(f"[ERROR] Failed to fetch historical data for {symbol}: {e}")
+                break
+        if all_data:
+            full_df = pd.concat(all_data)
+            full_df['timestamp'] = pd.to_datetime(full_df['timestamp'], unit='ms')
+            full_df.set_index('timestamp', inplace=True)
+            return full_df
+        return pd.DataFrame([])
+
+    def fetch_recent_ohlcv(self, symbol: str, timeframe: str, since: Optional[int] = None, limit: int = 1000) -> pd.DataFrame:
         """Fetch OHLCV data from exchange."""
         try:
             ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, since, limit)
@@ -130,6 +154,7 @@ class DatabaseManager:
             return None
 
 
+
 class RawDataCollector:
     """Main class for collecting and storing raw market data."""
     
@@ -137,6 +162,27 @@ class RawDataCollector:
         self.data_fetcher = DataFetcher(exchange_name)
         self.db_manager = DatabaseManager()
     
+    def collect_all_historical_data(self, symbol: str, timeframe: str, start_time: int):
+        """Collect all historical data for a symbol and timeframe."""
+        print(f"\n[FETCHING] All historical data for {symbol} - {timeframe.upper()} from {datetime.fromtimestamp(start_time/1000)}")
+        df_full = self.data_fetcher.fetch_all_historical_ohlcv(symbol, timeframe, start_time)
+        if df_full.empty:
+            print(f"[INFO] No historical data for {symbol} ({timeframe})")
+            return
+        self.db_manager.save_raw_data(df_full, symbol, timeframe)
+        print(f"[SUCCESS] Collected all historical data for {symbol} ({timeframe}) - {len(df_full)} records")
+
+    def collect_recent_data(self, symbol: str, timeframe: str):
+        """Collect recent data for a symbol and timeframe."""
+        print(f"\n[FETCHING] Recent data for {symbol} - {timeframe.upper()}")
+        fetch_since = self.db_manager.get_last_timestamp(symbol, timeframe)
+        df_recent = self.data_fetcher.fetch_recent_ohlcv(symbol, timeframe, since=fetch_since)
+        if df_recent.empty:
+            print(f"[INFO] No new recent data for {symbol} ({timeframe})")
+            return
+        self.db_manager.save_raw_data(df_recent, symbol, timeframe)
+        print(f"[SUCCESS] Collected recent data for {symbol} ({timeframe}) - {len(df_recent)} records")
+
     def collect_data(self, symbol: str, timeframe: str, start_time: Optional[int] = None):
         """Collect raw data for a symbol and timeframe."""
         print(f"\n[FETCHING] Raw data for {symbol} - {timeframe.upper()}")
@@ -148,7 +194,7 @@ class RawDataCollector:
             fetch_since = start_time
         
         # Fetch data
-        df_raw = self.data_fetcher.fetch_ohlcv(symbol, timeframe, since=fetch_since)
+        df_raw = self.data_fetcher.fetch_recent_ohlcv(symbol, timeframe, since=fetch_since)
         
         if df_raw.empty:
             print(f"[INFO] No new data for {symbol} ({timeframe})")
