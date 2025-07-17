@@ -255,6 +255,9 @@ class DataVisualizer:
         
         # Save if requested
         if save_path:
+            # Create directory if it doesn't exist
+            import os
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
             fig.savefig(save_path, dpi=300, bbox_inches='tight')
             print(f"Chart saved to: {save_path}")
         
