@@ -4,11 +4,26 @@ A Python trading bot that collects cryptocurrency market data and calculates Gau
 
 ## Project Structure
 
-- `data_fetcher.py` - Collects raw OHLCV data from exchanges and saves to database
-- `gaussian_channel.py` - Calculates Gaussian Channel indicators from raw data
-- `main.py` - Main runner script that coordinates both processes
-- `requirements.txt` - Python dependencies
-- `data/` - Directory for SQLite database files
+```
+Trading_Bot/
+├── backend/                    # Backend data processing modules
+│   ├── __init__.py
+│   ├── main.py                # Main runner script that coordinates processes
+│   ├── data_fetcher.py        # Collects raw OHLCV data from exchanges
+│   ├── gaussian_channel.py    # Calculates Gaussian Channel indicators
+│   └── collect_historical_data.py # Historical data collection script
+├── frontend/                   # Frontend data visualization modules
+│   ├── __init__.py
+│   ├── data_visualizer.py     # Data visualization and charting
+│   └── charts/                # Generated chart images
+├── data/                      # SQLite database files
+├── run_trading_bot.py         # Main entry point script
+├── collect_data.py           # Data collection entry point
+├── visualize_data.py         # Visualization entry point
+├── requirements.txt          # Python dependencies
+├── pyproject.toml           # Project configuration
+└── README.md                # Project documentation
+```
 
 ## Features
 
@@ -30,33 +45,44 @@ uv add ccxt pandas numpy
 
 ## Usage
 
-### Collect Raw Data Only
+### Main Trading Bot (Data Collection + Analysis)
 ```bash
-python main.py --mode collect
+# Run complete pipeline (collect data and calculate indicators)
+python run_trading_bot.py --mode both
+
+# Collect raw data only
+python run_trading_bot.py --mode collect
+
+# Calculate Gaussian Channels only  
+python run_trading_bot.py --mode calculate
+
+# Custom symbols and timeframes
+python run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 1h 4h --start-date 2022-01-01
 ```
 
-### Calculate Gaussian Channels Only
+### Data Collection
 ```bash
-python main.py --mode calculate
+# Collect historical data for all symbols
+python collect_data.py
 ```
 
-### Both (Default)
+### Data Visualization
 ```bash
+# Generate charts and visualizations
+python visualize_data.py
+```
+
+### Advanced Usage - Run Individual Modules
+```bash
+# Run backend modules directly
+cd backend
 python main.py --mode both
-```
-
-### Custom Symbols and Timeframes
-```bash
-python main.py --symbols BTC/USDT ETH/USDT --timeframes 1h 4h --start-date 2022-01-01
-```
-
-### Run Individual Scripts
-```bash
-# Collect raw data
 python data_fetcher.py
-
-# Calculate Gaussian Channel indicators
 python gaussian_channel.py
+
+# Run frontend modules directly
+cd frontend  
+python data_visualizer.py
 ```
 
 ## Database Schema

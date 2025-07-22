@@ -285,7 +285,7 @@ def main():
                 timeframe=timeframe, 
                 chart_type='candlestick',
                 days=90,
-                save_path=f"charts/{symbol.replace('/', '_')}_{timeframe}_candlestick.png"
+                save_path=f"frontend/charts/{symbol.replace('/', '_')}_{timeframe}_candlestick.png"
             )
             
             if fig:
