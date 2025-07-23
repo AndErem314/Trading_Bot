@@ -8,6 +8,10 @@ from datetime import datetime
 
 from data_fetcher import RawDataCollector
 from gaussian_channel import GaussianChannelCalculator
+from simple_moving_average import SimpleMovingAverageCalculator
+from bollinger_bands import BollingerBandsCalculator
+from ichimoku_cloud import IchimokuCloudCalculator
+from macd import MACDCalculator
 
 
 def collect_raw_data(symbols, timeframes, start_time=None):
@@ -18,6 +22,55 @@ def collect_raw_data(symbols, timeframes, start_time=None):
     for symbol in symbols:
         for timeframe in timeframes:
             collector.collect_data(symbol, timeframe, start_time=start_time)
+
+
+def calculate_all_indicators(symbols, timeframes):
+    """Calculate all technical indicators for specified symbols and timeframes."""
+    print("\n=== CALCULATING ALL TECHNICAL INDICATORS ===")
+    
+    # Initialize all calculators
+    gaussian_calc = GaussianChannelCalculator()
+    sma_calc = SimpleMovingAverageCalculator()
+    bb_calc = BollingerBandsCalculator()
+    ichimoku_calc = IchimokuCloudCalculator()
+    macd_calc = MACDCalculator()
+    
+    for symbol in symbols:
+        for timeframe in timeframes:
+            print(f"\n[PROCESSING] {symbol} - {timeframe.upper()}")
+            
+            # Fetch raw data once for all indicators
+            df_raw = gaussian_calc.fetch_raw_data(symbol, timeframe)
+            if df_raw.empty:
+                print(f"[INFO] No raw data available for {symbol} ({timeframe})")
+                continue
+            
+            # Calculate Gaussian Channel
+            print(f"  [CALCULATING] Gaussian Channel...")
+            df_gc = gaussian_calc.calculate_gaussian_channel(df_raw.copy())
+            gaussian_calc.save_gaussian_channel_data(df_gc, symbol, timeframe)
+            
+            # Calculate Simple Moving Averages
+            print(f"  [CALCULATING] Simple Moving Averages...")
+            df_sma = sma_calc.calculate_sma(df_raw.copy())
+            sma_calc.save_sma_data(df_sma, symbol, timeframe)
+            
+            # Calculate Bollinger Bands
+            print(f"  [CALCULATING] Bollinger Bands...")
+            df_bb = bb_calc.calculate_bollinger_bands(df_raw.copy())
+            bb_calc.save_bollinger_bands_data(df_bb, symbol, timeframe)
+            
+            # Calculate Ichimoku Cloud
+            print(f"  [CALCULATING] Ichimoku Cloud...")
+            df_ichimoku = ichimoku_calc.calculate_ichimoku_cloud(df_raw.copy())
+            ichimoku_calc.save_ichimoku_data(df_ichimoku, symbol, timeframe)
+            
+            # Calculate MACD
+            print(f"  [CALCULATING] MACD...")
+            df_macd = macd_calc.calculate_macd(df_raw.copy())
+            macd_calc.save_macd_data(df_macd, symbol, timeframe)
+            
+            print(f"  [COMPLETED] All indicators calculated for {symbol} ({timeframe})")
 
 
 def calculate_gaussian_channels(symbols, timeframes):
@@ -39,7 +92,7 @@ def calculate_gaussian_channels(symbols, timeframes):
 def main():
     """Main function with command line arguments."""
     parser = argparse.ArgumentParser(description='Trading Bot - Data Collection and Analysis')
-    parser.add_argument('--mode', choices=['collect', 'calculate', 'both'], 
+    parser.add_argument('--mode', choices=['collect', 'calculate', 'all_indicators', 'both'], 
                        default='both', help='Mode of operation')
     parser.add_argument('--symbols', nargs='+', 
                        default=['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC'],
@@ -67,6 +120,9 @@ def main():
         
         if args.mode in ['calculate', 'both']:
             calculate_gaussian_channels(args.symbols, args.timeframes)
+            
+        if args.mode == 'all_indicators':
+            calculate_all_indicators(args.symbols, args.timeframes)
             
         print("\n=== COMPLETED SUCCESSFULLY ===")
         

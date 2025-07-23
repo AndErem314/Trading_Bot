@@ -14,6 +14,7 @@ Trading_Bot/
 │   ├── bollinger_bands.py     # Calculates Bollinger Bands indicators
 │   ├── simple_moving_average.py # Calculates SMA (50/200) indicators
 │   ├── ichimoku_cloud.py      # Calculates Ichimoku Cloud indicators
+│   ├── macd.py                # Calculates MACD (12,26,9) indicators
 │   └── collect_historical_data.py # Historical data collection script
 ├── frontend/                   # Frontend data visualization modules
 │   ├── __init__.py
@@ -40,7 +41,7 @@ Trading_Bot/
 
 ### Data Analysis
 
-The bot implements **4 comprehensive technical indicators** with advanced analysis capabilities:
+The bot implements **5 comprehensive technical indicators** with advanced analysis capabilities:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -70,6 +71,15 @@ The bot implements **4 comprehensive technical indicators** with advanced analys
 - **Chikou Span**: Lagging span (current close shifted 26 periods back)
 - **Cloud Analysis**: Dynamic support/resistance with color-coded strength
 - **Comprehensive Signals**: Multi-component confirmation system
+
+#### **5. MACD (Moving Average Convergence Divergence)**
+- **MACD Line**: 12-period EMA - 26-period EMA (momentum indicator)
+- **Signal Line**: 9-period EMA of MACD line (crossover signals)
+- **Histogram**: MACD line - Signal line (momentum visualization)
+- **Crossover Signals**: Bullish (MACD above signal) and bearish (MACD below signal)
+- **Zero Line Analysis**: Trend direction confirmation (above/below zero)
+- **Divergence Detection**: Price vs MACD divergence for reversal signals
+- **Momentum Analysis**: Increasing/decreasing momentum tracking
 
 #### **Technical Features**
 - SQLite database with optimized schema for raw data and all indicators
@@ -198,6 +208,7 @@ Save chart to file? (y/n): y
 python backend/bollinger_bands.py     # Bollinger Bands analysis
 python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
 python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
+python backend/macd.py                # MACD (12,26,9) momentum analysis
 python backend/gaussian_channel.py    # Gaussian Channel indicators
 ```
 
@@ -211,6 +222,7 @@ python gaussian_channel.py
 python bollinger_bands.py
 python simple_moving_average.py
 python ichimoku_cloud.py
+python macd.py
 
 # Run frontend modules directly
 cd frontend  
@@ -219,7 +231,7 @@ python data_visualizer.py
 
 ## Database Schema
 
-The database contains **5 optimized tables** storing raw data and calculated indicators:
+The database contains **6 optimized tables** storing raw data and calculated indicators:
 
 ### Raw Data Table (`raw_data`)
 - `id` - Primary key
@@ -264,9 +276,18 @@ The database contains **5 optimized tables** storing raw data and calculated ind
 - `cloud_color` - Cloud color indicator (green/red)
 - `ichimoku_signal` - Overall signal (bullish/bearish/neutral)
 
+### MACD Data Table (`macd_data`)
+- All fields from raw data table plus:
+- `ema_12` - 12-period exponential moving average
+- `ema_26` - 26-period exponential moving average
+- `macd_line` - MACD line (EMA12 - EMA26)
+- `signal_line` - Signal line (9-period EMA of MACD line)
+- `histogram` - MACD histogram (MACD line - Signal line)
+- `macd_signal` - MACD signal (bullish, bearish, strong_bullish, strong_bearish, neutral)
+
 ## Data Summary
 
-The bot currently maintains **317,730+ records** across **5 indicator tables** and **5 trading pairs**:
+The bot currently maintains **381,276+ records** across **6 indicator tables** and **5 trading pairs**:
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
@@ -285,7 +306,8 @@ The bot currently maintains **317,730+ records** across **5 indicator tables** a
 | **Bollinger Bands** | 63,546 | Volatility bands with %B and squeeze detection |
 | **SMA (50/200)** | 63,546 | Moving averages with Golden/Death Cross signals |
 | **Ichimoku Cloud** | 63,546 | Complete Ichimoku system with all 5 components |
-| **TOTAL** | **317,730** | **Comprehensive technical analysis dataset** |
+| **MACD (12,26,9)** | 63,546 | Moving Average Convergence Divergence with momentum analysis |
+| **TOTAL** | **381,276** | **Comprehensive technical analysis dataset** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -312,6 +334,14 @@ python visualize_data.py
 
 ## Recent Updates
 
+### ✅ **Version 5.0 - Professional MACD Integration**
+- **NEW: MACD Indicator (12,26,9)** with momentum analysis and divergence detection
+- **Complete Technical Suite**: Now 5 professional-grade indicators
+- **Enhanced Signal Analysis**: Multi-component confirmation across all indicators
+- **Advanced Momentum Tracking**: MACD crossovers, zero-line analysis, and trend strength
+- **Comprehensive Database**: 381,276+ records across 6 indicator tables
+- **Pattern Recognition**: Real-time analysis with divergence risk assessment
+
 ### ✅ **Version 4.0 - Complete Technical Analysis Suite**
 - **NEW: Ichimoku Cloud Indicator** with comprehensive 5-component analysis system
 - **NEW: Bollinger Bands Indicator** with volatility analysis and squeeze detection
@@ -324,7 +354,8 @@ python visualize_data.py
 - **Improved user experience**: Menu-driven interface with validation
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
-### 📊 **Advanced Technical Analysis Features**
+### 📈 **Advanced Technical Analysis Features**
+- **MACD Analysis**: Complete momentum system with signal crossovers and divergence detection
 - **Ichimoku Cloud**: Complete system with Tenkan-sen, Kijun-sen, Senkou spans, and Chikou span
 - **Bollinger Bands**: %B position tracking, band width analysis, squeeze detection
 - **SMA Crossovers**: Automated Golden Cross and Death Cross detection
@@ -334,8 +365,9 @@ python visualize_data.py
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
 ### 🔧 **Technical Improvements**
-- **Database expansion**: 317,730+ records across 5 indicator tables
-- **Complete indicator suite**: 4 professional-grade technical indicators
+- **Database expansion**: 381,276+ records across 6 indicator tables
+- **Complete indicator suite**: 5 professional-grade technical indicators
+- **MACD Integration**: Full momentum analysis with EMA calculations and histogram tracking
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
 - Optimized database operations for better performance
