@@ -14,6 +14,7 @@ from ichimoku_cloud import IchimokuCloudCalculator
 from macd import MACDCalculator
 from rsi import calculate_rsi_for_symbol_timeframe
 from parabolic_sar import ParabolicSARCalculator
+from fibonacci_retracement import FibonacciRetracementCalculator
 
 
 def collect_raw_data(symbols, timeframes, start_time=None):
@@ -37,6 +38,7 @@ def calculate_all_indicators(symbols, timeframes):
     ichimoku_calc = IchimokuCloudCalculator()
     macd_calc = MACDCalculator()
     sar_calc = ParabolicSARCalculator()
+    fib_calc = FibonacciRetracementCalculator()
     
     for symbol in symbols:
         for timeframe in timeframes:
@@ -81,6 +83,11 @@ def calculate_all_indicators(symbols, timeframes):
             print(f"  [CALCULATING] Parabolic SAR...")
             df_sar = sar_calc.calculate_parabolic_sar(df_raw.copy())
             sar_calc.save_parabolic_sar_data(df_sar, symbol, timeframe)
+            
+            # Calculate Fibonacci Retracement
+            print(f"  [CALCULATING] Fibonacci Retracement...")
+            df_fib = fib_calc.calculate_fibonacci_retracement(df_raw.copy())
+            fib_calc.save_fibonacci_data(df_fib, symbol, timeframe)
 
             print(f"  [COMPLETED] All indicators calculated for {symbol} ({timeframe})")
 
