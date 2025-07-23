@@ -207,7 +207,7 @@ class RawDataCollector:
 
 def main():
     """Main function to collect raw data for multiple symbols and timeframes."""
-    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC']
     timeframes = ['4h', '1d']
     
     # Start from January 1, 2021

@@ -264,35 +264,280 @@ class DataVisualizer:
         return fig
 
 
-def main():
-    """Main function to demonstrate the visualizer."""
+def get_user_input():
+    """Get user input for visualization parameters."""
+    print("\n" + "="*60)
+    print("   TRADING BOT DATA VISUALIZER")
+    print("="*60)
+    
+    # Get available data
+    visualizer = DataVisualizer()
+    summary = visualizer.get_available_data()
+    
+    # Display available symbols
+    print("\nAvailable trading pairs:")
+    symbols = summary['symbol'].unique()
+    for i, symbol in enumerate(symbols, 1):
+        print(f"{i}. {symbol}")
+    
+    # Get symbol selection
+    while True:
+        try:
+            choice = input(f"\nSelect a trading pair (1-{len(symbols)}) or enter symbol directly: ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(symbols):
+                selected_symbol = symbols[int(choice) - 1]
+                break
+            elif choice in symbols:
+                selected_symbol = choice
+                break
+            else:
+                print(f"Invalid choice. Please select 1-{len(symbols)} or enter a valid symbol.")
+        except ValueError:
+            print("Invalid input. Please enter a number or symbol.")
+    
+    # Get available timeframes for selected symbol
+    symbol_timeframes = summary[summary['symbol'] == selected_symbol]['timeframe'].tolist()
+    print(f"\nAvailable timeframes for {selected_symbol}:")
+    for i, tf in enumerate(symbol_timeframes, 1):
+        print(f"{i}. {tf}")
+    
+    # Get timeframe selection
+    while True:
+        try:
+            choice = input(f"\nSelect timeframe (1-{len(symbol_timeframes)}) or enter directly: ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(symbol_timeframes):
+                selected_timeframe = symbol_timeframes[int(choice) - 1]
+                break
+            elif choice in symbol_timeframes:
+                selected_timeframe = choice
+                break
+            else:
+                print(f"Invalid choice. Please select 1-{len(symbol_timeframes)} or enter a valid timeframe.")
+        except ValueError:
+            print("Invalid input. Please enter a number or timeframe.")
+    
+    # Get number of days
+    while True:
+        try:
+            days_input = input("\nEnter number of days to visualize (or 'all' for all available data): ").strip().lower()
+            if days_input == 'all' or days_input == '':
+                selected_days = None
+                break
+            else:
+                selected_days = int(days_input)
+                if selected_days <= 0:
+                    print("Please enter a positive number of days.")
+                    continue
+                break
+        except ValueError:
+            print("Invalid input. Please enter a number or 'all'.")
+    
+    # Get chart type
+    chart_types = ['candlestick', 'line', 'ohlc', 'volume']
+    print("\nAvailable chart types:")
+    for i, chart_type in enumerate(chart_types, 1):
+        print(f"{i}. {chart_type.capitalize()}")
+    
+    while True:
+        try:
+            choice = input(f"\nSelect chart type (1-{len(chart_types)}) [default: candlestick]: ").strip()
+            if choice == '':
+                selected_chart_type = 'candlestick'
+                break
+            elif choice.isdigit() and 1 <= int(choice) <= len(chart_types):
+                selected_chart_type = chart_types[int(choice) - 1]
+                break
+            elif choice.lower() in chart_types:
+                selected_chart_type = choice.lower()
+                break
+            else:
+                print(f"Invalid choice. Please select 1-{len(chart_types)} or enter a valid chart type.")
+        except ValueError:
+            print("Invalid input. Please enter a number or chart type.")
+    
+    # Ask about saving
+    save_chart = input("\nSave chart to file? (y/n) [default: n]: ").strip().lower()
+    save_path = None
+    if save_chart in ['y', 'yes']:
+        default_filename = f"{selected_symbol.replace('/', '_')}_{selected_timeframe}_{selected_chart_type}{'_' + str(selected_days) + 'd' if selected_days else '_all'}.png"
+        filename = input(f"Enter filename [default: {default_filename}]: ").strip()
+        if not filename:
+            filename = default_filename
+        save_path = f"charts/{filename}"
+    
+    return {
+        'symbol': selected_symbol,
+        'timeframe': selected_timeframe,
+        'days': selected_days,
+        'chart_type': selected_chart_type,
+        'save_path': save_path
+    }
+
+
+def interactive_mode():
+    """Interactive mode with user input."""
     visualizer = DataVisualizer()
     
     # Display data summary
     visualizer.display_data_summary()
     
-    # Example visualizations
-    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-    timeframes = ['1d', '4h']
-    
-    for symbol in symbols:
-        for timeframe in timeframes:
-            print(f"\nGenerating charts for {symbol} ({timeframe})...")
+    while True:
+        try:
+            # Get user preferences
+            params = get_user_input()
             
-            # Candlestick chart for last 90 days
+            print(f"\nGenerating {params['chart_type']} chart for {params['symbol']} ({params['timeframe']})...")
+            if params['days']:
+                print(f"Time period: Last {params['days']} days")
+            else:
+                print("Time period: All available data")
+            
+            # Generate visualization
             fig = visualizer.visualize_symbol(
-                symbol=symbol, 
-                timeframe=timeframe, 
-                chart_type='candlestick',
-                days=90,
-                save_path=f"frontend/charts/{symbol.replace('/', '_')}_{timeframe}_candlestick.png"
+                symbol=params['symbol'],
+                timeframe=params['timeframe'],
+                chart_type=params['chart_type'],
+                days=params['days'],
+                save_path=params['save_path']
             )
             
             if fig:
                 plt.show()
                 plt.close(fig)
+                print("✓ Chart displayed successfully!")
+            else:
+                print("✗ Failed to generate chart.")
+            
+            # Ask if user wants to continue
+            continue_choice = input("\nGenerate another chart? (y/n) [default: n]: ").strip().lower()
+            if continue_choice not in ['y', 'yes']:
+                break
+                
+        except KeyboardInterrupt:
+            print("\n\nExiting...")
+            break
+        except Exception as e:
+            print(f"\nError: {e}")
+            continue_choice = input("Continue anyway? (y/n) [default: y]: ").strip().lower()
+            if continue_choice in ['n', 'no']:
+                break
     
-    print("\nVisualization complete!")
+    print("\nVisualization session complete!")
+
+
+def batch_mode():
+    """Batch mode for generating multiple charts automatically."""
+    visualizer = DataVisualizer()
+    
+    # Display data summary
+    visualizer.display_data_summary()
+    
+    # Get available symbols
+    summary = visualizer.get_available_data()
+    symbols = summary['symbol'].unique()
+    
+    print(f"\nAvailable symbols: {', '.join(symbols)}")
+    
+    # Get batch parameters
+    days_input = input("\nEnter number of days for all charts (or 'all' for all data) [default: 90]: ").strip()
+    if days_input.lower() == 'all' or days_input == '':
+        days = 90 if days_input == '' else None
+    else:
+        try:
+            days = int(days_input)
+        except ValueError:
+            print("Invalid input, using default 90 days.")
+            days = 90
+    
+    chart_type = input("Enter chart type (candlestick/line/ohlc/volume) [default: candlestick]: ").strip().lower()
+    if chart_type not in ['candlestick', 'line', 'ohlc', 'volume']:
+        chart_type = 'candlestick'
+    
+    timeframes = ['1d', '4h']
+    
+    print(f"\nGenerating {chart_type} charts for all symbols...")
+    print(f"Time period: {'Last ' + str(days) + ' days' if days else 'All available data'}")
+    
+    for symbol in symbols:
+        for timeframe in timeframes:
+            try:
+                print(f"\nGenerating chart for {symbol} ({timeframe})...")
+                
+                fig = visualizer.visualize_symbol(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    chart_type=chart_type,
+                    days=days,
+                    save_path=f"charts/{symbol.replace('/', '_')}_{timeframe}_{chart_type}{'_' + str(days) + 'd' if days else '_all'}.png"
+                )
+                
+                if fig:
+                    plt.close(fig)  # Don't show in batch mode, just save
+                    print(f"✓ Chart saved for {symbol} ({timeframe})")
+                else:
+                    print(f"✗ Failed to generate chart for {symbol} ({timeframe})")
+                    
+            except Exception as e:
+                print(f"✗ Error generating chart for {symbol} ({timeframe}): {e}")
+    
+    print("\nBatch generation complete!")
+
+
+def main():
+    """Main function with mode selection."""
+    print("\n" + "="*60)
+    print("   TRADING BOT DATA VISUALIZER")
+    print("="*60)
+    print("\nSelect mode:")
+    print("1. Interactive mode (custom charts with user input)")
+    print("2. Batch mode (generate charts for all symbols)")
+    print("3. Quick demo (legacy mode)")
+    
+    while True:
+        try:
+            choice = input("\nEnter your choice (1-3) [default: 1]: ").strip()
+            if choice == '' or choice == '1':
+                interactive_mode()
+                break
+            elif choice == '2':
+                batch_mode()
+                break
+            elif choice == '3':
+                # Legacy demo mode
+                visualizer = DataVisualizer()
+                visualizer.display_data_summary()
+                
+                # Updated to include all symbols
+                symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC']
+                timeframes = ['1d', '4h']
+                
+                days = 90  # Default demo period
+                
+                for symbol in symbols:
+                    for timeframe in timeframes:
+                        print(f"\nGenerating demo chart for {symbol} ({timeframe})...")
+                        
+                        fig = visualizer.visualize_symbol(
+                            symbol=symbol,
+                            timeframe=timeframe,
+                            chart_type='candlestick',
+                            days=days,
+                            save_path=f"charts/{symbol.replace('/', '_')}_{timeframe}_candlestick_{days}d.png"
+                        )
+                        
+                        if fig:
+                            plt.show()
+                            plt.close(fig)
+                
+                print("\nDemo visualization complete!")
+                break
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
+        except ValueError:
+            print("Invalid input. Please enter 1, 2, or 3.")
+        except KeyboardInterrupt:
+            print("\n\nExiting...")
+            break
 
 
 if __name__ == '__main__':

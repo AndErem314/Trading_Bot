@@ -38,17 +38,30 @@ class GaussianChannelCalculator:
         df_to_save = df[['timestamp', 'open', 'high', 'low', 'close', 'volume', 'gc_upper', 'gc_lower', 'gc_middle']].copy()
         df_to_save['symbol'] = symbol
         df_to_save['timeframe'] = timeframe
+        
+        # Reorder columns to match database schema
+        df_to_save = df_to_save[['symbol', 'timeframe', 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'gc_upper', 'gc_lower', 'gc_middle']]
+        
         try:
             with sqlite3.connect(self.db_path) as conn:
-                df_to_save.to_sql('gaussian_channel_data', conn, if_exists='append', index=False)
-                print(f"[INFO] Saved Gaussian Channel data for {symbol} ({timeframe})")
+                cursor = conn.cursor()
+                inserted = 0
+                for _, row in df_to_save.iterrows():
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO gaussian_channel_data 
+                        (symbol, timeframe, timestamp, open, high, low, close, volume, gc_upper, gc_lower, gc_middle)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', tuple(row))
+                    inserted += 1
+                conn.commit()
+                print(f"[INFO] Saved {inserted} Gaussian Channel records for {symbol} ({timeframe})")
         except Exception as e:
             print(f"[ERROR] Failed to save Gaussian Channel data for {symbol}: {e}")
 
 
 def main():
     """Main function to calculate and save Gaussian Channel data for multiple symbols and timeframes."""
-    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC']
     timeframes = ['4h', '1d']
 
     calculator = GaussianChannelCalculator()

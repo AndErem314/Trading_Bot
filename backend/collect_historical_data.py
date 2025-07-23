@@ -10,7 +10,7 @@ def collect_all_historical_data_for_all_pairs(start_date: str = '2020-08-01'):
     Collect all historical data for all trading pairs since the specified start date.
     """
     # Example trading pairs and timeframes
-    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC']
     timeframes = ['4h', '1d']
 
     # Convert start_date to timestamp in milliseconds

@@ -42,7 +42,7 @@ def main():
     parser.add_argument('--mode', choices=['collect', 'calculate', 'both'], 
                        default='both', help='Mode of operation')
     parser.add_argument('--symbols', nargs='+', 
-                       default=['BTC/USDT', 'ETH/USDT', 'SOL/USDT'],
+                       default=['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC'],
                        help='Symbols to process')
     parser.add_argument('--timeframes', nargs='+', 
                        default=['4h', '1d'],
