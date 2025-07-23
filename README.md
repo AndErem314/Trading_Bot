@@ -6,28 +6,42 @@ A comprehensive Python trading bot that collects cryptocurrency market data, cal
 
 ```
 Trading_Bot/
-├── backend/                    # Backend data processing modules
-│   ├── __init__.py
-│   ├── main.py                # Main runner script that coordinates processes
-│   ├── data_fetcher.py        # Collects raw OHLCV data from exchanges
-│   ├── gaussian_channel.py    # Calculates Gaussian Channel indicators
-│   ├── bollinger_bands.py     # Calculates Bollinger Bands indicators
-│   ├── simple_moving_average.py # Calculates SMA (50/200) indicators
-│   ├── ichimoku_cloud.py      # Calculates Ichimoku Cloud indicators
-│   ├── macd.py                # Calculates MACD (12,26,9) indicators
-│   ├── rsi.py                 # Calculates RSI (14-period) indicators
-│   └── collect_historical_data.py # Historical data collection script
-├── frontend/                   # Frontend data visualization modules
-│   ├── __init__.py
-│   ├── data_visualizer.py     # Data visualization and charting
-│   └── charts/                # Generated chart images
-├── data/                      # SQLite database files
-├── run_trading_bot.py         # Main entry point script
-├── collect_data.py           # Data collection entry point
-├── visualize_data.py         # Visualization entry point
-├── requirements.txt          # Python dependencies
-├── pyproject.toml           # Project configuration
-└── README.md                # Project documentation
+├── backend/                          # Backend data processing modules
+│   ├── __init__.py                  # Package initialization
+│   ├── main.py                      # Main coordinator script for all processes
+│   ├── data_fetcher.py              # Raw OHLCV data collection from exchanges
+│   ├── gaussian_channel.py          # Gaussian Channel indicator calculator
+│   ├── bollinger_bands.py           # Bollinger Bands indicator calculator
+│   ├── simple_moving_average.py     # SMA (50/200) indicator calculator
+│   ├── ichimoku_cloud.py            # Ichimoku Cloud indicator calculator
+│   ├── macd.py                      # MACD (12,26,9) indicator calculator
+│   ├── rsi.py                       # RSI (14-period) indicator calculator
+│   ├── parabolic_sar.py             # Parabolic SAR indicator calculator
+│   ├── fibonacci_retracement.py     # Fibonacci Retracement calculator
+│   └── collect_historical_data.py   # Historical data collection utility
+├── frontend/                         # Frontend data visualization modules
+│   ├── __init__.py                  # Package initialization
+│   ├── data_visualizer.py           # Advanced charting and visualization
+│   └── charts/                      # Generated chart images (PNG exports)
+├── data/                            # Dedicated SQLite database files
+│   ├── raw_market_data.db           # Raw OHLCV data (9.5MB)
+│   ├── gaussian_channel_data.db     # Gaussian Channel indicators (11.3MB)
+│   ├── bollinger_bands_data.db      # Bollinger Bands indicators (12.5MB)
+│   ├── sma_data.db                  # Simple Moving Average indicators (13.7MB)
+│   ├── ichimoku_data.db             # Ichimoku Cloud indicators (13.3MB)
+│   ├── macd_data.db                 # MACD indicators (13.3MB)
+│   ├── rsi_data.db                  # RSI indicators (4.4MB)
+│   ├── parabolic_sar_data.db        # Parabolic SAR indicators (11.0MB)
+│   └── fibonacci_retracement_data.db # Fibonacci Retracement levels (9.6MB)
+├── run_trading_bot.py               # Main application entry point
+├── collect_data.py                  # Data collection entry point script
+├── visualize_data.py                # Data visualization entry point script
+├── demo_parabolic_sar.py            # Parabolic SAR demonstration script
+├── requirements.txt                 # Python package dependencies
+├── pyproject.toml                   # Project configuration and metadata
+├── .gitignore                       # Git ignore patterns
+├── .python-version                  # Python version specification
+└── README.md                        # Comprehensive project documentation
 ```
 
 ## Features
