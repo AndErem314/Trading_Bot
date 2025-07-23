@@ -11,6 +11,8 @@ Trading_Bot/
 │   ├── main.py                # Main runner script that coordinates processes
 │   ├── data_fetcher.py        # Collects raw OHLCV data from exchanges
 │   ├── gaussian_channel.py    # Calculates Gaussian Channel indicators
+│   ├── bollinger_bands.py     # Calculates Bollinger Bands indicators
+│   ├── simple_moving_average.py # Calculates SMA (50/200) indicators
 │   └── collect_historical_data.py # Historical data collection script
 ├── frontend/                   # Frontend data visualization modules
 │   ├── __init__.py
@@ -36,9 +38,33 @@ Trading_Bot/
 - Robust error handling and retry mechanisms
 
 ### Data Analysis
-- Calculates Gaussian Channel indicators (upper, middle, lower bands)
-- SQLite database with optimized schema for raw data and indicators
+
+The bot implements **3 comprehensive technical indicators** with advanced analysis capabilities:
+
+#### **1. Gaussian Channel Indicator**
+- Upper, middle, and lower channel bands based on moving averages
+- Volatility-based trend analysis
+- Breakout and reversal signal detection
+
+#### **2. Bollinger Bands Indicator**
+- Standard Bollinger Bands (20-period SMA ± 2 standard deviations)
+- **Band Width**: Measures volatility expansion/contraction
+- **%B Position**: Shows price position relative to bands (0-1 scale)
+- **Squeeze Detection**: Identifies low volatility periods for breakout trading
+- **Trading Signals**: Overbought/oversold conditions with buy/sell alerts
+
+#### **3. Simple Moving Average (50/200)**
+- **SMA 50**: Short-term trend identification (50-period average)
+- **SMA 200**: Long-term trend identification (200-period average)
+- **Golden Cross**: SMA 50 crosses above SMA 200 (major bullish signal)
+- **Death Cross**: SMA 50 crosses below SMA 200 (major bearish signal)
+- **Trend Strength**: Quantified analysis (-100 to +100 scale)
+- **Position Analysis**: Price vs SMA positioning with detailed descriptions
+
+#### **Technical Features**
+- SQLite database with optimized schema for raw data and all indicators
 - Supports batch processing of multiple symbols and timeframes
+- Real-time pattern analysis and signal generation
 - Command-line interface for flexible operation
 
 ### Data Visualization
@@ -156,6 +182,14 @@ Select chart type (1-4) [default: candlestick]: 1
 Save chart to file? (y/n): y
 ```
 
+### Individual Indicator Calculations
+```bash
+# Calculate specific indicators for all trading pairs
+python backend/bollinger_bands.py     # Bollinger Bands analysis
+python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
+python backend/gaussian_channel.py    # Gaussian Channel indicators
+```
+
 ### Advanced Usage - Run Individual Modules
 ```bash
 # Run backend modules directly
@@ -163,6 +197,8 @@ cd backend
 python main.py --mode both
 python data_fetcher.py
 python gaussian_channel.py
+python bollinger_bands.py
+python simple_moving_average.py
 
 # Run frontend modules directly
 cd frontend  
@@ -171,7 +207,9 @@ python data_visualizer.py
 
 ## Database Schema
 
-### Raw Data Table
+The database contains **4 optimized tables** storing raw data and calculated indicators:
+
+### Raw Data Table (`raw_data`)
 - `id` - Primary key
 - `symbol` - Trading pair (e.g., BTC/USDT)
 - `timeframe` - Time interval (e.g., 4h, 1d)
@@ -179,16 +217,36 @@ python data_visualizer.py
 - `open, high, low, close, volume` - OHLCV data
 - `created_at` - Record creation timestamp
 
-### Gaussian Channel Data Table
+### Gaussian Channel Data Table (`gaussian_channel_data`)
 - All fields from raw data table plus:
 - `gc_upper` - Upper Gaussian Channel band
 - `gc_middle` - Middle Gaussian Channel band (moving average)
 - `gc_lower` - Lower Gaussian Channel band
 
+### Bollinger Bands Data Table (`bollinger_bands_data`)
+- All fields from raw data table plus:
+- `bb_upper` - Upper Bollinger Band (SMA + 2σ)
+- `bb_middle` - Middle Bollinger Band (20-period SMA)
+- `bb_lower` - Lower Bollinger Band (SMA - 2σ)
+- `bb_width` - Band width (volatility measure)
+- `bb_percent` - %B position indicator (0-1 scale)
+
+### Simple Moving Average Data Table (`sma_data`)
+- All fields from raw data table plus:
+- `sma_50` - 50-period simple moving average
+- `sma_200` - 200-period simple moving average
+- `sma_ratio` - SMA 50/200 ratio (trend strength)
+- `price_vs_sma50` - Price position vs SMA 50 (%)
+- `price_vs_sma200` - Price position vs SMA 200 (%)
+- `trend_strength` - Quantified trend analysis (-100 to +100)
+- `sma_signal` - Trading signal (strong_buy, buy, hold, sell, strong_sell)
+- `cross_signal` - Crossover detection (golden_cross, death_cross, none)
+
 ## Data Summary
 
-The bot currently maintains **63,546+ records** across **5 trading pairs**:
+The bot currently maintains **254,184+ records** across **4 indicator tables** and **5 trading pairs**:
 
+### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
 |-------------|----------------|---------------|------------|
 | BTC/USDT    | 10,905         | 1,818         | Aug 2020 - Present |
@@ -197,7 +255,16 @@ The bot currently maintains **63,546+ records** across **5 trading pairs**:
 | **SOL/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
 | **ETH/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
 
-*Note: SOL/BTC and ETH/BTC pairs were recently added with full historical data.*
+### Technical Indicators Database
+| Indicator | Records | Description |
+|-----------|---------|-------------|
+| **Raw Data** | 63,546 | Original OHLCV market data |
+| **Gaussian Channel** | 63,546 | Volatility-based channel indicators |
+| **Bollinger Bands** | 63,546 | Volatility bands with %B and squeeze detection |
+| **SMA (50/200)** | 63,546 | Moving averages with Golden/Death Cross signals |
+| **TOTAL** | **254,184** | **Complete technical analysis dataset** |
+
+*Note: All indicators calculated for the same time periods with consistent data coverage.*
 
 ## Configuration
 
@@ -222,7 +289,9 @@ python visualize_data.py
 
 ## Recent Updates
 
-### ✅ **Version 2.0 - Enhanced Visualization & New Trading Pairs**
+### ✅ **Version 3.0 - Advanced Technical Indicators & Enhanced Analysis**
+- **NEW: Bollinger Bands Indicator** with volatility analysis and squeeze detection
+- **NEW: Simple Moving Average (50/200)** with Golden/Death Cross signals
 - **Added new trading pairs**: SOL/BTC and ETH/BTC with full historical data
 - **Interactive visualizer**: Dynamic user input for days, chart types, and trading pairs
 - **Batch chart generation**: Create charts for all pairs automatically
@@ -231,7 +300,15 @@ python visualize_data.py
 - **Improved user experience**: Menu-driven interface with validation
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
+### 📊 **New Technical Analysis Features**
+- **Bollinger Bands**: %B position tracking, band width analysis, squeeze detection
+- **SMA Crossovers**: Automated Golden Cross and Death Cross detection
+- **Trend Strength**: Quantified trend analysis with -100 to +100 scoring
+- **Advanced Signals**: Multiple signal types (strong_buy, buy, hold, sell, strong_sell)
+- **Pattern Recognition**: Real-time analysis of market conditions and positioning
+
 ### 🔧 **Technical Improvements**
+- **Database expansion**: 254,184+ records across 4 indicator tables
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
 - Optimized database operations for better performance
