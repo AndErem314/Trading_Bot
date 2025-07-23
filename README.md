@@ -242,11 +242,26 @@ cd frontend
 python data_visualizer.py
 ```
 
-## Database Schema
+## Database Architecture
 
-The database contains **7 optimized tables** storing raw data and calculated indicators:
+The project uses a **dedicated database structure** with separate SQLite database files for optimal performance and organization:
 
-### Raw Data Table (`raw_data`)
+### Database Files Structure
+```
+data/
+├── raw_market_data.db          # Raw OHLCV market data
+├── gaussian_channel_data.db    # Gaussian Channel indicators
+├── bollinger_bands_data.db     # Bollinger Bands indicators
+├── sma_data.db                 # Simple Moving Average indicators
+├── ichimoku_data.db            # Ichimoku Cloud indicators
+├── macd_data.db                # MACD indicators
+└── rsi_data.db                 # RSI indicators
+```
+
+### Database Schema
+
+#### **Raw Market Data** (`raw_market_data.db`)
+**Table: `raw_data`**
 - `id` - Primary key
 - `symbol` - Trading pair (e.g., BTC/USDT)
 - `timeframe` - Time interval (e.g., 4h, 1d)
@@ -254,22 +269,25 @@ The database contains **7 optimized tables** storing raw data and calculated ind
 - `open, high, low, close, volume` - OHLCV data
 - `created_at` - Record creation timestamp
 
-### Gaussian Channel Data Table (`gaussian_channel_data`)
-- All fields from raw data table plus:
+#### **Gaussian Channel Database** (`gaussian_channel_data.db`)
+**Table: `gaussian_channel_data`**
+- All OHLCV fields plus:
 - `gc_upper` - Upper Gaussian Channel band
 - `gc_middle` - Middle Gaussian Channel band (moving average)
 - `gc_lower` - Lower Gaussian Channel band
 
-### Bollinger Bands Data Table (`bollinger_bands_data`)
-- All fields from raw data table plus:
+#### **Bollinger Bands Database** (`bollinger_bands_data.db`)
+**Table: `bollinger_bands_data`**
+- All OHLCV fields plus:
 - `bb_upper` - Upper Bollinger Band (SMA + 2σ)
 - `bb_middle` - Middle Bollinger Band (20-period SMA)
 - `bb_lower` - Lower Bollinger Band (SMA - 2σ)
 - `bb_width` - Band width (volatility measure)
 - `bb_percent` - %B position indicator (0-1 scale)
 
-### Simple Moving Average Data Table (`sma_data`)
-- All fields from raw data table plus:
+#### **Simple Moving Average Database** (`sma_data.db`)
+**Table: `sma_data`**
+- All OHLCV fields plus:
 - `sma_50` - 50-period simple moving average
 - `sma_200` - 200-period simple moving average
 - `sma_ratio` - SMA 50/200 ratio (trend strength)
@@ -279,8 +297,9 @@ The database contains **7 optimized tables** storing raw data and calculated ind
 - `sma_signal` - Trading signal (strong_buy, buy, hold, sell, strong_sell)
 - `cross_signal` - Crossover detection (golden_cross, death_cross, none)
 
-### Ichimoku Cloud Data Table (`ichimoku_data`)
-- All fields from raw data table plus:
+#### **Ichimoku Cloud Database** (`ichimoku_data.db`)
+**Table: `ichimoku_data`**
+- All OHLCV fields plus:
 - `tenkan_sen` - Tenkan-sen (9-period conversion line)
 - `kijun_sen` - Kijun-sen (26-period base line)
 - `senkou_span_a` - Senkou Span A (leading span A, projected 26 periods forward)
@@ -289,8 +308,9 @@ The database contains **7 optimized tables** storing raw data and calculated ind
 - `cloud_color` - Cloud color indicator (green/red)
 - `ichimoku_signal` - Overall signal (bullish/bearish/neutral)
 
-### MACD Data Table (`macd_data`)
-- All fields from raw data table plus:
+#### **MACD Database** (`macd_data.db`)
+**Table: `macd_data`**
+- All OHLCV fields plus:
 - `ema_12` - 12-period exponential moving average
 - `ema_26` - 26-period exponential moving average
 - `macd_line` - MACD line (EMA12 - EMA26)
@@ -298,8 +318,9 @@ The database contains **7 optimized tables** storing raw data and calculated ind
 - `histogram` - MACD histogram (MACD line - Signal line)
 - `macd_signal` - MACD signal (bullish, bearish, strong_bullish, strong_bearish, neutral)
 
-### RSI Data Table (`rsi_data`)
-- All fields from raw data table plus:
+#### **RSI Database** (`rsi_data.db`)
+**Table: `rsi_data`**
+- All OHLCV fields plus:
 - `rsi` - RSI value (0-100 scale, 14-period Wilder's smoothing)
 - `rsi_sma_5` - 5-period simple moving average of RSI
 - `rsi_sma_10` - 10-period simple moving average of RSI
@@ -309,6 +330,13 @@ The database contains **7 optimized tables** storing raw data and calculated ind
 - `divergence_signal` - Divergence detection (bullish, bearish, none)
 - `momentum_shift` - Significant RSI change detection (>5 points)
 - `support_resistance` - Dynamic RSI support/resistance levels
+
+### Database Architecture Benefits
+- **Performance**: Faster access to specific indicators
+- **Organization**: Clean separation of concerns
+- **Scalability**: Easy to add new indicators
+- **Maintenance**: Individual backup and optimization
+- **Development**: Isolated indicator development
 
 ## Data Summary
 
@@ -323,17 +351,17 @@ The bot currently maintains **444,822+ records** across **7 indicator tables** a
 | **SOL/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
 | **ETH/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
 
-### Technical Indicators Database
-| Indicator | Records | Description |
-|-----------|---------|-------------|
-| **Raw Data** | 63,546 | Original OHLCV market data |
-| **Gaussian Channel** | 63,546 | Volatility-based channel indicators |
-| **Bollinger Bands** | 63,546 | Volatility bands with %B and squeeze detection |
-| **SMA (50/200)** | 63,546 | Moving averages with Golden/Death Cross signals |
-| **Ichimoku Cloud** | 63,546 | Complete Ichimoku system with all 5 components |
-| **MACD (12,26,9)** | 63,546 | Moving Average Convergence Divergence with momentum analysis |
-| **RSI (14-period)** | 63,546 | Relative Strength Index with overbought/oversold and divergence analysis |
-| **TOTAL** | **444,822** | **Comprehensive technical analysis dataset** |
+### Database Files Summary
+| Database File | Records | Size | Description |
+|---------------|---------|------|-------------|
+| **raw_market_data.db** | 63,546 | ~9.5MB | Original OHLCV market data for all trading pairs |
+| **gaussian_channel_data.db** | 63,546 | ~11.3MB | Volatility-based channel indicators |
+| **bollinger_bands_data.db** | 63,546 | ~12.5MB | Volatility bands with %B and squeeze detection |
+| **sma_data.db** | 63,546 | ~13.7MB | Moving averages with Golden/Death Cross signals |
+| **ichimoku_data.db** | 63,546 | ~13.3MB | Complete Ichimoku system with all 5 components |
+| **macd_data.db** | 63,546 | ~13.3MB | Moving Average Convergence Divergence with momentum analysis |
+| **rsi_data.db** | 63,546 | ~4.1MB | Relative Strength Index with overbought/oversold and divergence analysis |
+| **TOTAL** | **444,822** | **~77.7MB** | **Complete technical analysis dataset across 7 dedicated databases** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -343,8 +371,9 @@ The bot currently maintains **444,822+ records** across **7 indicator tables** a
 - **Symbols**: BTC/USDT, ETH/USDT, SOL/USDT, SOL/BTC, ETH/BTC
 - **Timeframes**: 4h (4-hour), 1d (daily)
 - **Historical start**: August 1st, 2020
-- **Raw Database**: `data/raw_market_data.db` (SQLite) - Contains OHLCV data
-- **Indicators Database**: `data/indicators_data.db` (SQLite) - Contains all technical indicators
+- **Database Architecture**: Dedicated database files for optimal performance
+  - **Raw Data**: `data/raw_market_data.db` - OHLCV market data
+  - **Indicators**: 6 separate database files for each technical indicator
 - **Exchange**: Binance
 - **Chart output**: `charts/` directory
 
@@ -360,6 +389,14 @@ python visualize_data.py
 ```
 
 ## Recent Updates
+
+### ✅ **Version 6.1 - Database Architecture Optimization**
+- **NEW: Dedicated Database Structure** - Split monolithic database into 7 specialized files
+- **Performance Enhancement**: Faster access to individual indicators with dedicated databases
+- **Improved Organization**: Each indicator has its own optimized database file
+- **Better Scalability**: Easier maintenance, backup, and development workflows
+- **Database Files**: `raw_market_data.db` + 6 dedicated indicator databases (~77.7MB total)
+- **Architecture Benefits**: Isolated indicator development and individual optimization
 
 ### ✅ **Version 6.0 - Complete RSI Integration**
 - **NEW: RSI Indicator (14-period)** with overbought/oversold levels and momentum analysis
