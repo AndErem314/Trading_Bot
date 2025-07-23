@@ -42,7 +42,7 @@ Trading_Bot/
 
 ### Data Analysis
 
-The bot implements **6 comprehensive technical indicators** with advanced analysis capabilities:
+The bot implements **7 comprehensive technical indicators** with advanced analysis capabilities:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -91,6 +91,16 @@ The bot implements **6 comprehensive technical indicators** with advanced analys
 - **Momentum Shift**: Detection of significant RSI changes (>5 points)
 - **RSI Smoothing**: 5 and 10-period SMAs of RSI for trend confirmation
 - **Wilder's Smoothing**: Authentic RSI calculation using Wilder's exponential averaging
+
+#### **7. Parabolic SAR (Stop and Reverse)**
+- **SAR Value**: Dynamic stop-loss and trend reversal indicator
+- **Trend Detection**: Real-time identification of uptrend/downtrend periods
+- **Reversal Signals**: Automatic detection of trend change points with boolean flags
+- **Signal Strength**: Percentage-based distance measurement between price and SAR
+- **Acceleration Factor**: Progressive AF from 0.02 to 0.20 for trend acceleration
+- **Pattern Analysis**: Current trend assessment with persistence measurement
+- **Reversal History**: Complete tracking of trend changes with timestamps
+- **Signal Classification**: Weak/moderate/strong categories based on price-SAR distance
 
 #### **Technical Features**
 - SQLite database with optimized schema for raw data and all indicators
@@ -221,6 +231,7 @@ python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
 python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
 python backend/macd.py                # MACD (12,26,9) momentum analysis
 python backend/rsi.py                 # RSI (14-period) momentum oscillator
+python backend/parabolic_sar.py       # Parabolic SAR (Stop and Reverse) trend indicator
 python backend/gaussian_channel.py    # Gaussian Channel indicators
 ```
 
@@ -236,6 +247,7 @@ python simple_moving_average.py
 python ichimoku_cloud.py
 python macd.py
 python rsi.py
+python parabolic_sar.py
 
 # Run frontend modules directly
 cd frontend  
@@ -255,7 +267,8 @@ data/
 ├── sma_data.db                 # Simple Moving Average indicators
 ├── ichimoku_data.db            # Ichimoku Cloud indicators
 ├── macd_data.db                # MACD indicators
-└── rsi_data.db                 # RSI indicators
+├── rsi_data.db                 # RSI indicators
+└── parabolic_sar_data.db       # Parabolic SAR indicators
 ```
 
 ### Database Schema
@@ -331,6 +344,14 @@ data/
 - `momentum_shift` - Significant RSI change detection (>5 points)
 - `support_resistance` - Dynamic RSI support/resistance levels
 
+#### **Parabolic SAR Database** (`parabolic_sar_data.db`)
+**Table: `parabolic_sar_data`**
+- All OHLCV fields plus:
+- `parabolic_sar` - Parabolic SAR value (dynamic stop-loss level)
+- `trend` - Current trend direction (up/down)
+- `reversal_signal` - Trend reversal detection (boolean flag)
+- `signal_strength` - Signal strength based on price-SAR distance (percentage)
+
 ### Database Architecture Benefits
 - **Performance**: Faster access to specific indicators
 - **Organization**: Clean separation of concerns
@@ -340,7 +361,7 @@ data/
 
 ## Data Summary
 
-The bot currently maintains **444,822+ records** across **7 indicator tables** and **5 trading pairs**:
+The bot currently maintains **508,368+ records** across **8 indicator tables** and **5 trading pairs**:
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
@@ -361,7 +382,8 @@ The bot currently maintains **444,822+ records** across **7 indicator tables** a
 | **ichimoku_data.db** | 63,546 | ~13.3MB | Complete Ichimoku system with all 5 components |
 | **macd_data.db** | 63,546 | ~13.3MB | Moving Average Convergence Divergence with momentum analysis |
 | **rsi_data.db** | 63,546 | ~4.1MB | Relative Strength Index with overbought/oversold and divergence analysis |
-| **TOTAL** | **444,822** | **~77.7MB** | **Complete technical analysis dataset across 7 dedicated databases** |
+| **parabolic_sar_data.db** | 63,546 | ~10.4MB | Parabolic SAR with trend reversal detection and signal strength |
+| **TOTAL** | **508,368** | **~88.1MB** | **Complete technical analysis dataset across 8 dedicated databases** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -373,7 +395,7 @@ The bot currently maintains **444,822+ records** across **7 indicator tables** a
 - **Historical start**: August 1st, 2020
 - **Database Architecture**: Dedicated database files for optimal performance
   - **Raw Data**: `data/raw_market_data.db` - OHLCV market data
-  - **Indicators**: 6 separate database files for each technical indicator
+  - **Indicators**: 7 separate database files for each technical indicator
 - **Exchange**: Binance
 - **Chart output**: `charts/` directory
 
@@ -389,6 +411,15 @@ python visualize_data.py
 ```
 
 ## Recent Updates
+
+### ✅ **Version 6.2 - Parabolic SAR Indicator Integration**
+- **NEW: Parabolic SAR Indicator** - Stop and Reverse trend following indicator
+- **Advanced Trend Detection**: Real-time uptrend/downtrend identification with reversal signals
+- **Signal Analysis**: 7,640+ trend reversals detected with signal strength measurement
+- **Pattern Recognition**: Trend persistence analysis and reversal history tracking
+- **Dedicated Database**: `parabolic_sar_data.db` (~10.4MB) with comprehensive SAR data
+- **Complete Integration**: Seamlessly integrated with existing indicator architecture
+- **Professional Features**: Acceleration factor progression, signal classification, pattern analysis
 
 ### ✅ **Version 6.1 - Database Architecture Optimization**
 - **NEW: Dedicated Database Structure** - Split monolithic database into 7 specialized files
@@ -426,6 +457,7 @@ python visualize_data.py
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
 ### 📈 **Advanced Technical Analysis Features**
+- **Parabolic SAR Analysis**: Trend following with automatic reversal detection and signal strength measurement
 - **RSI Analysis**: 14-period momentum oscillator with overbought/oversold signals and divergence detection
 - **MACD Analysis**: Complete momentum system with signal crossovers and divergence detection
 - **Ichimoku Cloud**: Complete system with Tenkan-sen, Kijun-sen, Senkou spans, and Chikou span
@@ -437,10 +469,12 @@ python visualize_data.py
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
 ### 🔧 **Technical Improvements**
-- **Database expansion**: 444,822+ records across 7 indicator tables
-- **Complete indicator suite**: 6 professional-grade technical indicators
+- **Database expansion**: 508,368+ records across 8 indicator tables
+- **Complete indicator suite**: 7 professional-grade technical indicators
+- **Parabolic SAR Integration**: Full trend reversal system with signal strength analysis
 - **RSI Integration**: Full momentum oscillator with Wilder's smoothing and trend analysis
 - **MACD Integration**: Full momentum analysis with EMA calculations and histogram tracking
+- **Dedicated Database Architecture**: 8 optimized database files for maximum performance
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
 - Optimized database operations for better performance
