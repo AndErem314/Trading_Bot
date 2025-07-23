@@ -42,7 +42,7 @@ Trading_Bot/
 
 ### Data Analysis
 
-The bot implements **7 comprehensive technical indicators** with advanced analysis capabilities:
+The bot implements **8 comprehensive technical indicators** with advanced analysis capabilities:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -101,6 +101,16 @@ The bot implements **7 comprehensive technical indicators** with advanced analys
 - **Pattern Analysis**: Current trend assessment with persistence measurement
 - **Reversal History**: Complete tracking of trend changes with timestamps
 - **Signal Classification**: Weak/moderate/strong categories based on price-SAR distance
+
+#### **8. Fibonacci Retracement**
+- **Retracement Levels**: Industry-standard Fibonacci ratios (23.6%, 38.2%, 50.0%, 61.8%, 76.4%)
+- **Range-Based Calculation**: Consistent levels based on overall high/low range
+- **Support/Resistance Identification**: Key price levels for technical analysis
+- **Simple Implementation**: Clean, focused design suitable for combination with other indicators
+- **Price Level Analysis**: Determine current price position relative to Fibonacci levels
+- **Market Structure**: Identify potential reversal zones and continuation levels
+- **Clean Data Structure**: Dedicated storage for each Fibonacci level
+- **Historical Consistency**: Same retracement levels maintained across all time periods
 
 #### **Technical Features**
 - SQLite database with optimized schema for raw data and all indicators
@@ -232,6 +242,7 @@ python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
 python backend/macd.py                # MACD (12,26,9) momentum analysis
 python backend/rsi.py                 # RSI (14-period) momentum oscillator
 python backend/parabolic_sar.py       # Parabolic SAR (Stop and Reverse) trend indicator
+python backend/fibonacci_retracement.py # Fibonacci Retracement levels
 python backend/gaussian_channel.py    # Gaussian Channel indicators
 ```
 
@@ -248,6 +259,7 @@ python ichimoku_cloud.py
 python macd.py
 python rsi.py
 python parabolic_sar.py
+python fibonacci_retracement.py
 
 # Run frontend modules directly
 cd frontend  
@@ -268,7 +280,8 @@ data/
 ├── ichimoku_data.db            # Ichimoku Cloud indicators
 ├── macd_data.db                # MACD indicators
 ├── rsi_data.db                 # RSI indicators
-└── parabolic_sar_data.db       # Parabolic SAR indicators
+├── parabolic_sar_data.db       # Parabolic SAR indicators
+└── fibonacci_retracement_data.db # Fibonacci Retracement indicators
 ```
 
 ### Database Schema
@@ -352,6 +365,15 @@ data/
 - `reversal_signal` - Trend reversal detection (boolean flag)
 - `signal_strength` - Signal strength based on price-SAR distance (percentage)
 
+#### **Fibonacci Retracement Database** (`fibonacci_retracement_data.db`)
+**Table: `fibonacci_retracement_data`**
+- Standard fields: symbol, timeframe, timestamp
+- `level_23_6` - 23.6% Fibonacci retracement level
+- `level_38_2` - 38.2% Fibonacci retracement level
+- `level_50_0` - 50.0% Fibonacci retracement level (midpoint)
+- `level_61_8` - 61.8% Fibonacci retracement level (golden ratio)
+- `level_76_4` - 76.4% Fibonacci retracement level
+
 ### Database Architecture Benefits
 - **Performance**: Faster access to specific indicators
 - **Organization**: Clean separation of concerns
@@ -361,7 +383,7 @@ data/
 
 ## Data Summary
 
-The bot currently maintains **508,368+ records** across **8 indicator tables** and **5 trading pairs**:
+The bot currently maintains **571,914+ records** across **9 indicator tables** and **5 trading pairs**:
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
@@ -383,7 +405,8 @@ The bot currently maintains **508,368+ records** across **8 indicator tables** a
 | **macd_data.db** | 63,546 | ~13.3MB | Moving Average Convergence Divergence with momentum analysis |
 | **rsi_data.db** | 63,546 | ~4.1MB | Relative Strength Index with overbought/oversold and divergence analysis |
 | **parabolic_sar_data.db** | 63,546 | ~10.4MB | Parabolic SAR with trend reversal detection and signal strength |
-| **TOTAL** | **508,368** | **~88.1MB** | **Complete technical analysis dataset across 8 dedicated databases** |
+| **fibonacci_retracement_data.db** | 63,546 | ~9.2MB | Fibonacci retracement levels with standard ratios |
+| **TOTAL** | **571,914** | **~97.3MB** | **Complete technical analysis dataset across 9 dedicated databases** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -395,7 +418,7 @@ The bot currently maintains **508,368+ records** across **8 indicator tables** a
 - **Historical start**: August 1st, 2020
 - **Database Architecture**: Dedicated database files for optimal performance
   - **Raw Data**: `data/raw_market_data.db` - OHLCV market data
-  - **Indicators**: 7 separate database files for each technical indicator
+  - **Indicators**: 8 separate database files for each technical indicator
 - **Exchange**: Binance
 - **Chart output**: `charts/` directory
 
@@ -411,6 +434,15 @@ python visualize_data.py
 ```
 
 ## Recent Updates
+
+### ✅ **Version 6.3 - Fibonacci Retracement Indicator Integration**
+- **NEW: Fibonacci Retracement Indicator** - Classic retracement levels for support/resistance analysis
+- **Standard Fibonacci Ratios**: Industry-standard levels (23.6%, 38.2%, 50.0%, 61.8%, 76.4%)
+- **Range-Based Calculation**: Consistent levels based on overall high/low range
+- **Clean Implementation**: Simple, focused design suitable for combination with other indicators
+- **Dedicated Database**: `fibonacci_retracement_data.db` (~9.2MB) with 63,546 records
+- **Perfect for Integration**: Foundation for combining with other technical analysis tools
+- **Demo Results**: BTC/USDT range $9,825-$123,218 with current price at 4.2% retracement
 
 ### ✅ **Version 6.2 - Parabolic SAR Indicator Integration**
 - **NEW: Parabolic SAR Indicator** - Stop and Reverse trend following indicator
@@ -457,6 +489,7 @@ python visualize_data.py
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
 ### 📈 **Advanced Technical Analysis Features**
+- **Fibonacci Retracement Analysis**: Classic retracement levels for support/resistance identification
 - **Parabolic SAR Analysis**: Trend following with automatic reversal detection and signal strength measurement
 - **RSI Analysis**: 14-period momentum oscillator with overbought/oversold signals and divergence detection
 - **MACD Analysis**: Complete momentum system with signal crossovers and divergence detection
@@ -469,12 +502,13 @@ python visualize_data.py
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
 ### 🔧 **Technical Improvements**
-- **Database expansion**: 508,368+ records across 8 indicator tables
-- **Complete indicator suite**: 7 professional-grade technical indicators
+- **Database expansion**: 571,914+ records across 9 indicator tables
+- **Complete indicator suite**: 8 professional-grade technical indicators
+- **Fibonacci Retracement Integration**: Classic retracement levels with clean implementation
 - **Parabolic SAR Integration**: Full trend reversal system with signal strength analysis
 - **RSI Integration**: Full momentum oscillator with Wilder's smoothing and trend analysis
 - **MACD Integration**: Full momentum analysis with EMA calculations and histogram tracking
-- **Dedicated Database Architecture**: 8 optimized database files for maximum performance
+- **Dedicated Database Architecture**: 9 optimized database files for maximum performance
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
 - Optimized database operations for better performance
