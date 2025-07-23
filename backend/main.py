@@ -12,6 +12,7 @@ from simple_moving_average import SimpleMovingAverageCalculator
 from bollinger_bands import BollingerBandsCalculator
 from ichimoku_cloud import IchimokuCloudCalculator
 from macd import MACDCalculator
+from rsi import calculate_rsi_for_symbol_timeframe
 
 
 def collect_raw_data(symbols, timeframes, start_time=None):
@@ -70,6 +71,10 @@ def calculate_all_indicators(symbols, timeframes):
             df_macd = macd_calc.calculate_macd(df_raw.copy())
             macd_calc.save_macd_data(df_macd, symbol, timeframe)
             
+            # Calculate RSI
+            print(f"  [CALCULATING] RSI...")
+            calculate_rsi_for_symbol_timeframe(symbol, timeframe)
+
             print(f"  [COMPLETED] All indicators calculated for {symbol} ({timeframe})")
 
 

@@ -15,6 +15,7 @@ Trading_Bot/
 │   ├── simple_moving_average.py # Calculates SMA (50/200) indicators
 │   ├── ichimoku_cloud.py      # Calculates Ichimoku Cloud indicators
 │   ├── macd.py                # Calculates MACD (12,26,9) indicators
+│   ├── rsi.py                 # Calculates RSI (14-period) indicators
 │   └── collect_historical_data.py # Historical data collection script
 ├── frontend/                   # Frontend data visualization modules
 │   ├── __init__.py
@@ -41,7 +42,7 @@ Trading_Bot/
 
 ### Data Analysis
 
-The bot implements **5 comprehensive technical indicators** with advanced analysis capabilities:
+The bot implements **6 comprehensive technical indicators** with advanced analysis capabilities:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -80,6 +81,16 @@ The bot implements **5 comprehensive technical indicators** with advanced analys
 - **Zero Line Analysis**: Trend direction confirmation (above/below zero)
 - **Divergence Detection**: Price vs MACD divergence for reversal signals
 - **Momentum Analysis**: Increasing/decreasing momentum tracking
+
+#### **6. RSI (Relative Strength Index) - 14 Period**
+- **RSI Value**: Momentum oscillator (0-100 scale) using 14-period calculation
+- **Overbought/Oversold**: Classic levels at 70/30 with signal generation
+- **Trend Strength Analysis**: Multi-level categorization (strong_bullish, bullish, neutral, bearish, strong_bearish)
+- **Divergence Detection**: Bullish/bearish divergences between RSI and price movement
+- **Support/Resistance**: Dynamic RSI level identification (30, 40, 50, 60, 70)
+- **Momentum Shift**: Detection of significant RSI changes (>5 points)
+- **RSI Smoothing**: 5 and 10-period SMAs of RSI for trend confirmation
+- **Wilder's Smoothing**: Authentic RSI calculation using Wilder's exponential averaging
 
 #### **Technical Features**
 - SQLite database with optimized schema for raw data and all indicators
@@ -209,6 +220,7 @@ python backend/bollinger_bands.py     # Bollinger Bands analysis
 python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
 python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
 python backend/macd.py                # MACD (12,26,9) momentum analysis
+python backend/rsi.py                 # RSI (14-period) momentum oscillator
 python backend/gaussian_channel.py    # Gaussian Channel indicators
 ```
 
@@ -223,6 +235,7 @@ python bollinger_bands.py
 python simple_moving_average.py
 python ichimoku_cloud.py
 python macd.py
+python rsi.py
 
 # Run frontend modules directly
 cd frontend  
@@ -231,7 +244,7 @@ python data_visualizer.py
 
 ## Database Schema
 
-The database contains **6 optimized tables** storing raw data and calculated indicators:
+The database contains **7 optimized tables** storing raw data and calculated indicators:
 
 ### Raw Data Table (`raw_data`)
 - `id` - Primary key
@@ -285,9 +298,21 @@ The database contains **6 optimized tables** storing raw data and calculated ind
 - `histogram` - MACD histogram (MACD line - Signal line)
 - `macd_signal` - MACD signal (bullish, bearish, strong_bullish, strong_bearish, neutral)
 
+### RSI Data Table (`rsi_data`)
+- All fields from raw data table plus:
+- `rsi` - RSI value (0-100 scale, 14-period Wilder's smoothing)
+- `rsi_sma_5` - 5-period simple moving average of RSI
+- `rsi_sma_10` - 10-period simple moving average of RSI
+- `overbought` - Overbought signal (RSI > 70)
+- `oversold` - Oversold signal (RSI < 30)
+- `trend_strength` - Trend categorization (strong_bullish, bullish, neutral, bearish, strong_bearish)
+- `divergence_signal` - Divergence detection (bullish, bearish, none)
+- `momentum_shift` - Significant RSI change detection (>5 points)
+- `support_resistance` - Dynamic RSI support/resistance levels
+
 ## Data Summary
 
-The bot currently maintains **381,276+ records** across **6 indicator tables** and **5 trading pairs**:
+The bot currently maintains **444,822+ records** across **7 indicator tables** and **5 trading pairs**:
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
@@ -307,7 +332,8 @@ The bot currently maintains **381,276+ records** across **6 indicator tables** a
 | **SMA (50/200)** | 63,546 | Moving averages with Golden/Death Cross signals |
 | **Ichimoku Cloud** | 63,546 | Complete Ichimoku system with all 5 components |
 | **MACD (12,26,9)** | 63,546 | Moving Average Convergence Divergence with momentum analysis |
-| **TOTAL** | **381,276** | **Comprehensive technical analysis dataset** |
+| **RSI (14-period)** | 63,546 | Relative Strength Index with overbought/oversold and divergence analysis |
+| **TOTAL** | **444,822** | **Comprehensive technical analysis dataset** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -334,12 +360,19 @@ python visualize_data.py
 
 ## Recent Updates
 
+### ✅ **Version 6.0 - Complete RSI Integration**
+- **NEW: RSI Indicator (14-period)** with overbought/oversold levels and momentum analysis
+- **Advanced RSI Features**: Wilder's smoothing, divergence detection, support/resistance levels
+- **Complete Technical Suite**: Now 6 professional-grade indicators with momentum focus
+- **Enhanced Signal Analysis**: RSI trend strength categorization and momentum shift detection
+- **Comprehensive Database**: 444,822+ records across 7 indicator tables
+- **RSI Pattern Recognition**: Real-time analysis with 5/10-period RSI smoothing
+
 ### ✅ **Version 5.0 - Professional MACD Integration**
 - **NEW: MACD Indicator (12,26,9)** with momentum analysis and divergence detection
-- **Complete Technical Suite**: Now 5 professional-grade indicators
+- **Complete Technical Suite**: 5 professional-grade indicators
 - **Enhanced Signal Analysis**: Multi-component confirmation across all indicators
 - **Advanced Momentum Tracking**: MACD crossovers, zero-line analysis, and trend strength
-- **Comprehensive Database**: 381,276+ records across 6 indicator tables
 - **Pattern Recognition**: Real-time analysis with divergence risk assessment
 
 ### ✅ **Version 4.0 - Complete Technical Analysis Suite**
@@ -355,6 +388,7 @@ python visualize_data.py
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
 ### 📈 **Advanced Technical Analysis Features**
+- **RSI Analysis**: 14-period momentum oscillator with overbought/oversold signals and divergence detection
 - **MACD Analysis**: Complete momentum system with signal crossovers and divergence detection
 - **Ichimoku Cloud**: Complete system with Tenkan-sen, Kijun-sen, Senkou spans, and Chikou span
 - **Bollinger Bands**: %B position tracking, band width analysis, squeeze detection
@@ -365,8 +399,9 @@ python visualize_data.py
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
 ### 🔧 **Technical Improvements**
-- **Database expansion**: 381,276+ records across 6 indicator tables
-- **Complete indicator suite**: 5 professional-grade technical indicators
+- **Database expansion**: 444,822+ records across 7 indicator tables
+- **Complete indicator suite**: 6 professional-grade technical indicators
+- **RSI Integration**: Full momentum oscillator with Wilder's smoothing and trend analysis
 - **MACD Integration**: Full momentum analysis with EMA calculations and histogram tracking
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
