@@ -13,6 +13,7 @@ Trading_Bot/
 │   ├── gaussian_channel.py    # Calculates Gaussian Channel indicators
 │   ├── bollinger_bands.py     # Calculates Bollinger Bands indicators
 │   ├── simple_moving_average.py # Calculates SMA (50/200) indicators
+│   ├── ichimoku_cloud.py      # Calculates Ichimoku Cloud indicators
 │   └── collect_historical_data.py # Historical data collection script
 ├── frontend/                   # Frontend data visualization modules
 │   ├── __init__.py
@@ -39,7 +40,7 @@ Trading_Bot/
 
 ### Data Analysis
 
-The bot implements **3 comprehensive technical indicators** with advanced analysis capabilities:
+The bot implements **4 comprehensive technical indicators** with advanced analysis capabilities:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -60,6 +61,15 @@ The bot implements **3 comprehensive technical indicators** with advanced analys
 - **Death Cross**: SMA 50 crosses below SMA 200 (major bearish signal)
 - **Trend Strength**: Quantified analysis (-100 to +100 scale)
 - **Position Analysis**: Price vs SMA positioning with detailed descriptions
+
+#### **4. Ichimoku Cloud (Ichimoku Kinko Hyo)**
+- **Tenkan-sen**: 9-period conversion line (short-term trend)
+- **Kijun-sen**: 26-period base line (medium-term trend)
+- **Senkou Span A**: Leading span A projected 26 periods forward
+- **Senkou Span B**: Leading span B projected 26 periods forward
+- **Chikou Span**: Lagging span (current close shifted 26 periods back)
+- **Cloud Analysis**: Dynamic support/resistance with color-coded strength
+- **Comprehensive Signals**: Multi-component confirmation system
 
 #### **Technical Features**
 - SQLite database with optimized schema for raw data and all indicators
@@ -187,6 +197,7 @@ Save chart to file? (y/n): y
 # Calculate specific indicators for all trading pairs
 python backend/bollinger_bands.py     # Bollinger Bands analysis
 python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
+python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
 python backend/gaussian_channel.py    # Gaussian Channel indicators
 ```
 
@@ -199,6 +210,7 @@ python data_fetcher.py
 python gaussian_channel.py
 python bollinger_bands.py
 python simple_moving_average.py
+python ichimoku_cloud.py
 
 # Run frontend modules directly
 cd frontend  
@@ -207,7 +219,7 @@ python data_visualizer.py
 
 ## Database Schema
 
-The database contains **4 optimized tables** storing raw data and calculated indicators:
+The database contains **5 optimized tables** storing raw data and calculated indicators:
 
 ### Raw Data Table (`raw_data`)
 - `id` - Primary key
@@ -242,9 +254,19 @@ The database contains **4 optimized tables** storing raw data and calculated ind
 - `sma_signal` - Trading signal (strong_buy, buy, hold, sell, strong_sell)
 - `cross_signal` - Crossover detection (golden_cross, death_cross, none)
 
+### Ichimoku Cloud Data Table (`ichimoku_data`)
+- All fields from raw data table plus:
+- `tenkan_sen` - Tenkan-sen (9-period conversion line)
+- `kijun_sen` - Kijun-sen (26-period base line)
+- `senkou_span_a` - Senkou Span A (leading span A, projected 26 periods forward)
+- `senkou_span_b` - Senkou Span B (leading span B, projected 26 periods forward)
+- `chikou_span` - Chikou Span (lagging span, shifted 26 periods backward)
+- `cloud_color` - Cloud color indicator (green/red)
+- `ichimoku_signal` - Overall signal (bullish/bearish/neutral)
+
 ## Data Summary
 
-The bot currently maintains **254,184+ records** across **4 indicator tables** and **5 trading pairs**:
+The bot currently maintains **317,730+ records** across **5 indicator tables** and **5 trading pairs**:
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
@@ -262,7 +284,8 @@ The bot currently maintains **254,184+ records** across **4 indicator tables** a
 | **Gaussian Channel** | 63,546 | Volatility-based channel indicators |
 | **Bollinger Bands** | 63,546 | Volatility bands with %B and squeeze detection |
 | **SMA (50/200)** | 63,546 | Moving averages with Golden/Death Cross signals |
-| **TOTAL** | **254,184** | **Complete technical analysis dataset** |
+| **Ichimoku Cloud** | 63,546 | Complete Ichimoku system with all 5 components |
+| **TOTAL** | **317,730** | **Comprehensive technical analysis dataset** |
 
 *Note: All indicators calculated for the same time periods with consistent data coverage.*
 
@@ -289,7 +312,8 @@ python visualize_data.py
 
 ## Recent Updates
 
-### ✅ **Version 3.0 - Advanced Technical Indicators & Enhanced Analysis**
+### ✅ **Version 4.0 - Complete Technical Analysis Suite**
+- **NEW: Ichimoku Cloud Indicator** with comprehensive 5-component analysis system
 - **NEW: Bollinger Bands Indicator** with volatility analysis and squeeze detection
 - **NEW: Simple Moving Average (50/200)** with Golden/Death Cross signals
 - **Added new trading pairs**: SOL/BTC and ETH/BTC with full historical data
@@ -300,15 +324,18 @@ python visualize_data.py
 - **Improved user experience**: Menu-driven interface with validation
 - **High-quality exports**: 300 DPI PNG charts with organized naming
 
-### 📊 **New Technical Analysis Features**
+### 📊 **Advanced Technical Analysis Features**
+- **Ichimoku Cloud**: Complete system with Tenkan-sen, Kijun-sen, Senkou spans, and Chikou span
 - **Bollinger Bands**: %B position tracking, band width analysis, squeeze detection
 - **SMA Crossovers**: Automated Golden Cross and Death Cross detection
 - **Trend Strength**: Quantified trend analysis with -100 to +100 scoring
 - **Advanced Signals**: Multiple signal types (strong_buy, buy, hold, sell, strong_sell)
 - **Pattern Recognition**: Real-time analysis of market conditions and positioning
+- **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
 ### 🔧 **Technical Improvements**
-- **Database expansion**: 254,184+ records across 4 indicator tables
+- **Database expansion**: 317,730+ records across 5 indicator tables
+- **Complete indicator suite**: 4 professional-grade technical indicators
 - Fixed requirements.txt (removed non-existent sqlite3 dependency)
 - Enhanced error handling and data validation
 - Optimized database operations for better performance
