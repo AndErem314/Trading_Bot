@@ -199,8 +199,8 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
         bool: True if successful, False otherwise
     """
     try:
-        # Connect to database
-        conn = sqlite3.connect('data/market_data.db')
+        # Connect to raw database
+        raw_conn = sqlite3.connect('data/raw_market_data.db')
         
         # Read OHLCV data
         query = """
@@ -210,12 +210,14 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
         ORDER BY timestamp ASC
         """
         
-        df = pd.read_sql_query(query, conn, params=(symbol, timeframe))
+        df = pd.read_sql_query(query, raw_conn, params=(symbol, timeframe))
         
         if df.empty:
             print(f"[WARNING] No data found for {symbol} {timeframe}")
-            conn.close()
+            raw_conn.close()
             return False
+        
+        raw_conn.close()
         
         print(f"[INFO] Calculating RSI for {symbol} {timeframe} - {len(df)} candles")
         
@@ -266,6 +268,9 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
             else None for s in signals_list
         ]
         
+        # Connect to RSI database
+        rsi_conn = sqlite3.connect('data/rsi_data.db')
+        
         # Create table if not exists
         create_table_query = """
         CREATE TABLE IF NOT EXISTS rsi_data (
@@ -287,17 +292,17 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
         )
         """
         
-        conn.execute(create_table_query)
+        rsi_conn.execute(create_table_query)
         
         # Delete existing data for this symbol/timeframe
         delete_query = "DELETE FROM rsi_data WHERE symbol = ? AND timeframe = ?"
-        conn.execute(delete_query, (symbol, timeframe))
+        rsi_conn.execute(delete_query, (symbol, timeframe))
         
         # Insert new data
-        rsi_df.to_sql('rsi_data', conn, if_exists='append', index=False)
+        rsi_df.to_sql('rsi_data', rsi_conn, if_exists='append', index=False)
         
-        conn.commit()
-        conn.close()
+        rsi_conn.commit()
+        rsi_conn.close()
         
         # Calculate statistics
         valid_rsi = rsi_df['rsi'].dropna()

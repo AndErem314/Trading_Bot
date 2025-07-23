@@ -61,7 +61,7 @@ class DataFetcher:
 class DatabaseManager:
     """Manages database operations for raw market data."""
     
-    def __init__(self, db_path: str = 'data/market_data.db'):
+    def __init__(self, db_path: str = 'data/raw_market_data.db'):
         self.db_path = db_path
         self.ensure_data_directory()
         self.init_database()

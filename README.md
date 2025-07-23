@@ -343,7 +343,8 @@ The bot currently maintains **444,822+ records** across **7 indicator tables** a
 - **Symbols**: BTC/USDT, ETH/USDT, SOL/USDT, SOL/BTC, ETH/BTC
 - **Timeframes**: 4h (4-hour), 1d (daily)
 - **Historical start**: August 1st, 2020
-- **Database**: `data/market_data.db` (SQLite)
+- **Raw Database**: `data/raw_market_data.db` (SQLite) - Contains OHLCV data
+- **Indicators Database**: `data/indicators_data.db` (SQLite) - Contains all technical indicators
 - **Exchange**: Binance
 - **Chart output**: `charts/` directory
 

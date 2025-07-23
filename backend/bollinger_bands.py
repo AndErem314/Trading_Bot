@@ -21,19 +21,21 @@ from typing import Optional
 class BollingerBandsCalculator:
     """Calculates Bollinger Bands indicator from raw data."""
     
-    def __init__(self, db_path: str = 'data/market_data.db'):
-        # Ensure we use the correct database path relative to project root
+    def __init__(self, raw_db_path: str = 'data/raw_market_data.db', bollinger_db_path: str = 'data/bollinger_bands_data.db'):
+        # Ensure we use the correct database paths relative to project root
         import os
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
+        if not os.path.isabs(raw_db_path) and not raw_db_path.startswith('../'):
             # If running from backend directory, adjust path to parent directory
             if os.path.basename(os.getcwd()) == 'backend':
-                db_path = '../' + db_path
-        self.db_path = db_path
+                raw_db_path = '../' + raw_db_path
+                bollinger_db_path = '../' + bollinger_db_path
+        self.raw_db_path = raw_db_path
+        self.bollinger_db_path = bollinger_db_path
         self.init_database()
     
     def init_database(self):
         """Initialize database with Bollinger Bands table if it doesn't exist."""
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.bollinger_db_path) as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS bollinger_bands_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +66,7 @@ class BollingerBandsCalculator:
             WHERE symbol = ? AND timeframe = ?
             ORDER BY timestamp ASC
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.raw_db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe))
 
     def calculate_bollinger_bands(self, df: pd.DataFrame, window: int = 20, std_dev: float = 2) -> pd.DataFrame:
@@ -120,7 +122,7 @@ class BollingerBandsCalculator:
         ]
         
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.bollinger_db_path) as conn:
                 cursor = conn.cursor()
                 inserted = 0
                 for _, row in df_to_save.iterrows():

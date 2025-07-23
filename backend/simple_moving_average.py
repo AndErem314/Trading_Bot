@@ -26,19 +26,21 @@ from typing import Optional, Tuple
 class SimpleMovingAverageCalculator:
     """Calculates Simple Moving Average indicators from raw data."""
     
-    def __init__(self, db_path: str = 'data/market_data.db'):
-        # Ensure we use the correct database path relative to project root
+    def __init__(self, raw_db_path: str = 'data/raw_market_data.db', sma_db_path: str = 'data/sma_data.db'):
+        # Ensure we use the correct database paths relative to project root
         import os
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
+        if not os.path.isabs(raw_db_path) and not raw_db_path.startswith('../'):
             # If running from backend directory, adjust path to parent directory
             if os.path.basename(os.getcwd()) == 'backend':
-                db_path = '../' + db_path
-        self.db_path = db_path
+                raw_db_path = '../' + raw_db_path
+                sma_db_path = '../' + sma_db_path
+        self.raw_db_path = raw_db_path
+        self.sma_db_path = sma_db_path
         self.init_database()
     
     def init_database(self):
         """Initialize database with SMA table if it doesn't exist."""
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.sma_db_path) as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS sma_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,7 +74,7 @@ class SimpleMovingAverageCalculator:
             WHERE symbol = ? AND timeframe = ?
             ORDER BY timestamp ASC
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.raw_db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe))
 
     def calculate_sma(self, df: pd.DataFrame, sma_50_period: int = 50, sma_200_period: int = 200) -> pd.DataFrame:
@@ -205,7 +207,7 @@ class SimpleMovingAverageCalculator:
         ]
         
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.sma_db_path) as conn:
                 cursor = conn.cursor()
                 inserted = 0
                 for _, row in df_to_save.iterrows():
@@ -321,7 +323,7 @@ class SimpleMovingAverageCalculator:
             ORDER BY timestamp DESC
             LIMIT ?
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.sma_db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe, limit))
 
 

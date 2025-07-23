@@ -15,8 +15,9 @@ from typing import Optional, List, Tuple
 class DataVisualizer:
     """Visualizes raw market data from the database."""
     
-    def __init__(self, db_path: str = 'data/market_data.db'):
-        self.db_path = db_path
+    def __init__(self, raw_db_path='data/raw_market_data.db', indicators_db_path='data/indicators_data.db'):
+        self.raw_db_path = raw_db_path
+        self.indicators_db_path = indicators_db_path
         # Set up matplotlib style
         plt.style.use('seaborn-v0_8')
         plt.rcParams['figure.figsize'] = (15, 10)
@@ -48,7 +49,7 @@ class DataVisualizer:
             query += ' LIMIT ?'
             params.append(limit)
         
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.raw_db_path) as conn:
             df = pd.read_sql(query, conn, params=params)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             return df
@@ -198,7 +199,7 @@ class DataVisualizer:
             GROUP BY symbol, timeframe
             ORDER BY symbol, timeframe
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.raw_db_path) as conn:
             return pd.read_sql(query, conn)
     
     def display_data_summary(self):

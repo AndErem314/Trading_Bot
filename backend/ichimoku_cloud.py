@@ -24,19 +24,21 @@ from typing import Optional
 class IchimokuCloudCalculator:
     """Calculates Ichimoku Cloud indicators from raw data."""
     
-    def __init__(self, db_path: str = 'data/market_data.db'):
-        # Ensure we use the correct database path relative to project root
+    def __init__(self, raw_db_path: str = 'data/raw_market_data.db', ichimoku_db_path: str = 'data/ichimoku_data.db'):
+        # Ensure we use the correct database paths relative to project root
         import os
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
+        if not os.path.isabs(raw_db_path) and not raw_db_path.startswith('../'):
             # If running from backend directory, adjust path to parent directory
             if os.path.basename(os.getcwd()) == 'backend':
-                db_path = '../' + db_path
-        self.db_path = db_path
+                raw_db_path = '../' + raw_db_path
+                ichimoku_db_path = '../' + ichimoku_db_path
+        self.raw_db_path = raw_db_path
+        self.ichimoku_db_path = ichimoku_db_path
         self.init_database()
     
     def init_database(self):
         """Initialize database with Ichimoku Cloud table if it doesn't exist."""
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.ichimoku_db_path) as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS ichimoku_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,7 +71,7 @@ class IchimokuCloudCalculator:
             WHERE symbol = ? AND timeframe = ?
             ORDER BY timestamp ASC
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.raw_db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe))
 
     def calculate_ichimoku_cloud(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -138,7 +140,7 @@ class IchimokuCloudCalculator:
         ]
         
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.ichimoku_db_path) as conn:
                 cursor = conn.cursor()
                 inserted = 0
                 for _, row in df_to_save.iterrows():
@@ -191,7 +193,7 @@ class IchimokuCloudCalculator:
             ORDER BY timestamp DESC
             LIMIT ?
         '''
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.ichimoku_db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe, limit))
 
 
