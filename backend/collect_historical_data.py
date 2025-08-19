@@ -1,27 +1,34 @@
 """
 Script to collect all historical data from August 1st, 2020 for all trading pairs.
+
+USES UNIFIED TRADING DATABASE SYSTEM
 """
-from data_fetcher import RawDataCollector
+from unified_data_fetcher import UnifiedDataCollector
 from datetime import datetime
 
 
 def collect_all_historical_data_for_all_pairs(start_date: str = '2020-08-01'):
     """
     Collect all historical data for all trading pairs since the specified start date.
+    Uses the unified database system for streamlined data management.
     """
-    # Example trading pairs and timeframes
+    # Trading pairs and timeframes
     symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC']
     timeframes = ['4h', '1d']
 
-    # Convert start_date to timestamp in milliseconds
-    start_time = int(datetime.strptime(start_date, '%Y-%m-%d').timestamp() * 1000)
-
-    collector = RawDataCollector()
-
-    # Collect historical data for each symbol and timeframe
-    for symbol in symbols:
-        for timeframe in timeframes:
-            collector.collect_all_historical_data(symbol, timeframe, start_time)
+    print(f"📊 Starting historical data collection from {start_date}")
+    print(f"🎯 Symbols: {symbols}")
+    print(f"⏰ Timeframes: {timeframes}")
+    print(f"🗄️ Using unified database: data/unified_trading_data.db")
+    
+    # Initialize unified data collector
+    collector = UnifiedDataCollector()
+    
+    # Collect historical data using the unified system
+    collector.collect_historical_data(symbols, timeframes, start_date)
+    
+    print("\n✅ Historical data collection completed!")
+    print("📈 Use 'python ../scripts/unified_data_workflow.py --summary' to view data summary")
 
 
 if __name__ == '__main__':

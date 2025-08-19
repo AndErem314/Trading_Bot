@@ -1,38 +1,44 @@
 """
 Main runner script for the Trading Bot.
-Coordinates data collection and Gaussian Channel calculation.
+Coordinates unified data collection and technical indicator calculation.
+
+USES UNIFIED TRADING DATABASE SYSTEM
 """
 import sys
 import argparse
 from datetime import datetime
 
-from data_fetcher import RawDataCollector
-from gaussian_channel import GaussianChannelCalculator
-from simple_moving_average import SimpleMovingAverageCalculator
-from bollinger_bands import BollingerBandsCalculator
-from ichimoku_cloud import IchimokuCloudCalculator
-from macd import MACDCalculator
-from rsi import calculate_rsi_for_symbol_timeframe
-from parabolic_sar import ParabolicSARCalculator
-from fibonacci_retracement import FibonacciRetracementCalculator
+from unified_data_fetcher import UnifiedDataCollector
+from Indicators import (
+    SimpleMovingAverageCalculator,
+    BollingerBandsCalculator,
+    IchimokuCloudCalculator,
+    MACDCalculator,
+    calculate_rsi_for_symbol_timeframe,
+    ParabolicSARCalculator,
+    FibonacciRetracementCalculator
+)
 
 
 def collect_raw_data(symbols, timeframes, start_time=None):
-    """Collect raw data for specified symbols and timeframes."""
-    print("=== COLLECTING RAW DATA ===")
-    collector = RawDataCollector()
+    """Collect raw data for specified symbols and timeframes using unified system."""
+    print("=== COLLECTING RAW DATA (UNIFIED SYSTEM) ===")
+    collector = UnifiedDataCollector()
     
-    for symbol in symbols:
-        for timeframe in timeframes:
-            collector.collect_data(symbol, timeframe, start_time=start_time)
+    if start_time:
+        # Collect historical data from specific start time
+        start_date = datetime.fromtimestamp(start_time/1000).strftime('%Y-%m-%d')
+        collector.collect_historical_data(symbols, timeframes, start_date)
+    else:
+        # Update existing data with latest values
+        collector.update_all_data(symbols, timeframes)
 
 
 def calculate_all_indicators(symbols, timeframes):
     """Calculate all technical indicators for specified symbols and timeframes."""
-    print("\n=== CALCULATING ALL TECHNICAL INDICATORS ===")
+    print("\n=== CALCULATING ALL TECHNICAL INDICATORS (UNIFIED SYSTEM) ===")
     
     # Initialize all calculators
-    gaussian_calc = GaussianChannelCalculator()
     sma_calc = SimpleMovingAverageCalculator()
     bb_calc = BollingerBandsCalculator()
     ichimoku_calc = IchimokuCloudCalculator()
@@ -45,15 +51,10 @@ def calculate_all_indicators(symbols, timeframes):
             print(f"\n[PROCESSING] {symbol} - {timeframe.upper()}")
             
             # Fetch raw data once for all indicators
-            df_raw = gaussian_calc.fetch_raw_data(symbol, timeframe)
+            df_raw = sma_calc.fetch_raw_data(symbol, timeframe)
             if df_raw.empty:
                 print(f"[INFO] No raw data available for {symbol} ({timeframe})")
                 continue
-            
-            # Calculate Gaussian Channel
-            print(f"  [CALCULATING] Gaussian Channel...")
-            df_gc = gaussian_calc.calculate_gaussian_channel(df_raw.copy())
-            gaussian_calc.save_gaussian_channel_data(df_gc, symbol, timeframe)
             
             # Calculate Simple Moving Averages
             print(f"  [CALCULATING] Simple Moving Averages...")
@@ -92,20 +93,20 @@ def calculate_all_indicators(symbols, timeframes):
             print(f"  [COMPLETED] All indicators calculated for {symbol} ({timeframe})")
 
 
-def calculate_gaussian_channels(symbols, timeframes):
-    """Calculate Gaussian Channel indicators for specified symbols and timeframes."""
-    print("\n=== CALCULATING GAUSSIAN CHANNELS ===")
-    calculator = GaussianChannelCalculator()
+def calculate_simple_moving_averages(symbols, timeframes):
+    """Calculate Simple Moving Average indicators for specified symbols and timeframes."""
+    print("\n=== CALCULATING SIMPLE MOVING AVERAGES ===")
+    calculator = SimpleMovingAverageCalculator()
     
     for symbol in symbols:
         for timeframe in timeframes:
-            print(f"\n[CALCULATING] Gaussian Channel for {symbol} - {timeframe.upper()}")
+            print(f"\n[CALCULATING] SMA for {symbol} - {timeframe.upper()}")
             df_raw = calculator.fetch_raw_data(symbol, timeframe)
             if df_raw.empty:
                 print(f"[INFO] No raw data available for {symbol} ({timeframe})")
                 continue
-            df_gc = calculator.calculate_gaussian_channel(df_raw)
-            calculator.save_gaussian_channel_data(df_gc, symbol, timeframe)
+            df_sma = calculator.calculate_sma(df_raw)
+            calculator.save_sma_data(df_sma, symbol, timeframe)
 
 
 def main():
@@ -138,7 +139,7 @@ def main():
             collect_raw_data(args.symbols, args.timeframes, start_time)
         
         if args.mode in ['calculate', 'both']:
-            calculate_gaussian_channels(args.symbols, args.timeframes)
+            calculate_simple_moving_averages(args.symbols, args.timeframes)
             
         if args.mode == 'all_indicators':
             calculate_all_indicators(args.symbols, args.timeframes)
