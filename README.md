@@ -194,19 +194,68 @@ python3 -c "import ccxt, pandas, matplotlib; print('All dependencies installed s
 ### Main Trading Bot (Unified System)
 ```bash
 # Run complete pipeline (collect data and calculate all indicators)
-python backend/main.py --mode both
+python3 run_trading_bot.py --mode both
 
 # Collect raw data only
-python backend/main.py --mode collect
+python3 run_trading_bot.py --mode collect
 
 # Calculate all technical indicators
-python backend/main.py --mode all_indicators
+python3 run_trading_bot.py --mode all_indicators
 
 # Calculate simple moving averages only
-python backend/main.py --mode calculate
+python3 run_trading_bot.py --mode calculate
+
+# Interactive indicator selection menu
+python3 run_trading_bot.py --mode interactive
 
 # Custom symbols and timeframes
-python backend/main.py --symbols BTC/USDT ETH/USDT --timeframes 4h 1d --start-date 2022-01-01
+python3 run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 4h 1d --start-date 2022-01-01
+```
+
+### 🎯 Interactive Indicator Selection (NEW!)
+
+The Trading Bot now features an interactive menu system for selecting specific technical indicators:
+
+```bash
+# Launch interactive mode
+python3 run_trading_bot.py --mode interactive
+# OR
+python3 run_trading_bot.py --interactive
+```
+
+**Interactive Menu Options:**
+- `1` - 🔢 Simple Moving Averages (SMA 50/200)
+- `2` - 📈 Bollinger Bands
+- `3` - ☁️ Ichimoku Cloud
+- `4` - 📊 MACD (12,26,9)
+- `5` - 📉 RSI (14-period)
+- `6` - 🔄 Parabolic SAR
+- `7` - 🌀 Fibonacci Retracement
+- `8` - 🚀 ALL Indicators
+- `0` - ❌ Exit
+
+**Example Interactive Session:**
+```
+🎯 TECHNICAL INDICATORS MENU
+==================================================
+💱 Symbols: BTC/USDT, ETH/USDT, SOL/USDT, SOL/BTC, ETH/BTC
+⏰ Timeframes: 4h, 1d
+
+Select indicator to calculate:
+  1. 🔢 Simple Moving Averages (SMA 50/200)
+  2. 📈 Bollinger Bands
+  3. ☁️ Ichimoku Cloud
+  4. 📊 MACD (12,26,9)
+  5. 📉 RSI (14-period)
+  6. 🔄 Parabolic SAR
+  7. 🌀 Fibonacci Retracement
+  8. 🚀 ALL Indicators
+  0. ❌ Exit
+
+Enter your choice [1-8, 0 to exit]: 8
+
+🚀 Running ALL Technical Indicators...
+✅ Completed 7/7 indicators successfully!
 ```
 
 ### Unified Data Management
@@ -283,37 +332,53 @@ Select chart type (1-4) [default: candlestick]: 1
 Save chart to file? (y/n): y
 ```
 
-### Individual Indicator Calculations (Unified System)
+### Individual Indicator Calculations
+
+**🎯 Interactive Method (Recommended):**
 ```bash
-# Calculate specific indicators for all trading pairs (uses unified database)
-python backend/simple_moving_average.py # SMA with Golden/Death Cross detection
-python backend/bollinger_bands.py     # Bollinger Bands analysis
-python backend/ichimoku_cloud.py      # Ichimoku Cloud comprehensive analysis
-python backend/macd.py                # MACD (12,26,9) momentum analysis
-python backend/rsi.py                 # RSI (14-period) momentum oscillator
-python backend/parabolic_sar.py       # Parabolic SAR (Stop and Reverse) trend indicator
-python backend/fibonacci_retracement.py # Fibonacci Retracement levels
-python backend/gaussian_channel.py    # Gaussian Channel indicators
+# Use the interactive menu for easy indicator selection
+python3 run_trading_bot.py --interactive
+
+# Interactive mode with custom symbols
+python3 run_trading_bot.py --interactive --symbols BTC/USDT SOL/USDT
+```
+
+**🔧 Direct Backend Access (Advanced):**
+```bash
+# Calculate specific indicators directly (uses unified database)
+python3 backend/main.py --mode all_indicators  # All indicators via backend
+
+# Note: Individual standalone scripts use the Indicators/ subfolder:
+# All indicator calculators are now in backend/Indicators/
 ```
 
 ### Advanced Usage - Run Individual Modules
+
+**🚀 Root Directory (Recommended):**
+```bash
+# Complete pipeline with all options
+python3 run_trading_bot.py --mode both              # Complete pipeline
+python3 run_trading_bot.py --interactive            # Interactive indicator menu
+python3 run_trading_bot.py --status                 # Database status
+
+# Data visualization
+python3 visualize_data.py                           # Advanced visualization
+```
+
+**🔧 Backend Directory (Advanced):**
 ```bash
 # Run backend modules directly (unified system)
 cd backend
-python main.py --mode both              # Complete pipeline
-python unified_data_fetcher.py          # Data collection only
-python simple_moving_average.py         # SMA calculation
-python bollinger_bands.py               # Bollinger Bands calculation
-python ichimoku_cloud.py                # Ichimoku Cloud calculation
-python macd.py                          # MACD calculation
-python rsi.py                           # RSI calculation
-python parabolic_sar.py                 # Parabolic SAR calculation
-python fibonacci_retracement.py         # Fibonacci calculation
-python gaussian_channel.py              # Gaussian Channel calculation
+python3 main.py --mode both              # Complete pipeline
+python3 unified_data_fetcher.py          # Data collection only
+
+# Individual indicator calculators (in Indicators/ subfolder)
+# Note: Use interactive mode instead for easier access
+python3 -c "from Indicators import SimpleMovingAverageCalculator; print('SMA Calculator Available')"
 
 # Run frontend modules directly
-cd frontend  
-python data_visualizer.py               # Advanced visualization
+cd ../frontend  
+python3 data_visualizer.py               # Advanced visualization
 ```
 
 ## Database Architecture
@@ -515,6 +580,16 @@ python backend/main.py --mode all_indicators
 
 ## Recent Updates
 
+### ✅ **Version 7.1 - Interactive Indicator Selection - August 2025**
+- **🎯 NEW: Interactive Indicator Menu** - User-friendly interface for selecting specific indicators
+- **📊 Individual Indicator Control** - Choose from 7 technical indicators or run all at once
+- **🎨 Professional UI** - Beautiful menu with emojis, progress tracking, and status feedback
+- **🔄 Continuous Operation** - Menu stays active until user chooses to exit
+- **⚡ Enhanced User Experience** - Real-time progress updates and error handling
+- **🚀 Multiple Access Methods** - `--mode interactive` or `--interactive` flag
+- **🎛️ Custom Configuration** - Works with custom symbols and timeframes
+- **✅ Production Ready** - Fully integrated with unified database system
+
 ### ✅ **Version 7.0 - Unified Database System - August 2025**
 - **🚀 MAJOR: Unified Database Architecture** - Complete migration to single normalized database
 - **🔧 Database Consolidation**: From 9 separate files (~97MB) to 1 unified file (~59MB)
@@ -597,9 +672,11 @@ python backend/main.py --mode all_indicators
 - **Pattern Recognition**: Real-time analysis of market conditions and positioning
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
-### 🔧 **Technical Improvements - Unified System**
+### 🔧 **Technical Improvements - Unified System + Interactive Features**
+- **Interactive Interface**: User-friendly menu system for individual indicator selection
 - **Unified Database**: Single normalized database with 64,499+ OHLCV records
 - **Complete Indicator Suite**: 8 professional-grade technical indicators with foreign key relationships
+- **Enhanced User Experience**: Real-time progress tracking and professional UI
 - **Data Integrity**: 100% validated data with automatic duplicate prevention
 - **Performance Optimization**: Normalized schema with optimized indexes
 - **Memory Efficiency**: ~40% reduction in storage requirements vs legacy system
@@ -607,5 +684,5 @@ python backend/main.py --mode all_indicators
 - **Incremental Updates**: Smart data fetching reduces API calls and processing time
 - **Enhanced Error Handling**: Comprehensive error handling with retry logic
 - **Connection Pooling**: Efficient database connection management
-- **Legacy Migration**: Complete transition from 9-file system to unified architecture
+- **Flexible Operation Modes**: Batch processing and interactive selection
 - **Production Ready**: Fully tested unified workflow with comprehensive validation
