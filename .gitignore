@@ -50,3 +50,14 @@ data/*.db
 # SQLite database files
 *.sqlite
 *.sqlite3
+
+# Environment variables and secrets
+.env
+.env
+!.env
+config/secrets.json
+config/keys.json
+*.key
+*.secret
+secrets/
+keys/

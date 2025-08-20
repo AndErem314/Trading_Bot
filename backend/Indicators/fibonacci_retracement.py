@@ -232,7 +232,7 @@ class FibonacciRetracementCalculator:
                     
                     # Insert or replace Fibonacci indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO fibonacci_indicators 
+                        INSERT OR REPLACE INTO fibonacci_retracement_indicator 
                         (ohlcv_id, level_0, level_23_6, level_38_2, level_50_0, level_61_8, 
                          level_78_6, level_100, trend_direction, nearest_fib_level, 
                          fib_signal, support_resistance)
@@ -363,7 +363,7 @@ class FibonacciRetracementCalculator:
             FROM ohlcv_data o
             JOIN symbols s ON o.symbol_id = s.id
             JOIN timeframes t ON o.timeframe_id = t.id
-            JOIN fibonacci_indicators fib ON o.id = fib.ohlcv_id
+            JOIN fibonacci_retracement_indicator fib ON o.id = fib.ohlcv_id
             WHERE s.symbol = ? AND t.timeframe = ? AND fib.fib_signal != 'hold'
             ORDER BY o.timestamp DESC
             LIMIT ?

@@ -150,7 +150,7 @@ class IchimokuCloudCalculator:
                     
                     # Insert or replace Ichimoku indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO ichimoku_indicators 
+                        INSERT OR REPLACE INTO ichimoku_indicator 
                         (ohlcv_id, tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, 
                          chikou_span, cloud_color, ichimoku_signal)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -250,7 +250,7 @@ class IchimokuCloudCalculator:
             FROM ohlcv_data o
             JOIN symbols s ON o.symbol_id = s.id
             JOIN timeframes t ON o.timeframe_id = t.id
-            JOIN ichimoku_indicators ich ON o.id = ich.ohlcv_id
+            JOIN ichimoku_indicator ich ON o.id = ich.ohlcv_id
             WHERE s.symbol = ? AND t.timeframe = ? AND ich.ichimoku_signal != 'neutral'
             ORDER BY o.timestamp DESC
             LIMIT ?

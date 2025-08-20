@@ -24,7 +24,7 @@ UNIFIED DATABASE FEATURES:
 - Incremental data updates
 - Data integrity validation
 - Normalized schema with foreign keys
-- 8 technical indicators supported
+- 9 technical indicators supported
 """
 import sys
 import os
@@ -179,6 +179,22 @@ def run_individual_indicator(indicator_name, symbols, timeframes):
                         print(f"    ✅ Fibonacci Retracement calculated and saved")
                     else:
                         print(f"    ⚠️  No data available")
+                        
+        elif indicator_name == 'gaussian':
+            print("📡 Running Gaussian Channel Calculation...")
+            from Indicators import GaussianChannelCalculator
+            calculator = GaussianChannelCalculator()
+            
+            for symbol in symbols:
+                for timeframe in timeframes:
+                    print(f"  📊 Processing {symbol} ({timeframe})")
+                    df_raw = calculator.fetch_raw_data(symbol, timeframe)
+                    if not df_raw.empty:
+                        df_gc = calculator.calculate_gaussian_channel(df_raw)
+                        calculator.save_gaussian_channel_data(df_gc, symbol, timeframe)
+                        print(f"    ✅ Gaussian Channel calculated and saved")
+                    else:
+                        print(f"    ⚠️  No data available")
         else:
             print(f"❌ Unknown indicator: {indicator_name}")
             return False
@@ -199,7 +215,8 @@ def interactive_indicator_selection(symbols, timeframes):
         '5': ('rsi', '📉 RSI (14-period)'),
         '6': ('parabolic', '🔄 Parabolic SAR'),
         '7': ('fibonacci', '🌀 Fibonacci Retracement'),
-        '8': ('all', '🚀 ALL Indicators'),
+        '8': ('gaussian', '📡 Gaussian Channel'),
+        '9': ('all', '🚀 ALL Indicators'),
         '0': ('exit', '❌ Exit')
     }
     
@@ -215,16 +232,16 @@ def interactive_indicator_selection(symbols, timeframes):
             print(f"  {key}. {description}")
         
         print("\n" + "-"*50)
-        choice = input("Enter your choice [1-8, 0 to exit]: ").strip()
+        choice = input("Enter your choice [1-9, 0 to exit]: ").strip()
         
         if choice == '0':
             print("👋 Goodbye!")
             break
-        elif choice == '8':  # All indicators
+        elif choice == '9':  # All indicators
             print("\n🚀 Running ALL Technical Indicators...")
             print("="*50)
             
-            all_indicators = ['sma', 'bollinger', 'ichimoku', 'macd', 'rsi', 'parabolic', 'fibonacci']
+            all_indicators = ['sma', 'bollinger', 'ichimoku', 'macd', 'rsi', 'parabolic', 'fibonacci', 'gaussian']
             success_count = 0
             
             for indicator in all_indicators:
@@ -239,7 +256,7 @@ def interactive_indicator_selection(symbols, timeframes):
             print(f"✅ Completed {success_count}/{len(all_indicators)} indicators successfully!")
             print("="*50)
             
-        elif choice in indicators and choice != '8' and choice != '0':
+        elif choice in indicators and choice != '9' and choice != '0':
             indicator_key, description = indicators[choice]
             print(f"\n{description}")
             print("-"*30)
@@ -250,7 +267,7 @@ def interactive_indicator_selection(symbols, timeframes):
                 print(f"\n❌ {description} failed!")
                 
         else:
-            print("❌ Invalid choice. Please select 1-8 or 0 to exit.")
+            print("❌ Invalid choice. Please select 1-9 or 0 to exit.")
         
         if choice != '0':
             input("\nPress Enter to continue...")

@@ -12,6 +12,7 @@ Available Indicators:
 - RSI (Relative Strength Index)
 - Parabolic SAR (Stop and Reverse)
 - Fibonacci Retracement
+- Gaussian Channel
 """
 
 from .simple_moving_average import SimpleMovingAverageCalculator
@@ -21,6 +22,7 @@ from .macd import MACDCalculator
 from .rsi import calculate_rsi_for_symbol_timeframe
 from .parabolic_sar import ParabolicSARCalculator
 from .fibonacci_retracement import FibonacciRetracementCalculator
+from .gaussian_channel import GaussianChannelCalculator
 
 __all__ = [
     'SimpleMovingAverageCalculator',
@@ -29,5 +31,6 @@ __all__ = [
     'MACDCalculator',
     'calculate_rsi_for_symbol_timeframe',
     'ParabolicSARCalculator',
-    'FibonacciRetracementCalculator'
+    'FibonacciRetracementCalculator',
+    'GaussianChannelCalculator'
 ]

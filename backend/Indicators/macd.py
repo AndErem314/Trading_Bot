@@ -130,7 +130,7 @@ class MACDCalculator:
                     
                     # Insert or replace MACD indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO macd_indicators 
+                        INSERT OR REPLACE INTO macd_indicator 
                         (ohlcv_id, ema_12, ema_26, macd_line, signal_line, histogram, macd_signal)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (

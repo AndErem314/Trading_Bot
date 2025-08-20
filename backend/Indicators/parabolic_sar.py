@@ -209,7 +209,7 @@ class ParabolicSARCalculator:
                     
                     # Insert or replace Parabolic SAR indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO parabolic_sar_indicators 
+                        INSERT OR REPLACE INTO parabolic_sar_indicator 
                         (ohlcv_id, parabolic_sar, trend, reversal_signal, signal_strength, 
                          acceleration_factor, sar_signal)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -325,7 +325,7 @@ class ParabolicSARCalculator:
             FROM ohlcv_data o
             JOIN symbols s ON o.symbol_id = s.id
             JOIN timeframes t ON o.timeframe_id = t.id
-            JOIN parabolic_sar_indicators sar ON o.id = sar.ohlcv_id
+            JOIN parabolic_sar_indicator sar ON o.id = sar.ohlcv_id
             WHERE s.symbol = ? AND t.timeframe = ? AND sar.reversal_signal = 1
             ORDER BY o.timestamp DESC
             LIMIT ?

@@ -113,7 +113,7 @@ class BollingerBandsCalculator:
                     
                     # Insert or replace Bollinger Bands indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO bollinger_bands_indicators 
+                        INSERT OR REPLACE INTO bollinger_bands_indicator 
                         (ohlcv_id, bb_upper, bb_lower, bb_middle, bb_width, bb_percent)
                         VALUES (?, ?, ?, ?, ?, ?)
                     ''', (

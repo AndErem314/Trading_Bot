@@ -193,7 +193,7 @@ class SimpleMovingAverageCalculator:
                     
                     # Insert or replace SMA indicator data
                     conn.execute('''
-                        INSERT OR REPLACE INTO sma_indicators 
+                        INSERT OR REPLACE INTO sma_indicator 
                         (ohlcv_id, sma_50, sma_200, sma_ratio, price_vs_sma50, price_vs_sma200,
                          trend_strength, sma_signal, cross_signal)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -315,7 +315,7 @@ class SimpleMovingAverageCalculator:
             FROM ohlcv_data o
             JOIN symbols s ON o.symbol_id = s.id
             JOIN timeframes t ON o.timeframe_id = t.id
-            JOIN sma_indicators sma ON o.id = sma.ohlcv_id
+            JOIN sma_indicator sma ON o.id = sma.ohlcv_id
             WHERE s.symbol = ? AND t.timeframe = ? AND sma.cross_signal != 'none'
             ORDER BY o.timestamp DESC
             LIMIT ?

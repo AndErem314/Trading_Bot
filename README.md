@@ -21,7 +21,8 @@ Trading_Bot/
 │   │   ├── macd.py                  # MACD (12,26,9) indicator calculator
 │   │   ├── rsi.py                   # RSI (14-period) indicator calculator
 │   │   ├── parabolic_sar.py         # Parabolic SAR indicator calculator
-│   │   └── fibonacci_retracement.py # Fibonacci Retracement calculator
+│   │   ├── fibonacci_retracement.py # Fibonacci Retracement calculator
+│   │   └── gaussian_channel.py      # Gaussian Channel indicator calculator
 │   ├── bollinger_bands.py           # Bollinger Bands standalone script
 │   ├── simple_moving_average.py     # SMA standalone script
 │   ├── ichimoku_cloud.py            # Ichimoku Cloud standalone script
@@ -67,7 +68,7 @@ Trading_Bot/
 
 ### Technical Indicators
 
-The bot implements **8 comprehensive technical indicators** with advanced analysis capabilities, all integrated with the unified database system:
+The bot implements **9 comprehensive technical indicators** with advanced analysis capabilities, all integrated with the unified database system:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -231,7 +232,8 @@ python3 run_trading_bot.py --interactive
 - `5` - 📉 RSI (14-period)
 - `6` - 🔄 Parabolic SAR
 - `7` - 🌀 Fibonacci Retracement
-- `8` - 🚀 ALL Indicators
+- `8` - 📡 Gaussian Channel
+- `9` - 🚀 ALL Indicators
 - `0` - ❌ Exit
 
 **Example Interactive Session:**
@@ -249,13 +251,14 @@ Select indicator to calculate:
   5. 📉 RSI (14-period)
   6. 🔄 Parabolic SAR
   7. 🌀 Fibonacci Retracement
-  8. 🚀 ALL Indicators
+  8. 📡 Gaussian Channel
+  9. 🚀 ALL Indicators
   0. ❌ Exit
 
-Enter your choice [1-8, 0 to exit]: 8
+Enter your choice [1-9, 0 to exit]: 9
 
 🚀 Running ALL Technical Indicators...
-✅ Completed 7/7 indicators successfully!
+✅ Completed 8/8 indicators successfully!
 ```
 
 ### Unified Data Management
@@ -392,14 +395,14 @@ data/
     ├── symbols                  # Trading pair lookup table
     ├── timeframes              # Timeframe lookup table  
     ├── ohlcv_data              # Raw OHLCV market data
-    ├── sma_indicators          # Simple Moving Average indicators
-    ├── bollinger_bands_indicators # Bollinger Bands indicators
-    ├── ichimoku_indicators     # Ichimoku Cloud indicators
-    ├── macd_indicators         # MACD indicators
-    ├── rsi_indicators          # RSI indicators
-    ├── parabolic_sar_indicators # Parabolic SAR indicators
-    ├── fibonacci_indicators    # Fibonacci Retracement indicators
-    └── gaussian_channel_indicators # Gaussian Channel indicators
+    ├── sma_indicator           # Simple Moving Average indicators
+    ├── bollinger_bands_indicator # Bollinger Bands indicators
+    ├── ichimoku_indicator      # Ichimoku Cloud indicators
+    ├── macd_indicator          # MACD indicators
+    ├── rsi_indicator           # RSI indicators
+    ├── parabolic_sar_indicator # Parabolic SAR indicators
+    ├── fibonacci_retracement_indicator # Fibonacci Retracement indicators
+    └── gaussian_channel_indicator # Gaussian Channel indicators
 ```
 
 ### Unified Database Schema
@@ -427,7 +430,7 @@ data/
 
 #### **Technical Indicator Tables**
 
-**Table: `sma_indicators`**
+**Table: `sma_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `sma_50` - 50-period simple moving average
 - `sma_200` - 200-period simple moving average
@@ -438,7 +441,7 @@ data/
 - `sma_signal` - Trading signal (strong_buy, buy, hold, sell, strong_sell)
 - `cross_signal` - Crossover detection (golden_cross, death_cross, none)
 
-**Table: `bollinger_bands_indicators`**
+**Table: `bollinger_bands_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `bb_upper` - Upper Bollinger Band (SMA + 2σ)
 - `bb_middle` - Middle Bollinger Band (20-period SMA)
@@ -446,7 +449,7 @@ data/
 - `bb_width` - Band width (volatility measure)
 - `bb_percent` - %B position indicator (0-1 scale)
 
-**Table: `ichimoku_indicators`**
+**Table: `ichimoku_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `tenkan_sen` - Tenkan-sen (9-period conversion line)
 - `kijun_sen` - Kijun-sen (26-period base line)
@@ -456,7 +459,7 @@ data/
 - `cloud_color` - Cloud color indicator (green/red)
 - `ichimoku_signal` - Overall signal (bullish/bearish/neutral)
 
-**Table: `macd_indicators`**
+**Table: `macd_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `ema_12` - 12-period exponential moving average
 - `ema_26` - 26-period exponential moving average
@@ -465,7 +468,7 @@ data/
 - `histogram` - MACD histogram (MACD line - Signal line)
 - `macd_signal` - MACD signal (bullish, bearish, strong_bullish, strong_bearish, neutral)
 
-**Table: `rsi_indicators`**
+**Table: `rsi_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `rsi` - RSI value (0-100 scale, 14-period Wilder's smoothing)
 - `rsi_sma_5` - 5-period simple moving average of RSI
@@ -477,14 +480,14 @@ data/
 - `momentum_shift` - Significant RSI change detection (>5 points)
 - `support_resistance` - Dynamic RSI support/resistance levels
 
-**Table: `parabolic_sar_indicators`**
+**Table: `parabolic_sar_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `parabolic_sar` - Parabolic SAR value (dynamic stop-loss level)
 - `trend` - Current trend direction (up/down)
 - `reversal_signal` - Trend reversal detection (boolean flag)
 - `signal_strength` - Signal strength based on price-SAR distance (percentage)
 
-**Table: `fibonacci_indicators`**
+**Table: `fibonacci_retracement_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `level_23_6` - 23.6% Fibonacci retracement level
 - `level_38_2` - 38.2% Fibonacci retracement level
@@ -492,7 +495,7 @@ data/
 - `level_61_8` - 61.8% Fibonacci retracement level (golden ratio)
 - `level_76_4` - 76.4% Fibonacci retracement level
 
-**Table: `gaussian_channel_indicators`**
+**Table: `gaussian_channel_indicator`**
 - Foreign keys to ohlcv_data, symbol, and timeframe tables
 - `gc_upper` - Upper Gaussian Channel band
 - `gc_middle` - Middle Gaussian Channel band (moving average)
@@ -582,7 +585,7 @@ python backend/main.py --mode all_indicators
 
 ### ✅ **Version 7.1 - Interactive Indicator Selection - August 2025**
 - **🎯 NEW: Interactive Indicator Menu** - User-friendly interface for selecting specific indicators
-- **📊 Individual Indicator Control** - Choose from 7 technical indicators or run all at once
+- **📊 Individual Indicator Control** - Choose from 8 technical indicators or run all at once
 - **🎨 Professional UI** - Beautiful menu with emojis, progress tracking, and status feedback
 - **🔄 Continuous Operation** - Menu stays active until user chooses to exit
 - **⚡ Enhanced User Experience** - Real-time progress updates and error handling

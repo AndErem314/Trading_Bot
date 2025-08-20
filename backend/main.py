@@ -16,7 +16,8 @@ from Indicators import (
     MACDCalculator,
     calculate_rsi_for_symbol_timeframe,
     ParabolicSARCalculator,
-    FibonacciRetracementCalculator
+    FibonacciRetracementCalculator,
+    GaussianChannelCalculator
 )
 
 
@@ -45,6 +46,7 @@ def calculate_all_indicators(symbols, timeframes):
     macd_calc = MACDCalculator()
     sar_calc = ParabolicSARCalculator()
     fib_calc = FibonacciRetracementCalculator()
+    gc_calc = GaussianChannelCalculator()
     
     for symbol in symbols:
         for timeframe in timeframes:
@@ -89,6 +91,11 @@ def calculate_all_indicators(symbols, timeframes):
             print(f"  [CALCULATING] Fibonacci Retracement...")
             df_fib = fib_calc.calculate_fibonacci_retracement(df_raw.copy())
             fib_calc.save_fibonacci_data(df_fib, symbol, timeframe)
+            
+            # Calculate Gaussian Channel
+            print(f"  [CALCULATING] Gaussian Channel...")
+            df_gc = gc_calc.calculate_gaussian_channel(df_raw.copy())
+            gc_calc.save_gaussian_channel_data(df_gc, symbol, timeframe)
 
             print(f"  [COMPLETED] All indicators calculated for {symbol} ({timeframe})")
 

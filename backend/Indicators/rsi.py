@@ -304,7 +304,7 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
             
             # Insert or replace RSI indicator data
             rsi_conn.execute('''
-                INSERT OR REPLACE INTO rsi_indicators 
+                INSERT OR REPLACE INTO rsi_indicator 
                 (ohlcv_id, rsi, rsi_sma_5, rsi_sma_10, overbought, oversold, 
                  trend_strength, divergence_signal, momentum_shift, support_resistance)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
