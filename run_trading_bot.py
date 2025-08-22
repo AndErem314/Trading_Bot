@@ -38,10 +38,10 @@ sys.path.insert(0, backend_path)
 def show_status():
     """Show unified database status and summary."""
     try:
-        from data_manager import UnifiedDataManager
+        from data_manager import DataManager
         
         print("\n=== UNIFIED TRADING DATABASE STATUS ===")
-        data_manager = UnifiedDataManager()
+        data_manager = DataManager()
         summary = data_manager.get_data_summary()
         
         print(f"Database: data/trading_data_BTC.db")

@@ -8,10 +8,10 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 import logging
-from data_manager import UnifiedDataManager
+from data_manager import DataManager
 
 
-class UnifiedDataFetcher:
+class DataFetcher:
     """Fetches OHLCV data and stores it using the unified database schema."""
     
     def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
@@ -25,8 +25,8 @@ class UnifiedDataFetcher:
             'sandbox': False,
         })
         
-        # Use single DB (trading_data_BTC.db) via UnifiedDataManager
-        self.data_manager = UnifiedDataManager(db_path='data/trading_data_BTC.db')
+        # Use single DB (trading_data_BTC.db) via DataManager
+        self.data_manager = DataManager(db_path='data/trading_data_BTC.db')
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -286,13 +286,13 @@ class UnifiedDataFetcher:
         return results
 
 
-class UnifiedDataCollector:
+class DataCollector:
     """High-level interface for data collection operations."""
     
     def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
         import os
-        self.fetcher = UnifiedDataFetcher(exchange_name, db_path='data/trading_data_BTC.db')
-        self.data_manager = UnifiedDataManager('data/trading_data_BTC.db')
+        self.fetcher = DataFetcher(exchange_name, db_path='data/trading_data_BTC.db')
+        self.data_manager = DataManager('data/trading_data_BTC.db')
         self.logger = logging.getLogger(__name__)
     
     def update_all_data(self, symbols: List[str], timeframes: List[str]) -> None:

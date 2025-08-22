@@ -264,11 +264,11 @@ Enter your choice [1-9, 0 to exit]: 9
 ### Unified Data Management
 ```bash
 # Using the unified data fetcher directly
-from backend.data_fetcher import UnifiedDataCollector
-from backend.data_manager import UnifiedDataManager
+from backend.data_fetcher import DataCollector
+from backend.data_manager import DataManager
 
 # Initialize the collector
-collector = UnifiedDataCollector()
+collector = DataCollector()
 
 # Update all data
 symbols = ['BTC/USDT', 'ETH/USDT']
@@ -276,7 +276,7 @@ timeframes = ['4h', '1d']
 collector.update_all_data(symbols, timeframes)
 
 # Get database summary
-data_manager = UnifiedDataManager()
+data_manager = DataManager()
 summary = data_manager.get_data_summary()
 ```
 

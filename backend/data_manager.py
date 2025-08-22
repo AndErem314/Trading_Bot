@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Tuple
 import logging
 
 
-class UnifiedDataManager:
+class DataManager:
     """Manages OHLCV data operations for the unified trading database."""
     
     def __init__(self, db_path: str = 'data/trading_data_BTC.db'):

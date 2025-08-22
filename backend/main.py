@@ -8,7 +8,7 @@ import sys
 import argparse
 from datetime import datetime
 
-from data_fetcher import UnifiedDataCollector
+from data_fetcher import DataCollector
 from Indicators import (
     SimpleMovingAverageCalculator,
     BollingerBandsCalculator,
@@ -24,7 +24,7 @@ from Indicators import (
 def collect_raw_data(symbols, timeframes, start_time=None):
     """Collect raw data for specified symbols and timeframes using unified system."""
     print("=== COLLECTING RAW DATA (UNIFIED SYSTEM) ===")
-    collector = UnifiedDataCollector()
+    collector = DataCollector()
     
     if start_time:
         # Collect historical data from specific start time
