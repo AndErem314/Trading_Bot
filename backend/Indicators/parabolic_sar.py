@@ -1,6 +1,6 @@
 """
-Parabolic SAR Calculator module - UNIFIED VERSION
-Uses unified_trading_data.db to calculate Parabolic SAR (Stop and Reverse) indicator and saves it to the unified database.
+Parabolic SAR Calculator module
+Uses per-symbol database (data/trading_data_BTC.db) to calculate Parabolic SAR (Stop and Reverse) indicator and saves it to the database.
 
 Parabolic SAR is a trend-following indicator that provides potential reversal points in the price action.
 It's designed to give traders an entry and exit point for trades.
@@ -26,7 +26,7 @@ from typing import Optional
 
 
 class ParabolicSARCalculator:
-    """Calculates Parabolic SAR indicator using unified database."""
+    """Calculates Parabolic SAR indicator using the database."""
     
     def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         import os
@@ -35,8 +35,8 @@ class ParabolicSARCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+        """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -177,8 +177,8 @@ class ParabolicSARCalculator:
         
         return df
 
-    def save_parabolic_sar_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated Parabolic SAR data to the unified database."""
+def save_parabolic_sar_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+        """Save calculated Parabolic SAR data to the database."""
         if df.empty:
             print(f"[INFO] No Parabolic SAR data to save for {symbol} ({timeframe})")
             return

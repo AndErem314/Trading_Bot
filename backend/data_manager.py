@@ -1,6 +1,6 @@
 """
-Unified Data Manager for OHLCV data operations.
-Handles all database operations for the unified_trading_data.db schema.
+Data Manager for OHLCV data operations.
+Handles all database operations for the per-symbol SQLite schema (e.g., data/trading_data_BTC.db).
 """
 import sqlite3
 import pandas as pd
@@ -11,7 +11,7 @@ import logging
 
 
 class DataManager:
-    """Manages OHLCV data operations for the unified trading database."""
+    """Manages OHLCV data operations for the per-symbol trading database."""
     
     def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         import os
@@ -308,7 +308,7 @@ class DataManager:
     
     def save_ohlcv_data(self, df: pd.DataFrame, symbol: str, timeframe: str) -> Dict[str, int]:
         """
-        Save OHLCV data to the unified database.
+        Save OHLCV data to the database.
         
         Args:
             df: DataFrame with OHLCV data (timestamp as index)

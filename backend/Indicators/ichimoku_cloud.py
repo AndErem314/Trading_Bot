@@ -1,6 +1,6 @@
 """
-Ichimoku Cloud Calculator module - UNIFIED VERSION
-Uses unified_trading_data.db to calculate Ichimoku Cloud indicators and saves them to the unified database.
+Ichimoku Cloud Calculator module
+Uses per-symbol database (data/trading_data_BTC.db) to calculate Ichimoku Cloud indicators and saves them to the database.
 
 The Ichimoku Cloud, also known as Ichimoku Kinko Hyo, is a comprehensive indicator that defines support/resistance, trend direction, momentum, and provides trading signals.
 
@@ -24,7 +24,7 @@ from typing import Optional
 
 
 class IchimokuCloudCalculator:
-    """Calculates Ichimoku Cloud indicators using unified database."""
+    """Calculates Ichimoku Cloud indicators using the database."""
     
     def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         import os
@@ -33,8 +33,8 @@ class IchimokuCloudCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+        """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -118,8 +118,8 @@ class IchimokuCloudCalculator:
 
         return df
 
-    def save_ichimoku_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated Ichimoku Cloud data to the unified database."""
+def save_ichimoku_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+        """Save calculated Ichimoku Cloud data to the database."""
         if df.empty:
             print(f"[INFO] No Ichimoku data to save for {symbol} ({timeframe})")
             return

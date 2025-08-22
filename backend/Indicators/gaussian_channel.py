@@ -1,6 +1,6 @@
 """
-Gaussian Channel Indicator Calculator Module - UNIFIED VERSION
-Uses unified_trading_data.db to calculate Gaussian Channel indicators and saves them to the unified database.
+Gaussian Channel Indicator Calculator Module
+Uses per-symbol database (data/trading_data_BTC.db) to calculate Gaussian Channel indicators and saves them to the database.
 
 The Gaussian Channel is a volatility-based channel indicator that creates dynamic support and resistance levels.
 It uses a moving average as the middle line and applies a Gaussian-based calculation to determine
@@ -18,7 +18,7 @@ This module implements:
 - Upper, middle (moving average), and lower channel bands
 - Signal generation for trend analysis and breakout detection
 - Pattern analysis for current market conditions
-- Integration with unified database system
+- Integration with per-symbol database
 
 Common trading signals:
 - Price breaking above upper channel: Potential bullish breakout
@@ -36,7 +36,7 @@ from typing import Optional
 
 
 class GaussianChannelCalculator:
-    """Calculates Gaussian Channel indicators using unified database."""
+    """Calculates Gaussian Channel indicators using the database."""
     
     def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         import os
@@ -45,8 +45,8 @@ class GaussianChannelCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+        """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -160,8 +160,8 @@ class GaussianChannelCalculator:
         
         return df
 
-    def save_gaussian_channel_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated Gaussian Channel data to the unified database."""
+def save_gaussian_channel_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+        """Save calculated Gaussian Channel data to the database."""
         if df.empty:
             print(f"[INFO] No Gaussian Channel data to save for {symbol} ({timeframe})")
             return

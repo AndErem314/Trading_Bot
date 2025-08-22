@@ -1,6 +1,6 @@
 """
-Unified Data Fetcher for OHLCV market data.
-Integrates with the UnifiedDataManager for streamlined data operations.
+Data Fetcher for OHLCV market data.
+Integrates with the DataManager for streamlined data operations using a per-symbol SQLite database.
 """
 import ccxt
 import pandas as pd
@@ -12,9 +12,9 @@ from data_manager import DataManager
 
 
 class DataFetcher:
-    """Fetches OHLCV data and stores it using the unified database schema."""
+    """Fetches OHLCV data and stores it using the per-symbol database schema."""
     
-    def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
+    def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/trading_data_BTC.db'):
         import os
         # Normalize db_path to project-absolute in the data manager
         self.exchange = getattr(ccxt, exchange_name)({
@@ -77,11 +77,17 @@ class DataFetcher:
             df_batch = self.fetch_ohlcv_batch(symbol, timeframe, since, batch_size)
             
             if df_batch.empty:
-                self.logger.warning(f"No data received for batch starting at {datetime.fromtimestamp(since/1000)}")
-                break
+                self.logger.warning(f"No data received for batch starting at {datetime.fromtimestamp(since/1000)}; advancing by one interval")
+                since += self._get_timeframe_ms(timeframe)
+                continue
             
             # Filter data to not exceed end_time
             df_batch = df_batch[df_batch.index <= pd.to_datetime(end_time, unit='ms')]
+
+            # If filtering removed all rows, advance by one interval to avoid stalling
+            if df_batch.empty:
+                since += self._get_timeframe_ms(timeframe)
+                continue
             
             all_data.append(df_batch)
             batch_count += 1
@@ -138,7 +144,7 @@ class DataFetcher:
     def collect_and_store_data(self, symbol: str, timeframe: str, start_time: Optional[int] = None, 
                               force_full_refresh: bool = False) -> Dict[str, int]:
         """
-        Collect OHLCV data and store it in the unified database.
+        Collect OHLCV data and store it in the per-symbol database.
         
         Args:
             symbol: Trading pair
@@ -175,7 +181,7 @@ class DataFetcher:
                 self.logger.info(f"No new data to store for {symbol} ({timeframe})")
                 return {'inserted': 0, 'duplicates': 0, 'errors': 0, 'operation_type': operation_type}
             
-            # Store data using UnifiedDataManager
+            # Store data using DataManager
             result = self.data_manager.save_ohlcv_data(df, symbol, timeframe)
             result['operation_type'] = operation_type
             
@@ -289,7 +295,7 @@ class DataFetcher:
 class DataCollector:
     """High-level interface for data collection operations."""
     
-    def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
+    def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/trading_data_BTC.db'):
         import os
         self.fetcher = DataFetcher(exchange_name, db_path='data/trading_data_BTC.db')
         self.data_manager = DataManager('data/trading_data_BTC.db')

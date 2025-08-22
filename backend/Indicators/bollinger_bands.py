@@ -32,7 +32,7 @@ class BollingerBandsCalculator:
     
     
     def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+        """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -82,7 +82,7 @@ class BollingerBandsCalculator:
         return df
 
     def save_bollinger_bands_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated Bollinger Bands data to the unified database."""
+        """Save calculated Bollinger Bands data to the database."""
         if df.empty:
             print(f"[INFO] No Bollinger Bands data to save for {symbol} ({timeframe})")
             return

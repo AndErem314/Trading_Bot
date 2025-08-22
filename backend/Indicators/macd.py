@@ -33,7 +33,7 @@ class MACDCalculator:
     
     
     def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+        """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -99,7 +99,7 @@ class MACDCalculator:
         return df
 
     def save_macd_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated MACD data to the unified database."""
+        """Save calculated MACD data to the database."""
         if df.empty:
             print(f"[INFO] No MACD data to save for {symbol} ({timeframe})")
             return

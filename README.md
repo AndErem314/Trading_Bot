@@ -11,7 +11,6 @@ Trading_Bot/
 │   ├── main.py                      # Main coordinator script for all processes
 │   ├── data_manager.py              # Core database operations
 │   ├── data_fetcher.py              # Data collection and management
-│   ├── data_fetcher.py              # Legacy data fetcher (deprecated)
 │   ├── collect_historical_data.py   # Historical data collection utility
 │   ├── Indicators/                  # Technical indicator calculators
 │   │   ├── __init__.py              # Package initialization
@@ -23,14 +22,6 @@ Trading_Bot/
 │   │   ├── parabolic_sar.py         # Parabolic SAR indicator calculator
 │   │   ├── fibonacci_retracement.py # Fibonacci Retracement calculator
 │   │   └── gaussian_channel.py      # Gaussian Channel indicator calculator
-│   ├── bollinger_bands.py           # Bollinger Bands standalone script
-│   ├── simple_moving_average.py     # SMA standalone script
-│   ├── ichimoku_cloud.py            # Ichimoku Cloud standalone script
-│   ├── macd.py                      # MACD standalone script
-│   ├── rsi.py                       # RSI standalone script
-│   ├── parabolic_sar.py             # Parabolic SAR standalone script
-│   ├── fibonacci_retracement.py     # Fibonacci standalone script
-│   └── gaussian_channel.py          # Gaussian Channel indicator calculator
 ├── frontend/                         # Frontend data visualization modules
 │   ├── __init__.py                  # Package initialization
 │   ├── data_visualizer.py           # Advanced charting and visualization
@@ -38,7 +29,6 @@ Trading_Bot/
 ├── data/                            # Per-symbol SQLite databases
 │   └── trading_data_BTC.db          # BTC/USDT OHLCV data and indicators
 ├── run_trading_bot.py               # Main application entry point
-├── collect_data.py                  # Data collection entry point script
 ├── visualize_data.py                # Data visualization entry point script
 ├── requirements.txt                 # Python package dependencies
 ├── pyproject.toml                   # Project configuration and metadata
@@ -49,8 +39,8 @@ Trading_Bot/
 
 ## Features
 
-### Unified Data System
-- **Unified Database Schema**: All OHLCV data stored in a single, normalized database
+### Data Management
+- **Normalized Database Schema (per-symbol)**: All OHLCV data stored in a single, normalized SQLite database per trading pair
 - **Automatic Duplicate Prevention**: Built-in UNIQUE constraints prevent data duplication
 - **Incremental Updates**: Smart fetching that only retrieves new data since last update
 - **Data Integrity Validation**: Automatic validation of OHLCV data quality
@@ -62,13 +52,13 @@ Trading_Bot/
 - Fetches raw OHLCV data from cryptocurrency exchanges (using ccxt)
 - Supports BTC/USDT pair only
 - Historical data from January 1st, 2020 to present
-- Timeframes: 1-hour and daily intervals (1h, 1d)
+- Timeframes: 1-hour, 4-hour, and daily intervals (1h, 4h, 1d)
 - Exchange: Binance (easily extendable)
 - Robust error handling and retry mechanisms with exponential backoff
 
 ### Technical Indicators
 
-The bot implements **9 comprehensive technical indicators** with advanced analysis capabilities, all integrated with the unified database system:
+The bot implements **9 comprehensive technical indicators** with advanced analysis capabilities, all integrated with the per-symbol database:
 
 #### **1. Gaussian Channel Indicator**
 - Upper, middle, and lower channel bands based on moving averages
@@ -139,7 +129,7 @@ The bot implements **9 comprehensive technical indicators** with advanced analys
 - **Historical Consistency**: Same retracement levels maintained across all time periods
 
 #### **Technical Features**
-- Unified SQLite database with normalized, optimized schema
+- Per-symbol SQLite database with normalized, optimized schema
 - Supports batch processing of multiple symbols and timeframes
 - Real-time pattern analysis and signal generation
 - Command-line interface for flexible operation
@@ -192,7 +182,7 @@ python3 -c "import ccxt, pandas, matplotlib; print('All dependencies installed s
 
 ## Usage
 
-### Main Trading Bot (Unified System)
+### Main Trading Bot
 ```bash
 # Run complete pipeline (collect data and calculate all indicators)
 python3 run_trading_bot.py --mode both
@@ -210,7 +200,7 @@ python3 run_trading_bot.py --mode calculate
 python3 run_trading_bot.py --mode interactive
 
 # Custom symbols and timeframes
-python3 run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 4h 1d --start-date 2022-01-01
+python3 run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 1h 4h 1d --start-date 2022-01-01
 ```
 
 ### 🎯 Interactive Indicator Selection (NEW!)
@@ -240,8 +230,8 @@ python3 run_trading_bot.py --interactive
 ```
 🎯 TECHNICAL INDICATORS MENU
 ==================================================
-💱 Symbols: BTC/USDT, ETH/USDT, SOL/USDT, SOL/BTC, ETH/BTC
-⏰ Timeframes: 4h, 1d
+💱 Symbols: BTC/USDT
+⏰ Timeframes: 1h, 4h, 1d
 
 Select indicator to calculate:
   1. 🔢 Simple Moving Averages (SMA 50/200)
@@ -261,9 +251,9 @@ Enter your choice [1-9, 0 to exit]: 9
 ✅ Completed 8/8 indicators successfully!
 ```
 
-### Unified Data Management
+### Data Management
 ```bash
-# Using the unified data fetcher directly
+# Using the data collector and data manager directly
 from backend.data_fetcher import DataCollector
 from backend.data_manager import DataManager
 
@@ -272,7 +262,7 @@ collector = DataCollector()
 
 # Update all data
 symbols = ['BTC/USDT', 'ETH/USDT']
-timeframes = ['4h', '1d']
+timeframes = ['1h', '4h', '1d']
 collector.update_all_data(symbols, timeframes)
 
 # Get database summary
@@ -280,11 +270,6 @@ data_manager = DataManager()
 summary = data_manager.get_data_summary()
 ```
 
-### Legacy Data Collection (Deprecated)
-```bash
-# Legacy data collection script (use unified system instead)
-python collect_data.py
-```
 
 ### Data Visualization
 
@@ -297,7 +282,7 @@ python visualize_data.py
 
 **Mode 1: Interactive Mode (Default)**
 - Select trading pairs from available data
-- Choose timeframes (4h, 1d)
+- Choose timeframes (1h, 4h, 1d)
 - Specify any number of days or view all data
 - Pick chart type (candlestick, line, OHLC, volume)
 - Optional chart saving with custom filenames
@@ -323,10 +308,6 @@ Enter your choice (1-3) [default: 1]: 1
 
 Available trading pairs:
 1. BTC/USDT
-2. ETH/BTC  
-3. ETH/USDT
-4. SOL/BTC
-5. SOL/USDT
 
 Select a trading pair (1-5): 4
 Select timeframe (1-2): 1
@@ -348,7 +329,7 @@ python3 run_trading_bot.py --interactive --symbols BTC/USDT SOL/USDT
 
 **🔧 Direct Backend Access (Advanced):**
 ```bash
-# Calculate specific indicators directly (uses unified database)
+# Calculate specific indicators directly (uses per-symbol database)
 python3 backend/main.py --mode all_indicators  # All indicators via backend
 
 # Note: Individual standalone scripts use the Indicators/ subfolder:
@@ -370,10 +351,10 @@ python3 visualize_data.py                           # Advanced visualization
 
 **🔧 Backend Directory (Advanced):**
 ```bash
-# Run backend modules directly (unified system)
+# Run backend modules directly
 cd backend
 python3 main.py --mode both              # Complete pipeline
-python3 unified_data_fetcher.py          # Data collection only
+python3 main.py --mode collect           # Data collection only
 
 # Individual indicator calculators (in Indicators/ subfolder)
 # Note: Use interactive mode instead for easier access
@@ -386,26 +367,26 @@ python3 data_visualizer.py               # Advanced visualization
 
 ## Database Architecture
 
-The project uses a **unified database system** with a single normalized SQLite database for optimal performance, data integrity, and simplified management:
+The project uses a per-symbol SQLite database with a normalized schema. For BTC/USDT, data is stored in:
 
-### Unified Database Structure
+### Database Structure (BTC/USDT)
 ```
 data/
-└── unified_trading_data.db      # Complete unified database (~59MB)
+└── trading_data_BTC.db          # Per-symbol database
     ├── symbols                  # Trading pair lookup table
-    ├── timeframes              # Timeframe lookup table  
-    ├── ohlcv_data              # Raw OHLCV market data
-    ├── sma_indicator           # Simple Moving Average indicators
+    ├── timeframes               # Timeframe lookup table
+    ├── ohlcv_data               # Raw OHLCV market data
+    ├── sma_indicator            # Simple Moving Average indicators
     ├── bollinger_bands_indicator # Bollinger Bands indicators
-    ├── ichimoku_indicator      # Ichimoku Cloud indicators
-    ├── macd_indicator          # MACD indicators
-    ├── rsi_indicator           # RSI indicators
-    ├── parabolic_sar_indicator # Parabolic SAR indicators
+    ├── ichimoku_indicator       # Ichimoku Cloud indicators
+    ├── macd_indicator           # MACD indicators
+    ├── rsi_indicator            # RSI indicators
+    ├── parabolic_sar_indicator  # Parabolic SAR indicators
     ├── fibonacci_retracement_indicator # Fibonacci Retracement indicators
     └── gaussian_channel_indicator # Gaussian Channel indicators
 ```
 
-### Unified Database Schema
+### Database Schema
 
 #### **Core Tables**
 
@@ -501,7 +482,7 @@ data/
 - `gc_middle` - Middle Gaussian Channel band (moving average)
 - `gc_lower` - Lower Gaussian Channel band
 
-### Unified Database Architecture Benefits
+### Database Architecture Benefits
 - **Data Integrity**: Foreign key relationships ensure consistent data
 - **Performance**: Optimized indexes and normalized schema for faster queries
 - **No Duplicates**: Built-in unique constraints prevent data duplication
@@ -513,18 +494,20 @@ data/
 
 ## Data Summary
 
-The unified trading database currently maintains **64,499 OHLCV records** with **complete technical indicator coverage** across **5 trading pairs**:
+Note: The following historical summary reflects an earlier unified database setup (archival). Current releases use per-symbol databases. For live counts, run:
+
+python3 run_trading_bot.py --status
 
 ### Trading Pairs Data
 | Trading Pair | 4-Hour Records | Daily Records | Date Range |
 |-------------|----------------|---------------|-----------|
-| BTC/USDT    | 10,905         | 1,818         | Aug 2020 - Present |
-| ETH/USDT    | 10,905         | 1,818         | Aug 2020 - Present |
-| SOL/USDT    | 10,844         | 1,808         | Aug 2020 - Present |
-| **SOL/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
-| **ETH/BTC** | **10,906**     | **1,818**     | **Aug 2020 - Present** |
+| BTC/USDT    | 10,905         | 1,818         | 2020-01-01 - Present |
+| ETH/USDT    | 10,905         | 1,818         | 2020-01-01 - Present |
+| SOL/USDT    | 10,844         | 1,808         | 2020-01-01 - Present |
+| **SOL/BTC** | **10,906**     | **1,818**     | **2020-01-01 - Present** |
+| **ETH/BTC** | **10,906**     | **1,818**     | **2020-01-01 - Present** |
 
-### Unified Database Summary
+### Historical Database Summary (archival)
 | Component | Records/Tables | Size | Description |
 |-----------|----------------|------|-------------|
 | **Core OHLCV Data** | 64,499 records | ~59MB | Raw market data in unified normalized schema |
@@ -533,7 +516,7 @@ The unified trading database currently maintains **64,499 OHLCV records** with *
 | **Schema Design** | Normalized | Optimized | Foreign key relationships, unique constraints |
 | **Total Database** | **1 unified file** | **~59MB** | **Complete trading system in single database** |
 
-### Key Improvements vs Legacy System
+### Historical comparison (archival)
 | Feature | Legacy System | Unified System |
 |---------|--------------|----------------|
 | Database Files | 9 separate files (~97MB) | 1 unified file (~59MB) |
@@ -549,10 +532,10 @@ The unified trading database currently maintains **64,499 OHLCV records** with *
 
 ### Default Settings
 - **Symbols**: BTC/USDT, ETH/USDT, SOL/USDT, SOL/BTC, ETH/BTC
-- **Timeframes**: 4h (4-hour), 1d (daily)
-- **Historical start**: August 1st, 2020
-- **Database Architecture**: Unified normalized database system
-  - **Single Database**: `data/unified_trading_data.db` - All OHLCV data and indicators
+- **Timeframes**: 1h (hourly), 4h (4-hour), 1d (daily)
+- **Historical start**: January 1st, 2020
+- **Database Architecture**: Per-symbol normalized database
+  - **Single Database (per-symbol)**: `data/trading_data_BTC.db` - OHLCV data and indicators for BTC/USDT
   - **Normalized Schema**: Foreign key relationships with unique constraints
   - **Automatic Duplicate Prevention**: Built-in data integrity
 - **Exchange**: Binance (easily extendable to other exchanges)
@@ -561,7 +544,7 @@ The unified trading database currently maintains **64,499 OHLCV records** with *
 ### Customization
 All settings can be customized via command-line arguments:
 ```bash
-# Custom symbols and timeframes (unified system)
+# Custom symbols and timeframes
 python backend/main.py --symbols SOL/BTC ETH/BTC --timeframes 1d --start-date 2023-01-01
 
 # Custom visualization period
@@ -569,7 +552,7 @@ python visualize_data.py
 # Then select custom days in interactive mode
 ```
 
-### Unified System Workflow Examples
+### Workflow Examples
 ```bash
 # Daily update routine (incremental data collection)
 python backend/main.py --mode collect
@@ -578,7 +561,7 @@ python backend/main.py --mode collect
 python backend/main.py --mode all_indicators
 
 # Data integrity validation
-# (Automatic with unified system - no manual validation needed)
+# (Automatic with normalized schema - no manual validation needed)
 ```
 
 ## Recent Updates
@@ -591,9 +574,9 @@ python backend/main.py --mode all_indicators
 - **⚡ Enhanced User Experience** - Real-time progress updates and error handling
 - **🚀 Multiple Access Methods** - `--mode interactive` or `--interactive` flag
 - **🎛️ Custom Configuration** - Works with custom symbols and timeframes
-- **✅ Production Ready** - Fully integrated with unified database system
+- **✅ Production Ready** - Fully integrated with the current database-backed workflow
 
-### ✅ **Version 7.0 - Unified Database System - August 2025**
+### ✅ **Version 7.0 - Database Architecture Update (historical, Aug 2025)**
 - **🚀 MAJOR: Unified Database Architecture** - Complete migration to single normalized database
 - **🔧 Database Consolidation**: From 9 separate files (~97MB) to 1 unified file (~59MB)
 - **⚡ Performance Optimization**: Normalized schema with foreign key relationships
@@ -675,9 +658,9 @@ python backend/main.py --mode all_indicators
 - **Pattern Recognition**: Real-time analysis of market conditions and positioning
 - **Multi-timeframe Analysis**: Comprehensive signals across 4h and daily intervals
 
-### 🔧 **Technical Improvements - Unified System + Interactive Features**
+### 🔧 **Technical Improvements**
 - **Interactive Interface**: User-friendly menu system for individual indicator selection
-- **Unified Database**: Single normalized database with 64,499+ OHLCV records
+- **Normalized schema**: SQLite schema optimized for OHLCV and indicators
 - **Complete Indicator Suite**: 8 professional-grade technical indicators with foreign key relationships
 - **Enhanced User Experience**: Real-time progress tracking and professional UI
 - **Data Integrity**: 100% validated data with automatic duplicate prevention

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Trading Bot - Unified Database System
+Trading Bot - Per-symbol Database
 
 Entry point script to run the Trading Bot from the root directory.
-Supports the unified database architecture with comprehensive data collection
+Supports a per-symbol database architecture with comprehensive data collection
 and technical indicator calculation.
 
 USAGE:
@@ -19,7 +19,7 @@ CUSTOM SYMBOLS & TIMEFRAMES:
 HISTORICAL DATA:
   python3 run_trading_bot.py --mode collect --start-date 2020-01-01
 
-UNIFIED DATABASE FEATURES:
+DATABASE FEATURES:
 - Automatic duplicate prevention
 - Incremental data updates
 - Data integrity validation
@@ -36,11 +36,11 @@ backend_path = os.path.join(os.path.dirname(__file__), 'backend')
 sys.path.insert(0, backend_path)
 
 def show_status():
-    """Show unified database status and summary."""
+    """Show database status and summary."""
     try:
         from data_manager import DataManager
         
-        print("\n=== UNIFIED TRADING DATABASE STATUS ===")
+        print("\n=== TRADING DATABASE STATUS ===")
         data_manager = DataManager()
         summary = data_manager.get_data_summary()
         
@@ -273,9 +273,9 @@ def interactive_indicator_selection(symbols, timeframes):
             input("\nPress Enter to continue...")
 
 def main_with_enhancements():
-    """Enhanced main function with unified workflow support."""
+    """Enhanced main function with database-backed workflow support."""
     parser = argparse.ArgumentParser(
-        description='Trading Bot - Unified Database System',
+        description='Trading Bot - Per-symbol Database',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 EXAMPLES:
@@ -297,7 +297,7 @@ EXAMPLES:
   # Show database status
   python3 run_trading_bot.py --status
 
-UNIFIED DATABASE BENEFITS:
+DATABASE BENEFITS:
 - Single normalized database (vs 9 separate files)
 - Automatic duplicate prevention
 - Data integrity with foreign keys
@@ -324,7 +324,7 @@ UNIFIED DATABASE BENEFITS:
                        help='Start date for historical data collection (YYYY-MM-DD)')
     parser.add_argument('--status', 
                        action='store_true',
-                       help='Show unified database status and exit')
+                       help='Show database status and exit')
     parser.add_argument('--interactive', 
                        action='store_true',
                        help='Launch interactive indicator selection menu')
@@ -345,7 +345,7 @@ UNIFIED DATABASE BENEFITS:
         return
     
     print("\n" + "="*60)
-    print("🚀 TRADING BOT - UNIFIED DATABASE SYSTEM")
+    print("🚀 TRADING BOT")
     print("="*60)
     print(f"📊 Mode: {args.mode.upper()}")
     print(f"💱 Symbols: {', '.join(args.symbols)}")

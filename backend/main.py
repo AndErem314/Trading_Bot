@@ -1,8 +1,6 @@
 """
 Main runner script for the Trading Bot.
-Coordinates unified data collection and technical indicator calculation.
-
-USES UNIFIED TRADING DATABASE SYSTEM
+Coordinates data collection and technical indicator calculation using a per-symbol SQLite database.
 """
 import sys
 import argparse
@@ -22,8 +20,8 @@ from Indicators import (
 
 
 def collect_raw_data(symbols, timeframes, start_time=None):
-    """Collect raw data for specified symbols and timeframes using unified system."""
-    print("=== COLLECTING RAW DATA (UNIFIED SYSTEM) ===")
+    """Collect raw data for specified symbols and timeframes."""
+    print("=== COLLECTING RAW DATA ===")
     collector = DataCollector()
     
     if start_time:
@@ -37,7 +35,7 @@ def collect_raw_data(symbols, timeframes, start_time=None):
 
 def calculate_all_indicators(symbols, timeframes):
     """Calculate all technical indicators for specified symbols and timeframes."""
-    print("\n=== CALCULATING ALL TECHNICAL INDICATORS (UNIFIED SYSTEM) ===")
+    print("\n=== CALCULATING ALL TECHNICAL INDICATORS ===")
     
     # Initialize all calculators
     sma_calc = SimpleMovingAverageCalculator()

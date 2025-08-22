@@ -2,7 +2,7 @@
 Technical Indicators Package
 
 This package contains all technical indicator calculators for the Trading Bot.
-All indicators use the unified trading data system with unified_trading_data.db.
+All indicators use the trading data system with per-symbol database files (e.g., data/trading_data_BTC.db).
 
 Available Indicators:
 - Simple Moving Average (SMA)

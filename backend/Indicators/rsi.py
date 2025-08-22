@@ -189,7 +189,7 @@ def detect_rsi_support_resistance(rsi_values):
 
 def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
     """
-    Calculate RSI for a specific symbol and timeframe from unified database.
+    Calculate RSI for a specific symbol and timeframe from the database.
     
     Args:
         symbol (str): Trading symbol (e.g., 'BTC/USDT')
@@ -199,7 +199,7 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
         bool: True if successful, False otherwise
     """
     try:
-        # Connect to unified database
+        # Connect to database
         import os
         db_path = 'data/trading_data_BTC.db'
         if not os.path.isabs(db_path):
@@ -207,7 +207,7 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         raw_conn = sqlite3.connect(db_path)
         
-        # Read OHLCV data from unified database
+        # Read OHLCV data from database
         query = """
         SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume 
         FROM ohlcv_data o
@@ -275,7 +275,7 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
             else None for s in signals_list
         ]
         
-        # Save to unified database using RSI indicators table
+        # Save to database using RSI indicators table
         rsi_conn = sqlite3.connect(db_path)
         
         inserted = 0
