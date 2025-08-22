@@ -201,15 +201,10 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
     try:
         # Connect to unified database
         import os
-        db_path = 'data/unified_trading_data.db'
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
-            # If running from Indicators subfolder, adjust path to project root
-            current_dir = os.path.basename(os.getcwd())
-            if current_dir == 'Indicators':
-                db_path = '../../' + db_path
-            elif current_dir == 'backend':
-                db_path = '../' + db_path
-                
+        db_path = 'data/trading_data_BTC.db'
+        if not os.path.isabs(db_path):
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            db_path = os.path.abspath(os.path.join(project_root, db_path))
         raw_conn = sqlite3.connect(db_path)
         
         # Read OHLCV data from unified database

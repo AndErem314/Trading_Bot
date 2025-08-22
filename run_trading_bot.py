@@ -17,7 +17,7 @@ CUSTOM SYMBOLS & TIMEFRAMES:
   python3 run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 4h 1d
   
 HISTORICAL DATA:
-  python3 run_trading_bot.py --mode collect --start-date 2022-01-01
+  python3 run_trading_bot.py --mode collect --start-date 2020-01-01
 
 UNIFIED DATABASE FEATURES:
 - Automatic duplicate prevention
@@ -38,13 +38,13 @@ sys.path.insert(0, backend_path)
 def show_status():
     """Show unified database status and summary."""
     try:
-        from unified_data_manager import UnifiedDataManager
+        from data_manager import UnifiedDataManager
         
         print("\n=== UNIFIED TRADING DATABASE STATUS ===")
         data_manager = UnifiedDataManager()
         summary = data_manager.get_data_summary()
         
-        print(f"Database: unified_trading_data.db")
+        print(f"Database: data/trading_data_BTC.db")
         print(f"Total OHLCV Records: {summary.get('total_records', 'N/A')}")
         print(f"Symbols: {summary.get('symbols', [])}")
         print(f"Timeframes: {summary.get('timeframes', [])}")
@@ -320,7 +320,7 @@ UNIFIED DATABASE BENEFITS:
                        help='Timeframes to process (default: 4h, 1d)')
     parser.add_argument('--start-date', 
                        type=str, 
-                       default='2021-01-01',
+                       default='2020-01-01',
                        help='Start date for historical data collection (YYYY-MM-DD)')
     parser.add_argument('--status', 
                        action='store_true',
@@ -351,7 +351,7 @@ UNIFIED DATABASE BENEFITS:
     print(f"💱 Symbols: {', '.join(args.symbols)}")
     print(f"⏰ Timeframes: {', '.join(args.timeframes)}")
     print(f"📅 Start Date: {args.start_date}")
-    print(f"💾 Database: unified_trading_data.db (normalized schema)")
+    print(f"💾 Database: data/trading_data_BTC.db (per-symbol schema)")
     print("\n🔧 Features: Duplicate prevention | Data integrity | Incremental updates")
     print("="*60)
     

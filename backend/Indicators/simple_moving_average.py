@@ -23,19 +23,16 @@ import numpy as np
 from typing import Optional, Tuple
 
 
+
+
 class SimpleMovingAverageCalculator:
     """Calculates Simple Moving Average indicators from unified database."""
     
-    def __init__(self, db_path: str = 'data/unified_trading_data.db'):
-        # Ensure we use the correct database path relative to project root
+    def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         import os
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
-            # If running from Indicators subfolder, adjust path to project root
-            current_dir = os.path.basename(os.getcwd())
-            if current_dir == 'Indicators':
-                db_path = '../../' + db_path
-            elif current_dir == 'backend':
-                db_path = '../' + db_path
+        if not os.path.isabs(db_path):
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
     

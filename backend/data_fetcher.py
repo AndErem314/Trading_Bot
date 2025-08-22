@@ -8,13 +8,15 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 import logging
-from unified_data_manager import UnifiedDataManager
+from data_manager import UnifiedDataManager
 
 
 class UnifiedDataFetcher:
     """Fetches OHLCV data and stores it using the unified database schema."""
     
     def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
+        import os
+        # Normalize db_path to project-absolute in the data manager
         self.exchange = getattr(ccxt, exchange_name)({
             'apiKey': '',
             'secret': '',
@@ -23,7 +25,8 @@ class UnifiedDataFetcher:
             'sandbox': False,
         })
         
-        self.data_manager = UnifiedDataManager(db_path)
+        # Use single DB (trading_data_BTC.db) via UnifiedDataManager
+        self.data_manager = UnifiedDataManager(db_path='data/trading_data_BTC.db')
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -287,8 +290,9 @@ class UnifiedDataCollector:
     """High-level interface for data collection operations."""
     
     def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/unified_trading_data.db'):
-        self.fetcher = UnifiedDataFetcher(exchange_name, db_path)
-        self.data_manager = UnifiedDataManager(db_path)
+        import os
+        self.fetcher = UnifiedDataFetcher(exchange_name, db_path='data/trading_data_BTC.db')
+        self.data_manager = UnifiedDataManager('data/trading_data_BTC.db')
         self.logger = logging.getLogger(__name__)
     
     def update_all_data(self, symbols: List[str], timeframes: List[str]) -> None:
@@ -310,18 +314,21 @@ class UnifiedDataCollector:
     
     def collect_historical_data(self, symbols: List[str], timeframes: List[str], 
                                start_date: str) -> None:
-        """Collect historical data from a specific start date."""
+        """Collect historical data from a specific start date incrementally (no duplication)."""
         start_time = int(pd.to_datetime(start_date).timestamp() * 1000)
         
-        self.logger.info(f"Starting historical data collection from {start_date}")
+        self.logger.info(f"Starting historical data collection from {start_date} (incremental, deduped)")
         
-        results = self.fetcher.bulk_collect_data(symbols, timeframes, start_time, force_refresh=True)
+        # Incremental collection: only fetch from last known timestamp onward,
+        # falling back to start_time if no data exists.
+        results = self.fetcher.bulk_collect_data(symbols, timeframes, start_time, force_refresh=False)
         
         # Display results
         print(f"\n=== HISTORICAL DATA COLLECTION SUMMARY ===")
         for symbol, symbol_results in results.items():
             for timeframe, result in symbol_results.items():
-                print(f"{symbol} ({timeframe}): {result['inserted']} records collected")
+                print(f"{symbol} ({timeframe}): {result['inserted']} records collected (" 
+                      f"{result['duplicates']} duplicates, {result['errors']} errors)")
     
     def validate_and_repair_data(self, symbols: List[str], timeframes: List[str], 
                                 start_date: str) -> None:

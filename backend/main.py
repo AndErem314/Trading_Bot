@@ -8,7 +8,7 @@ import sys
 import argparse
 from datetime import datetime
 
-from unified_data_fetcher import UnifiedDataCollector
+from data_fetcher import UnifiedDataCollector
 from Indicators import (
     SimpleMovingAverageCalculator,
     BollingerBandsCalculator,

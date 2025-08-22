@@ -1,6 +1,6 @@
 """
-Fibonacci Retracement Calculator Module - UNIFIED VERSION
-Uses unified_trading_data.db to calculate Fibonacci retracement levels and saves them to the unified database.
+Fibonacci Retracement Calculator Module - Per-Symbol Database Version
+Uses data/trading_data_BTC.db (or a provided per-symbol DB path) to calculate Fibonacci retracement levels and saves them to that database.
 
 Fibonacci retracements are horizontal lines that indicate areas of support or resistance at the key Fibonacci levels
 before the price continues in the original direction. These levels are created by drawing a trendline between
@@ -27,18 +27,14 @@ from typing import Optional, Tuple
 
 
 class FibonacciRetracementCalculator:
-    """Calculates Fibonacci retracement levels using unified database."""
+    """Calculates Fibonacci retracement levels using a per-symbol database."""
     
-    def __init__(self, db_path: str = 'data/unified_trading_data.db'):
+    def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
         # Ensure we use the correct database path relative to project root
         import os
-        if not os.path.isabs(db_path) and not db_path.startswith('../'):
-            # If running from Indicators subfolder, adjust path to project root
-            current_dir = os.path.basename(os.getcwd())
-            if current_dir == 'Indicators':
-                db_path = '../../' + db_path
-            elif current_dir == 'backend':
-                db_path = '../' + db_path
+        if not os.path.isabs(db_path):
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
         
         # Fibonacci ratios
@@ -53,7 +49,7 @@ class FibonacciRetracementCalculator:
         }
     
     def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Fetch raw OHLCV data from the unified database."""
+        """Fetch raw OHLCV data from the per-symbol database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
             FROM ohlcv_data o
@@ -204,7 +200,7 @@ class FibonacciRetracementCalculator:
         return 'none'
 
     def save_fibonacci_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
-        """Save calculated Fibonacci retracement data to the unified database."""
+        """Save calculated Fibonacci retracement data to the per-symbol database."""
         if df.empty:
             print(f"[INFO] No Fibonacci data to save for {symbol} ({timeframe})")
             return

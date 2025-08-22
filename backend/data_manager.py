@@ -13,17 +13,228 @@ import logging
 class UnifiedDataManager:
     """Manages OHLCV data operations for the unified trading database."""
     
-    def __init__(self, db_path: str = 'data/unified_trading_data.db'):
+    def __init__(self, db_path: str = 'data/trading_data_BTC.db'):
+        import os
+        # Resolve to absolute path relative to project root (parent of backend)
+        if not os.path.isabs(db_path):
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
         self.ensure_data_directory()
         self._symbol_cache = {}
         self._timeframe_cache = {}
-        self._load_caches()
         
-        # Setup logging
+        # Setup logging early so exception handlers can use it
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
+        
+        # Ensure schema exists before any DB operations
+        self._ensure_schema()
+        
+        # Load caches after logger is ready
+        self._load_caches()
     
+    def _ensure_schema(self):
+        """Create required tables and indexes if they do not exist."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS symbols (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT UNIQUE NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS timeframes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timeframe TEXT UNIQUE NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS ohlcv_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol_id INTEGER NOT NULL,
+                    timeframe_id INTEGER NOT NULL,
+                    timestamp DATETIME NOT NULL,
+                    open REAL NOT NULL,
+                    high REAL NOT NULL,
+                    low REAL NOT NULL,
+                    close REAL NOT NULL,
+                    volume REAL NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (symbol_id) REFERENCES symbols(id),
+                    FOREIGN KEY (timeframe_id) REFERENCES timeframes(id),
+                    UNIQUE(symbol_id, timeframe_id, timestamp)
+                );
+                """)
+                # Indicator tables (subset used by indicators)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS sma_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    sma_50 REAL,
+                    sma_200 REAL,
+                    sma_ratio REAL,
+                    price_vs_sma50 REAL,
+                    price_vs_sma200 REAL,
+                    trend_strength REAL,
+                    sma_signal TEXT,
+                    cross_signal TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS macd_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    ema_12 REAL,
+                    ema_26 REAL,
+                    macd_line REAL,
+                    signal_line REAL,
+                    histogram REAL,
+                    macd_signal TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS bollinger_bands_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    bb_upper REAL,
+                    bb_lower REAL,
+                    bb_middle REAL,
+                    bb_width REAL,
+                    bb_percent REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS rsi_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    rsi REAL,
+                    rsi_sma_5 REAL,
+                    rsi_sma_10 REAL,
+                    overbought BOOLEAN,
+                    oversold BOOLEAN,
+                    trend_strength TEXT,
+                    divergence_signal TEXT,
+                    momentum_shift BOOLEAN,
+                    support_resistance TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS ichimoku_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    tenkan_sen REAL,
+                    kijun_sen REAL,
+                    senkou_span_a REAL,
+                    senkou_span_b REAL,
+                    chikou_span REAL,
+                    cloud_color TEXT,
+                    ichimoku_signal TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS parabolic_sar_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    parabolic_sar REAL,
+                    trend TEXT,
+                    reversal_signal BOOLEAN,
+                    signal_strength REAL,
+                    acceleration_factor REAL,
+                    sar_signal TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                
+                # Ensure parabolic_sar_indicator has expected columns
+                try:
+                    cursor = conn.execute("PRAGMA table_info(parabolic_sar_indicator)")
+                    existing_cols = {row[1] for row in cursor.fetchall()}
+                    desired_cols = {
+                        ('acceleration_factor', 'REAL'),
+                        ('sar_signal', 'TEXT')
+                    }
+                    for col_name, col_type in desired_cols:
+                        if col_name not in existing_cols:
+                            conn.execute(f"ALTER TABLE parabolic_sar_indicator ADD COLUMN {col_name} {col_type}")
+                except sqlite3.Error as e:
+                    self.logger.warning(f"Could not extend parabolic_sar_indicator schema: {e}")
+                
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS fibonacci_retracement_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    level_23_6 REAL,
+                    level_38_2 REAL,
+                    level_50_0 REAL,
+                    level_61_8 REAL,
+                    level_76_4 REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                
+                # Ensure fibonacci_retracement_indicator has extended columns used by the indicator module
+                try:
+                    cursor = conn.execute("PRAGMA table_info(fibonacci_retracement_indicator)")
+                    existing_cols = {row[1] for row in cursor.fetchall()}
+                    desired_cols = {
+                        ('level_0', 'REAL'),
+                        ('level_78_6', 'REAL'),
+                        ('level_100', 'REAL'),
+                        ('trend_direction', 'TEXT'),
+                        ('nearest_fib_level', 'REAL'),
+                        ('fib_signal', 'TEXT'),
+                        ('support_resistance', 'TEXT')
+                    }
+                    for col_name, col_type in desired_cols:
+                        if col_name not in existing_cols:
+                            conn.execute(f"ALTER TABLE fibonacci_retracement_indicator ADD COLUMN {col_name} {col_type}")
+                except sqlite3.Error as e:
+                    self.logger.warning(f"Could not extend fibonacci_retracement_indicator schema: {e}")
+                
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS gaussian_channel_indicator (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ohlcv_id INTEGER NOT NULL,
+                    gc_upper REAL,
+                    gc_lower REAL,
+                    gc_middle REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+                    UNIQUE(ohlcv_id)
+                );
+                """)
+                # Indexes
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_symbol_timeframe_timestamp ON ohlcv_data(symbol_id, timeframe_id, timestamp);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_timestamp ON ohlcv_data(timestamp);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_symbol ON ohlcv_data(symbol_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_timeframe ON ohlcv_data(timeframe_id);")
+                conn.commit()
+        except sqlite3.Error as e:
+            self.logger.error(f"Failed to ensure schema: {e}")
+
     def ensure_data_directory(self):
         """Ensure data directory exists."""
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)

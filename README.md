@@ -1,6 +1,6 @@
 # Trading Bot
 
-A comprehensive Python trading bot that collects cryptocurrency market data, calculates technical indicators, and provides flexible data visualization capabilities. The bot uses a unified database system to store all OHLCV data and technical indicators, with advanced data management features including automatic duplicate prevention, incremental updates, and data integrity validation.
+A comprehensive Python trading bot that collects cryptocurrency market data, calculates technical indicators, and provides flexible data visualization capabilities. The bot stores BTC/USDT OHLCV data and indicators in a per-symbol SQLite database (data/trading_data_BTC.db), with automatic duplicate prevention, incremental updates, and data integrity validation.
 
 ## Project Structure
 
@@ -9,8 +9,8 @@ Trading_Bot/
 ├── backend/                          # Backend data processing modules
 │   ├── __init__.py                  # Package initialization
 │   ├── main.py                      # Main coordinator script for all processes
-│   ├── unified_data_manager.py      # Core unified database operations
-│   ├── unified_data_fetcher.py      # Unified data collection and management
+│   ├── data_manager.py              # Core database operations
+│   ├── data_fetcher.py              # Data collection and management
 │   ├── data_fetcher.py              # Legacy data fetcher (deprecated)
 │   ├── collect_historical_data.py   # Historical data collection utility
 │   ├── Indicators/                  # Technical indicator calculators
@@ -35,8 +35,8 @@ Trading_Bot/
 │   ├── __init__.py                  # Package initialization
 │   ├── data_visualizer.py           # Advanced charting and visualization
 │   └── charts/                      # Generated chart images (PNG exports)
-├── data/                            # Unified SQLite database
-│   └── unified_trading_data.db      # All OHLCV data and indicators (~59MB)
+├── data/                            # Per-symbol SQLite databases
+│   └── trading_data_BTC.db          # BTC/USDT OHLCV data and indicators
 ├── run_trading_bot.py               # Main application entry point
 ├── collect_data.py                  # Data collection entry point script
 ├── visualize_data.py                # Data visualization entry point script
@@ -60,10 +60,10 @@ Trading_Bot/
 
 ### Data Collection
 - Fetches raw OHLCV data from cryptocurrency exchanges (using ccxt)
-- Supports **5 trading pairs**: BTC/USDT, ETH/USDT, SOL/USDT, **SOL/BTC**, **ETH/BTC**
-- Historical data from August 1st, 2020 to present
-- Multiple timeframes: 4-hour and daily intervals
-- Multiple Exchange Support: Currently supports Binance (easily extendable)
+- Supports BTC/USDT pair only
+- Historical data from January 1st, 2020 to present
+- Timeframes: 1-hour and daily intervals (1h, 1d)
+- Exchange: Binance (easily extendable)
 - Robust error handling and retry mechanisms with exponential backoff
 
 ### Technical Indicators
@@ -198,7 +198,7 @@ python3 -c "import ccxt, pandas, matplotlib; print('All dependencies installed s
 python3 run_trading_bot.py --mode both
 
 # Collect raw data only
-python3 run_trading_bot.py --mode collect
+  python3 run_trading_bot.py --mode collect --start-date 2020-01-01
 
 # Calculate all technical indicators
 python3 run_trading_bot.py --mode all_indicators
@@ -264,8 +264,8 @@ Enter your choice [1-9, 0 to exit]: 9
 ### Unified Data Management
 ```bash
 # Using the unified data fetcher directly
-from backend.unified_data_fetcher import UnifiedDataCollector
-from backend.unified_data_manager import UnifiedDataManager
+from backend.data_fetcher import UnifiedDataCollector
+from backend.data_manager import UnifiedDataManager
 
 # Initialize the collector
 collector = UnifiedDataCollector()

@@ -3,7 +3,7 @@ Script to collect all historical data from August 1st, 2020 for all trading pair
 
 USES UNIFIED TRADING DATABASE SYSTEM
 """
-from unified_data_fetcher import UnifiedDataCollector
+from data_fetcher import UnifiedDataCollector
 from datetime import datetime
 
 
