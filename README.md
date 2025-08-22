@@ -492,6 +492,13 @@ data/
 - **Development**: Consistent data access patterns across all indicators
 - **Memory Efficiency**: Normalized schema reduces storage requirements
 
+#### Data Quality Notes
+- Rare historical gaps from the exchange may exist on the 1h timeframe. To ensure strict continuity for analysis and indicators, missing 1h bars may be synthesized as follows:
+  - Use the previous available 1h close if present
+  - Otherwise, use the containing 4h bar’s close
+  - Set open=high=low=close to that value and volume=0
+- This synthesis is applied only to the exact missing hours and does not affect existing real data.
+
 ## Data Summary
 
 Note: The following historical summary reflects an earlier unified database setup (archival). Current releases use per-symbol databases. For live counts, run:
