@@ -45,7 +45,7 @@ class GaussianChannelCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
@@ -57,7 +57,6 @@ def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         '''
         with sqlite3.connect(self.db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe))
-
     def calculate_gaussian_channel(self, df: pd.DataFrame, period: int = 20, smoothing: float = 2.0) -> pd.DataFrame:
         """
         Calculate Gaussian Channel indicators on data.
@@ -160,7 +159,7 @@ def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         
         return df
 
-def save_gaussian_channel_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+    def save_gaussian_channel_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
         """Save calculated Gaussian Channel data to the database."""
         if df.empty:
             print(f"[INFO] No Gaussian Channel data to save for {symbol} ({timeframe})")

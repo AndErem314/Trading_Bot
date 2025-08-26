@@ -148,8 +148,13 @@ class SimpleMovingAverageCalculator:
         cross_signal = pd.Series('none', index=df.index)
         
         # Calculate when SMA 50 crosses above/below SMA 200
-        sma_50_above_200 = (df['sma_50'] > df['sma_200']).fillna(False)
-        sma_50_above_200_prev = sma_50_above_200.shift(1).fillna(False)
+        # Use numpy comparison to avoid NaNs producing object dtype, then ensure boolean dtype
+        import numpy as np
+        comp = (df['sma_50'].to_numpy() > df['sma_200'].to_numpy())
+        sma_50_above_200 = pd.Series(comp, index=df.index, dtype=bool)
+        # Previous period boolean, cast to pandas BooleanDtype before fillna to avoid FutureWarning
+        sma_50_above_200_prev = sma_50_above_200.shift(1)
+        sma_50_above_200_prev = sma_50_above_200_prev.astype('boolean').fillna(False).astype(bool)
         
         # Golden Cross: SMA 50 crosses above SMA 200
         golden_cross = (~sma_50_above_200_prev) & sma_50_above_200

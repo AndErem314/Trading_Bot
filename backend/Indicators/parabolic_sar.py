@@ -35,7 +35,7 @@ class ParabolicSARCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
@@ -47,7 +47,6 @@ def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         '''
         with sqlite3.connect(self.db_path) as conn:
             return pd.read_sql(query, conn, params=(symbol, timeframe))
-
     def calculate_parabolic_sar(self, df: pd.DataFrame, step: float = 0.02, max_step: float = 0.2) -> pd.DataFrame:
         """
         Calculate Parabolic SAR on data.
@@ -177,7 +176,7 @@ def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         
         return df
 
-def save_parabolic_sar_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+    def save_parabolic_sar_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
         """Save calculated Parabolic SAR data to the database."""
         if df.empty:
             print(f"[INFO] No Parabolic SAR data to save for {symbol} ({timeframe})")

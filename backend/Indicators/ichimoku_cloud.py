@@ -33,7 +33,7 @@ class IchimokuCloudCalculator:
             db_path = os.path.abspath(os.path.join(project_root, db_path))
         self.db_path = db_path
     
-def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+    def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         """Fetch raw OHLCV data from the database."""
         query = '''
             SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
@@ -118,7 +118,7 @@ def fetch_raw_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
 
         return df
 
-def save_ichimoku_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
+    def save_ichimoku_data(self, df: pd.DataFrame, symbol: str, timeframe: str):
         """Save calculated Ichimoku Cloud data to the database."""
         if df.empty:
             print(f"[INFO] No Ichimoku data to save for {symbol} ({timeframe})")

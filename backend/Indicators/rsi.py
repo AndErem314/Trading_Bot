@@ -187,13 +187,14 @@ def detect_rsi_support_resistance(rsi_values):
         return {'support': None, 'resistance': None}
 
 
-def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
+def calculate_rsi_for_symbol_timeframe(symbol, timeframe, db_path: str = 'data/trading_data_BTC.db'):
     """
     Calculate RSI for a specific symbol and timeframe from the database.
     
     Args:
         symbol (str): Trading symbol (e.g., 'BTC/USDT')
         timeframe (str): Timeframe (e.g., '4h', '1d')
+        db_path (str): Path to the per-symbol SQLite database file
     
     Returns:
         bool: True if successful, False otherwise
@@ -201,7 +202,6 @@ def calculate_rsi_for_symbol_timeframe(symbol, timeframe):
     try:
         # Connect to database
         import os
-        db_path = 'data/trading_data_BTC.db'
         if not os.path.isabs(db_path):
             project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
             db_path = os.path.abspath(os.path.join(project_root, db_path))

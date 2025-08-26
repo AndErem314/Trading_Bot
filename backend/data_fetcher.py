@@ -25,8 +25,9 @@ class DataFetcher:
             'sandbox': False,
         })
         
-        # Use single DB (trading_data_BTC.db) via DataManager
-        self.data_manager = DataManager(db_path='data/trading_data_BTC.db')
+        # Respect provided db_path for per-symbol databases
+        self.data_manager = DataManager(db_path=db_path)
+        self.db_path = db_path
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -297,8 +298,9 @@ class DataCollector:
     
     def __init__(self, exchange_name: str = 'binance', db_path: str = 'data/trading_data_BTC.db'):
         import os
-        self.fetcher = DataFetcher(exchange_name, db_path='data/trading_data_BTC.db')
-        self.data_manager = DataManager('data/trading_data_BTC.db')
+        # Respect provided db_path for per-symbol databases
+        self.fetcher = DataFetcher(exchange_name, db_path=db_path)
+        self.data_manager = DataManager(db_path)
         self.logger = logging.getLogger(__name__)
     
     def update_all_data(self, symbols: List[str], timeframes: List[str]) -> None:
