@@ -14,7 +14,7 @@ USAGE:
   python3 run_trading_bot.py --mode interactive          # Interactive indicator menu
   
 CUSTOM SYMBOLS & TIMEFRAMES:
-  python3 run_trading_bot.py --symbols BTC/USDT ETH/USDT --timeframes 4h 1d
+  python3 run_trading_bot.py --symbols BTC/USDT --timeframes 4h 1d
   
 HISTORICAL DATA:
   python3 run_trading_bot.py --mode collect --start-date 2020-01-01
@@ -312,8 +312,8 @@ DATABASE BENEFITS:
                        help='Mode of operation (default: both)')
     parser.add_argument('--symbols', 
                        nargs='+', 
-                       default=['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'SOL/BTC', 'ETH/BTC'],
-                       help='Trading pairs to process (default: all 5 pairs)')
+                       default=['BTC/USDT'],  # Only Bitcoin by default
+                       help='Trading pairs to process (default: BTC/USDT)')
     parser.add_argument('--timeframes', 
                        nargs='+', 
                        default=['4h', '1d'],
