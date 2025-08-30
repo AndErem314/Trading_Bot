@@ -26,7 +26,7 @@ from backend.Indicators import (
     SimpleMovingAverageCalculator, BollingerBandsCalculator,
     IchimokuCloudCalculator, MACDCalculator, ParabolicSARCalculator,
     FibonacciRetracementCalculator, GaussianChannelCalculator,
-    calculate_rsi_for_symbol_timeframe
+    calculate_rsi_for_symbol_timeframe, CryptoMarketRegimeDetector
 )
 
 app = Flask(__name__)
@@ -709,6 +709,222 @@ def get_symbols():
         'symbols': symbols,
         'timeframes': timeframes
     })
+
+@app.route('/market_regime')
+def market_regime():
+    """Display market regime for BTC, ETH, and SOL"""
+    return render_template('market_regime.html')
+
+@app.route('/api/market_regime')
+def get_market_regime():
+    """Get current market regime for BTC, ETH, and SOL"""
+    try:
+        results = {}
+        assets = ['BTC', 'ETH', 'SOL']
+        timeframe = request.args.get('timeframe', '4h')
+        periods = int(request.args.get('periods', '500'))
+        
+        # Load BTC data for benchmark
+        btc_df = None
+        with sqlite3.connect('data/trading_data_BTC.db') as conn:
+            query = """
+            SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
+            FROM ohlcv_data o
+            JOIN symbols s ON o.symbol_id = s.id
+            JOIN timeframes t ON o.timeframe_id = t.id
+            WHERE s.symbol = 'BTC/USDT' AND t.timeframe = ?
+            ORDER BY o.timestamp DESC
+            LIMIT ?
+            """
+            btc_df = pd.read_sql_query(query, conn, params=(timeframe, periods))
+            if not btc_df.empty:
+                # Handle both ISO format and space-separated format
+                btc_df['timestamp'] = pd.to_datetime(btc_df['timestamp'], format='mixed', dayfirst=False)
+                btc_df.set_index('timestamp', inplace=True)
+                btc_df.sort_index(inplace=True)
+                # Convert to numeric
+                for col in ['open', 'high', 'low', 'close', 'volume']:
+                    btc_df[col] = pd.to_numeric(btc_df[col], errors='coerce')
+        
+        # Process each asset
+        for asset in assets:
+            try:
+                # Get database path for the asset
+                db_path = f'data/trading_data_{asset}.db'
+                
+                # Load data
+                with sqlite3.connect(db_path) as conn:
+                    query = """
+                    SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
+                    FROM ohlcv_data o
+                    JOIN symbols s ON o.symbol_id = s.id
+                    JOIN timeframes t ON o.timeframe_id = t.id
+                    WHERE s.symbol = ? AND t.timeframe = ?
+                    ORDER BY o.timestamp DESC
+                    LIMIT ?
+                    """
+                    symbol = f'{asset}/USDT'
+                    df = pd.read_sql_query(query, conn, params=(symbol, timeframe, periods))
+                
+                if df.empty:
+                    results[asset] = {
+                        'error': f'No data available for {asset}',
+                        'regime': 'Unknown',
+                        'metrics': {}
+                    }
+                    continue
+                
+                # Prepare dataframe
+                # Handle both ISO format and space-separated format
+                df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed', dayfirst=False)
+                df.set_index('timestamp', inplace=True)
+                df.sort_index(inplace=True)
+                
+                # Convert to numeric
+                for col in ['open', 'high', 'low', 'close', 'volume']:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                # Create detector
+                # Use BTC as benchmark for ETH and SOL
+                benchmark = btc_df if asset != 'BTC' else None
+                detector = CryptoMarketRegimeDetector(
+                    df=df,
+                    asset_name=asset,
+                    benchmark_df=benchmark
+                )
+                
+                # Get current regime
+                regime, metrics = detector.classify_regime()
+                
+                # Get regime statistics
+                stats = detector.get_regime_statistics()
+                
+                # Calculate 24-hour price change
+                price_change_24h = None
+                if not df.empty:
+                    current_time = df.index[-1]
+                    time_24h_ago = current_time - pd.Timedelta(hours=24)
+                    
+                    # Find the closest data point to 24 hours ago
+                    past_data = df[df.index <= time_24h_ago]
+                    if not past_data.empty:
+                        past_price = past_data['close'].iloc[-1]
+                        current_price = df['close'].iloc[-1]
+                        price_change_24h = float((current_price / past_price - 1) * 100)
+                
+                # Prepare results
+                results[asset] = {
+                    'symbol': symbol,
+                    'regime': regime,
+                    'metrics': metrics,
+                    'statistics': stats.to_dict('records') if not stats.empty else [],
+                    'last_update': df.index[-1].isoformat() if not df.empty else None,
+                    'current_price': float(df['close'].iloc[-1]) if not df.empty else None,
+                    'price_change_24h': price_change_24h
+                }
+                
+            except Exception as e:
+                results[asset] = {
+                    'error': str(e),
+                    'regime': 'Error',
+                    'metrics': {}
+                }
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/market_regime_history/<asset>')
+def get_market_regime_history(asset):
+    """Get historical regime data for charting"""
+    try:
+        timeframe = request.args.get('timeframe', '4h')
+        periods = int(request.args.get('periods', '1000'))
+        
+        # Get database path
+        db_path = f'data/trading_data_{asset}.db'
+        
+        # Load data
+        with sqlite3.connect(db_path) as conn:
+            query = """
+            SELECT o.timestamp, o.open, o.high, o.low, o.close, o.volume
+            FROM ohlcv_data o
+            JOIN symbols s ON o.symbol_id = s.id
+            JOIN timeframes t ON o.timeframe_id = t.id
+            WHERE s.symbol = ? AND t.timeframe = ?
+            ORDER BY o.timestamp DESC
+            LIMIT ?
+            """
+            symbol = f'{asset}/USDT'
+            df = pd.read_sql_query(query, conn, params=(symbol, timeframe, periods))
+        
+        if df.empty:
+            return jsonify({'error': 'No data available'}), 404
+        
+        # Prepare dataframe
+        # Handle both ISO format and space-separated format
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed', dayfirst=False)
+        df.set_index('timestamp', inplace=True)
+        df.sort_index(inplace=True)
+        
+        # Convert to numeric
+        for col in ['open', 'high', 'low', 'close', 'volume']:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Load BTC as benchmark if needed
+        benchmark = None
+        if asset != 'BTC':
+            with sqlite3.connect('data/trading_data_BTC.db') as conn:
+                btc_df = pd.read_sql_query(query, conn, params=('BTC/USDT', timeframe, periods))
+                if not btc_df.empty:
+                    # Handle both ISO format and space-separated format
+                    btc_df['timestamp'] = pd.to_datetime(btc_df['timestamp'], format='mixed', dayfirst=False)
+                    btc_df.set_index('timestamp', inplace=True)
+                    btc_df.sort_index(inplace=True)
+                    for col in ['open', 'high', 'low', 'close', 'volume']:
+                        btc_df[col] = pd.to_numeric(btc_df[col], errors='coerce')
+                    benchmark = btc_df
+        
+        # Create detector and get history
+        detector = CryptoMarketRegimeDetector(
+            df=df,
+            asset_name=asset,
+            benchmark_df=benchmark
+        )
+        
+        regime_history = detector.get_regime_history()
+        
+        # Prepare data for frontend
+        history_data = []
+        for idx, row in regime_history.iterrows():
+            history_data.append({
+                'timestamp': idx.isoformat(),
+                'regime': row['regime'],
+                'adx': row.get('adx', None),
+                'rsi': row.get('rsi', None),
+                'volatility_regime': row.get('volatility_regime', 'Normal')
+            })
+        
+        # Get price data for chart
+        price_data = []
+        for idx, row in df.iterrows():
+            price_data.append({
+                'timestamp': idx.isoformat(),
+                'open': float(row['open']),
+                'high': float(row['high']),
+                'low': float(row['low']),
+                'close': float(row['close']),
+                'volume': float(row['volume'])
+            })
+        
+        return jsonify({
+            'regime_history': history_data,
+            'price_data': price_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist

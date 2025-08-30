@@ -23,6 +23,7 @@ from .rsi import calculate_rsi_for_symbol_timeframe
 from .parabolic_sar import ParabolicSARCalculator
 from .fibonacci_retracement import FibonacciRetracementCalculator
 from .gaussian_channel import GaussianChannelCalculator
+from .market_regime_detector import CryptoMarketRegimeDetector
 
 __all__ = [
     'SimpleMovingAverageCalculator',
@@ -32,5 +33,6 @@ __all__ = [
     'calculate_rsi_for_symbol_timeframe',
     'ParabolicSARCalculator',
     'FibonacciRetracementCalculator',
-    'GaussianChannelCalculator'
+    'GaussianChannelCalculator',
+    'CryptoMarketRegimeDetector'
 ]

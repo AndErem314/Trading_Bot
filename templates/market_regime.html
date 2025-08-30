@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Regime Detection - Trading Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background-color: #0d1117 !important;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .regime-card {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .regime-card:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.1);
+        }
+        
+        .asset-symbol {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .asset-price {
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .price-change {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .price-change.positive { color: #00D775; }
+        .price-change.negative { color: #FF3B30; }
+        
+        .regime-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Regime colors */
+        .regime-bull { background-color: #00D775; color: #000; }
+        .regime-bear { background-color: #FF3B30; color: #fff; }
+        .regime-ranging { background-color: #FFD60A; color: #000; }
+        .regime-volatile { background-color: #FF9500; color: #000; }
+        .regime-crash { background-color: #8B0000; color: #fff; }
+        .regime-unknown { background-color: #8E8E93; color: #fff; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .metric-item {
+            background-color: #161b22;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .regime-chart {
+            height: 400px;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .error-message {
+            display: none;
+            background-color: #F85149;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .controls-section {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .btn-custom {
+            background-color: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+            background-color: #2ea043;
+            color: white;
+        }
+        
+        .relative-strength {
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #161b22;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .stats-table {
+            width: 100%;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .stats-table th {
+            background-color: #161b22;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+        
+        .stats-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        @media (max-width: 768px) {
+            .asset-price { font-size: 28px; }
+            .regime-card { margin-bottom: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> Trading Bot
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/market_regime">Market Regime</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/visualization">Charts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/run_strategy">Strategy</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-cloud-sun"></i> Market Regime Detection
+                </h1>
+                
+                <!-- Controls Section -->
+                <div class="controls-section">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <label for="timeframeSelect" class="form-label">Timeframe</label>
+                            <select class="form-select" id="timeframeSelect">
+                                <option value="1h">1 Hour</option>
+                                <option value="4h" selected>4 Hours</option>
+                                <option value="1d">1 Day</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="periodsSelect" class="form-label">Analysis Periods</label>
+                            <select class="form-select" id="periodsSelect">
+                                <option value="200">200 Periods</option>
+                                <option value="500" selected>500 Periods</option>
+                                <option value="1000">1000 Periods</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-custom w-100" onclick="refreshRegimeData()">
+                                <i class="fas fa-sync-alt"></i> Refresh Analysis
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Auto Refresh</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+                                <label class="form-check-label" for="autoRefreshToggle">
+                                    Every 5 minutes
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage"></div>
+                
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Analyzing market regimes...</p>
+                </div>
+                
+                <!-- Asset Cards -->
+                <div class="row" id="regimeCards">
+                    <!-- BTC Card -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="regime-card" id="btc-card">
+                            <div class="asset-symbol">
+                                <i class="fab fa-bitcoin"></i> BTC/USDT
+                            </div>
+                            <div class="asset-price" id="btc-price">-</div>
+                            <div class="price-change" id="btc-change">-</div>
+                            <div class="regime-badge" id="btc-regime">Loading...</div>
+                            <div class="relative-strength" id="btc-relative">-</div>
+                            
+                            <div class="metrics-grid" id="btc-metrics">
+                                <!-- Metrics will be populated here -->
+                            </div>
+                            
+                            <button class="btn btn-sm btn-outline-light mt-3" onclick="showRegimeHistory('BTC')">
+                                <i class="fas fa-chart-area"></i> View History
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- ETH Card -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="regime-card" id="eth-card">
+                            <div class="asset-symbol">
+                                <i class="fab fa-ethereum"></i> ETH/USDT
+                            </div>
+                            <div class="asset-price" id="eth-price">-</div>
+                            <div class="price-change" id="eth-change">-</div>
+                            <div class="regime-badge" id="eth-regime">Loading...</div>
+                            <div class="relative-strength" id="eth-relative">-</div>
+                            
+                            <div class="metrics-grid" id="eth-metrics">
+                                <!-- Metrics will be populated here -->
+                            </div>
+                            
+                            <button class="btn btn-sm btn-outline-light mt-3" onclick="showRegimeHistory('ETH')">
+                                <i class="fas fa-chart-area"></i> View History
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- SOL Card -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="regime-card" id="sol-card">
+                            <div class="asset-symbol">
+                                <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="30" height="30" style="filter: invert(1);"> SOL/USDT
+                            </div>
+                            <div class="asset-price" id="sol-price">-</div>
+                            <div class="price-change" id="sol-change">-</div>
+                            <div class="regime-badge" id="sol-regime">Loading...</div>
+                            <div class="relative-strength" id="sol-relative">-</div>
+                            
+                            <div class="metrics-grid" id="sol-metrics">
+                                <!-- Metrics will be populated here -->
+                            </div>
+                            
+                            <button class="btn btn-sm btn-outline-light mt-3" onclick="showRegimeHistory('SOL')">
+                                <i class="fas fa-chart-area"></i> View History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Regime History Chart -->
+                <div class="regime-chart" id="regimeChart" style="display: none;">
+                    <h3 id="chartTitle">Regime History</h3>
+                    <div id="chartContainer"></div>
+                </div>
+                
+                <!-- Regime Statistics -->
+                <div class="mt-4" id="regimeStats" style="display: none;">
+                    <h3>Regime Statistics</h3>
+                    <div class="table-responsive">
+                        <table class="stats-table" id="statsTable">
+                            <thead>
+                                <tr>
+                                    <th>Regime</th>
+                                    <th>Frequency (%)</th>
+                                    <th>Avg Duration (hours)</th>
+                                    <th>Avg RSI</th>
+                                    <th>Avg ADX</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsTableBody">
+                                <!-- Stats will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        let autoRefreshInterval = null;
+        let currentAsset = null;
+        
+        // Regime color mapping
+        const regimeColors = {
+            'Bull Trend': 'regime-bull',
+            'Bear Trend': 'regime-bear',
+            'Ranging / Accumulation': 'regime-ranging',
+            'High Volatility / Breakout': 'regime-volatile',
+            'Crypto Crash': 'regime-crash',
+            'Transitioning / Unknown': 'regime-unknown',
+            'Unknown': 'regime-unknown',
+            'Error': 'regime-unknown'
+        };
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshRegimeData();
+            setupAutoRefresh();
+            
+            // Event listeners
+            document.getElementById('autoRefreshToggle').addEventListener('change', setupAutoRefresh);
+            document.getElementById('timeframeSelect').addEventListener('change', refreshRegimeData);
+            document.getElementById('periodsSelect').addEventListener('change', refreshRegimeData);
+        });
+        
+        function setupAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (document.getElementById('autoRefreshToggle').checked) {
+                autoRefreshInterval = setInterval(refreshRegimeData, 5 * 60 * 1000); // 5 minutes
+            }
+        }
+        
+        async function refreshRegimeData() {
+            const timeframe = document.getElementById('timeframeSelect').value;
+            const periods = document.getElementById('periodsSelect').value;
+            
+            showLoading(true);
+            hideError();
+            
+            try {
+                const response = await fetch(`/api/market_regime?timeframe=${timeframe}&periods=${periods}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateRegimeDisplay(data);
+                } else {
+                    showError(data.error || 'Failed to fetch regime data');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function updateRegimeDisplay(data) {
+            const assets = ['BTC', 'ETH', 'SOL'];
+            
+            assets.forEach(asset => {
+                const assetData = data[asset];
+                const assetLower = asset.toLowerCase();
+                
+                if (assetData.error) {
+                    document.getElementById(`${assetLower}-regime`).textContent = 'Error';
+                    document.getElementById(`${assetLower}-regime`).className = 'regime-badge regime-unknown';
+                    return;
+                }
+                
+                // Update price
+                if (assetData.current_price) {
+                    document.getElementById(`${assetLower}-price`).textContent = 
+                        `$${assetData.current_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+                
+                // Update price change
+                if (assetData.price_change_24h !== null) {
+                    const changeElement = document.getElementById(`${assetLower}-change`);
+                    const change = assetData.price_change_24h;
+                    changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}% (24h)`;
+                    changeElement.className = `price-change ${change >= 0 ? 'positive' : 'negative'}`;
+                }
+                
+                // Update regime
+                const regime = assetData.regime || 'Unknown';
+                const regimeBadge = document.getElementById(`${assetLower}-regime`);
+                regimeBadge.textContent = regime;
+                regimeBadge.className = `regime-badge ${regimeColors[regime] || 'regime-unknown'}`;
+                
+                // Update relative strength
+                if (assetData.metrics && assetData.metrics.relative_strength) {
+                    const relativeElement = document.getElementById(`${assetLower}-relative`);
+                    if (assetData.metrics.relative_strength !== 'No Benchmark') {
+                        relativeElement.textContent = `Relative Strength: ${assetData.metrics.relative_strength}`;
+                        relativeElement.style.display = 'inline-block';
+                    } else {
+                        relativeElement.style.display = 'none';
+                    }
+                }
+                
+                // Update metrics
+                if (assetData.metrics) {
+                    const metricsContainer = document.getElementById(`${assetLower}-metrics`);
+                    metricsContainer.innerHTML = '';
+                    
+                    const metricsToShow = [
+                        { key: 'adx', label: 'ADX', suffix: '' },
+                        { key: 'rsi', label: 'RSI', suffix: '' },
+                        { key: 'volatility_regime', label: 'Volatility', suffix: '' },
+                        { key: 'atr_zscore', label: 'ATR Z-Score', suffix: '' }
+                    ];
+                    
+                    metricsToShow.forEach(metric => {
+                        if (assetData.metrics[metric.key] !== null && assetData.metrics[metric.key] !== undefined) {
+                            const metricDiv = document.createElement('div');
+                            metricDiv.className = 'metric-item';
+                            
+                            const value = typeof assetData.metrics[metric.key] === 'number' 
+                                ? assetData.metrics[metric.key].toFixed(2) 
+                                : assetData.metrics[metric.key];
+                            
+                            metricDiv.innerHTML = `
+                                <div class="metric-label">${metric.label}</div>
+                                <div class="metric-value">${value}${metric.suffix}</div>
+                            `;
+                            
+                            metricsContainer.appendChild(metricDiv);
+                        }
+                    });
+                }
+            });
+        }
+        
+        async function showRegimeHistory(asset) {
+            currentAsset = asset;
+            const timeframe = document.getElementById('timeframeSelect').value;
+            const periods = 1000; // Get more data for history
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/market_regime_history/${asset}?timeframe=${timeframe}&periods=${periods}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayRegimeChart(asset, data);
+                    
+                    // Also fetch current stats
+                    const regimeResponse = await fetch(`/api/market_regime?timeframe=${timeframe}&periods=${periods}`);
+                    const regimeData = await regimeResponse.json();
+                    if (regimeData[asset] && regimeData[asset].statistics) {
+                        displayRegimeStats(regimeData[asset].statistics);
+                    }
+                } else {
+                    showError(data.error || 'Failed to fetch regime history');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function displayRegimeChart(asset, data) {
+            document.getElementById('regimeChart').style.display = 'block';
+            document.getElementById('chartTitle').textContent = `${asset} Regime History`;
+            
+            // Prepare data for plotting
+            const timestamps = data.price_data.map(d => d.timestamp);
+            const prices = data.price_data.map(d => d.close);
+            const regimes = data.regime_history;
+            
+            // Create regime color mapping for chart
+            const regimeColorMap = {
+                'Bull Trend': '#00D775',
+                'Bear Trend': '#FF3B30',
+                'Ranging / Accumulation': '#FFD60A',
+                'High Volatility / Breakout': '#FF9500',
+                'Crypto Crash': '#8B0000',
+                'Transitioning / Unknown': '#8E8E93'
+            };
+            
+            // Create traces for each regime
+            const traces = [];
+            let currentRegime = null;
+            let segmentStart = 0;
+            
+            for (let i = 0; i < regimes.length; i++) {
+                if (regimes[i].regime !== currentRegime) {
+                    if (currentRegime !== null) {
+                        // Add trace for previous regime segment
+                        const segmentTimestamps = timestamps.slice(segmentStart, i);
+                        const segmentPrices = prices.slice(segmentStart, i);
+                        
+                        traces.push({
+                            x: segmentTimestamps,
+                            y: segmentPrices,
+                            type: 'scatter',
+                            mode: 'lines',
+                            name: currentRegime,
+                            line: {
+                                color: regimeColorMap[currentRegime] || '#8E8E93',
+                                width: 2
+                            },
+                            showlegend: traces.filter(t => t.name === currentRegime).length === 0
+                        });
+                    }
+                    
+                    currentRegime = regimes[i].regime;
+                    segmentStart = i;
+                }
+            }
+            
+            // Add the last segment
+            if (currentRegime !== null) {
+                const segmentTimestamps = timestamps.slice(segmentStart);
+                const segmentPrices = prices.slice(segmentStart);
+                
+                traces.push({
+                    x: segmentTimestamps,
+                    y: segmentPrices,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: currentRegime,
+                    line: {
+                        color: regimeColorMap[currentRegime] || '#8E8E93',
+                        width: 2
+                    },
+                    showlegend: traces.filter(t => t.name === currentRegime).length === 0
+                });
+            }
+            
+            const layout = {
+                title: `${asset}/USDT Price with Market Regime`,
+                xaxis: {
+                    title: 'Date',
+                    gridcolor: '#30363d'
+                },
+                yaxis: {
+                    title: 'Price (USDT)',
+                    gridcolor: '#30363d'
+                },
+                plot_bgcolor: '#0d1117',
+                paper_bgcolor: '#0d1117',
+                font: {
+                    color: '#e0e0e0'
+                },
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1,
+                    bgcolor: 'rgba(0,0,0,0.5)'
+                },
+                hovermode: 'x unified'
+            };
+            
+            Plotly.newPlot('chartContainer', traces, layout, {responsive: true});
+        }
+        
+        function displayRegimeStats(statistics) {
+            if (!statistics || statistics.length === 0) return;
+            
+            document.getElementById('regimeStats').style.display = 'block';
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = '';
+            
+            statistics.forEach(stat => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${stat.regime}</td>
+                    <td>${stat.percentage.toFixed(1)}%</td>
+                    <td>${stat.avg_duration_hours.toFixed(1)}</td>
+                    <td>${stat.avg_rsi ? stat.avg_rsi.toFixed(1) : '-'}</td>
+                    <td>${stat.avg_adx ? stat.avg_adx.toFixed(1) : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
