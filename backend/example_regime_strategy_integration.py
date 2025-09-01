@@ -12,7 +12,7 @@ Date: 2025-08-30
 import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
-from backend.Indicators import CryptoMarketRegimeDetector
+from backend.Indicators import MarketRegimeDetector
 from backend.Strategies import *  # Import all strategies
 
 
@@ -89,7 +89,7 @@ class RegimeAwareStrategyExecutor:
     
     def detect_current_regime(self, df, benchmark_df=None):
         """Detect current market regime."""
-        detector = CryptoMarketRegimeDetector(
+        detector = MarketRegimeDetector(
             df=df,
             asset_name=self.asset_name,
             benchmark_df=benchmark_df
