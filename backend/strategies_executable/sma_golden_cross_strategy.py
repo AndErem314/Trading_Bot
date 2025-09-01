@@ -4,8 +4,6 @@ SMA Golden Cross Strategy - Executable Implementation
 This module provides an executable implementation of the SMA Golden Cross
 strategy that conforms to the TradingStrategy interface.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import pandas as pd

@@ -4,8 +4,6 @@ Example Usage of the Enhanced Trading System
 This script demonstrates how to use the enhanced meta strategy orchestrator
 with executable strategies for live trading signal generation.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import pandas as pd

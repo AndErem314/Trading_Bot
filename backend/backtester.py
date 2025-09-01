@@ -4,8 +4,6 @@ Backtesting Framework for MetaStrategyOrchestrator
 This module provides a backtesting framework that simulates running
 the orchestrator over historical data in a walk-forward manner.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import pandas as pd

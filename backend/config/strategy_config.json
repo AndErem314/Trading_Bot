@@ -49,7 +49,7 @@
         },
         "ichimoku_cloud": {
             "class": "IchimokuCloudBreakout",
-            "enabled": false,
+            "enabled": true,
             "parameters": {
                 "tenkan_period": 9,
                 "kijun_period": 26,
@@ -59,7 +59,7 @@
         },
         "parabolic_sar": {
             "class": "ParabolicSARTrendFollowing",
-            "enabled": false,
+            "enabled": true,
             "parameters": {
                 "start": 0.02,
                 "increment": 0.02,
@@ -68,7 +68,7 @@
         },
         "fibonacci_retracement": {
             "class": "FibonacciRetracementSupportResistance",
-            "enabled": false,
+            "enabled": true,
             "parameters": {
                 "lookback_period": 50,
                 "fib_levels": [0.236, 0.382, 0.5, 0.618, 0.786]
@@ -76,10 +76,11 @@
         },
         "gaussian_channel": {
             "class": "GaussianChannelBreakoutMeanReversion",
-            "enabled": false,
+            "enabled": true,
             "parameters": {
                 "period": 20,
-                "std_dev": 2.0
+                "std_dev": 2.0,
+                "adaptive": true
             }
         }
     },

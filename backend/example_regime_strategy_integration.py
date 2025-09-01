@@ -5,8 +5,6 @@ Example: Integrating Market Regime Detection with Trading Strategies
 This example demonstrates how to use the CryptoMarketRegimeDetector to enhance
 your existing trading strategies by adapting to different market conditions.
 
-Author: Andrey's Trading Bot
-Date: 2025-08-30
 """
 
 import pandas as pd

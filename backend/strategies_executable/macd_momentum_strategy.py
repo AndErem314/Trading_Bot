@@ -4,8 +4,6 @@ MACD Momentum Crossover Strategy - Executable Implementation
 This module provides an executable implementation of the MACD Momentum
 Crossover strategy that conforms to the TradingStrategy interface.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import pandas as pd

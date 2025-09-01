@@ -4,8 +4,6 @@ Enhanced Meta Strategy Orchestrator with Executable Strategies
 This module provides an enhanced version of the MetaStrategyOrchestrator
 that integrates with the new executable strategy framework.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import logging
@@ -26,7 +24,11 @@ from backend.strategies_executable import (
     BollingerBandsMeanReversion,
     RSIMomentumDivergence,
     MACDMomentumCrossover,
-    SMAGoldenCross
+    SMAGoldenCross,
+    IchimokuCloudBreakout,
+    ParabolicSARTrendFollowing,
+    FibonacciRetracementSupportResistance,
+    GaussianChannelBreakoutMeanReversion
 )
 
 # Import the strategy interface
@@ -53,7 +55,11 @@ class EnhancedMetaStrategyOrchestrator:
         'BollingerBandsMeanReversion': BollingerBandsMeanReversion,
         'RSIMomentumDivergence': RSIMomentumDivergence,
         'MACDMomentumCrossover': MACDMomentumCrossover,
-        'SMAGoldenCross': SMAGoldenCross
+        'SMAGoldenCross': SMAGoldenCross,
+        'IchimokuCloudBreakout': IchimokuCloudBreakout,
+        'ParabolicSARTrendFollowing': ParabolicSARTrendFollowing,
+        'FibonacciRetracementSupportResistance': FibonacciRetracementSupportResistance,
+        'GaussianChannelBreakoutMeanReversion': GaussianChannelBreakoutMeanReversion
     }
     
     # Default timeframes

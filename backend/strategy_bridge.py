@@ -4,8 +4,6 @@ Strategy Bridge Module
 This module provides a bridge between the old strategy descriptors
 and the new executable strategies, allowing both to be used together.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import logging
@@ -18,7 +16,11 @@ from backend.Strategies import (
     RSIMomentumDivergenceSwingStrategy,
     BollingerBandsMeanReversionStrategy,
     MACDMomentumCrossoverStrategy,
-    SMAGoldenCrossStrategy
+    SMAGoldenCrossStrategy,
+    IchimokuCloudBreakoutStrategy,
+    ParabolicSARTrendFollowingStrategy,
+    FibonacciRetracementSupportResistanceStrategy,
+    GaussianChannelBreakoutMeanReversionStrategy
 )
 
 # Import new executable strategies
@@ -26,7 +28,11 @@ from backend.strategies_executable import (
     RSIMomentumDivergence,
     BollingerBandsMeanReversion,
     MACDMomentumCrossover,
-    SMAGoldenCross
+    SMAGoldenCross,
+    IchimokuCloudBreakout,
+    ParabolicSARTrendFollowing,
+    FibonacciRetracementSupportResistance,
+    GaussianChannelBreakoutMeanReversion
 )
 
 from backend.trading_strategy_interface import TradingStrategy
@@ -47,7 +53,11 @@ class StrategyBridge:
         'RSIMomentumDivergenceSwingStrategy': RSIMomentumDivergence,
         'BollingerBandsMeanReversionStrategy': BollingerBandsMeanReversion,
         'MACDMomentumCrossoverStrategy': MACDMomentumCrossover,
-        'SMAGoldenCrossStrategy': SMAGoldenCross
+        'SMAGoldenCrossStrategy': SMAGoldenCross,
+        'IchimokuCloudBreakoutStrategy': IchimokuCloudBreakout,
+        'ParabolicSARTrendFollowingStrategy': ParabolicSARTrendFollowing,
+        'FibonacciRetracementSupportResistanceStrategy': FibonacciRetracementSupportResistance,
+        'GaussianChannelBreakoutMeanReversionStrategy': GaussianChannelBreakoutMeanReversion
     }
     
     def __init__(self, strategy_name: str, db_path: str = None):
@@ -72,7 +82,11 @@ class StrategyBridge:
             'RSI_Momentum': RSIMomentumDivergenceSwingStrategy,
             'Bollinger_Bands': BollingerBandsMeanReversionStrategy,
             'MACD_Momentum': MACDMomentumCrossoverStrategy,
-            'SMA_Golden_Cross': SMAGoldenCrossStrategy
+            'SMA_Golden_Cross': SMAGoldenCrossStrategy,
+            'Ichimoku_Cloud': IchimokuCloudBreakoutStrategy,
+            'Parabolic_SAR': ParabolicSARTrendFollowingStrategy,
+            'Fibonacci_Retracement': FibonacciRetracementSupportResistanceStrategy,
+            'Gaussian_Channel': GaussianChannelBreakoutMeanReversionStrategy
         }
         
         for key, cls in descriptor_classes.items():
@@ -280,7 +294,11 @@ class UnifiedStrategyFactory:
             'RSI_Momentum_Divergence',
             'Bollinger_Bands_Mean_Reversion',
             'MACD_Momentum_Crossover',
-            'SMA_Golden_Cross'
+            'SMA_Golden_Cross',
+            'Ichimoku_Cloud_Breakout',
+            'Parabolic_SAR_Trend_Following',
+            'Fibonacci_Retracement_Support_Resistance',
+            'Gaussian_Channel_Breakout_Mean_Reversion'
         ]
     
     @staticmethod

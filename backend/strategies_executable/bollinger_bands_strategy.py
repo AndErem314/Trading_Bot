@@ -4,8 +4,6 @@ Bollinger Bands Mean Reversion Strategy - Executable Implementation
 This module provides an executable implementation of the Bollinger Bands
 Mean Reversion strategy that conforms to the TradingStrategy interface.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import pandas as pd

@@ -10,8 +10,6 @@ This class serves as the central coordination point for:
 - Data management and caching
 - Risk management coordination
 
-Author: Trading Bot Team
-Date: 2024
 """
 
 import logging

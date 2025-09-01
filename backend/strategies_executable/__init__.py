@@ -9,10 +9,18 @@ from .bollinger_bands_strategy import BollingerBandsMeanReversion
 from .rsi_momentum_strategy import RSIMomentumDivergence
 from .macd_momentum_strategy import MACDMomentumCrossover
 from .sma_golden_cross_strategy import SMAGoldenCross
+from .ichimoku_cloud_strategy import IchimokuCloudBreakout
+from .parabolic_sar_strategy import ParabolicSARTrendFollowing
+from .fibonacci_retracement_strategy import FibonacciRetracementSupportResistance
+from .gaussian_channel_strategy import GaussianChannelBreakoutMeanReversion
 
 __all__ = [
     'BollingerBandsMeanReversion',
     'RSIMomentumDivergence',
     'MACDMomentumCrossover',
-    'SMAGoldenCross'
+    'SMAGoldenCross',
+    'IchimokuCloudBreakout',
+    'ParabolicSARTrendFollowing',
+    'FibonacciRetracementSupportResistance',
+    'GaussianChannelBreakoutMeanReversion'
 ]

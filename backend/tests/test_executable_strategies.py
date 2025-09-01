@@ -4,8 +4,6 @@ Unit Tests for Executable Trading Strategies
 This module provides comprehensive tests for the executable strategy framework
 to ensure signal generation works correctly.
 
-Author: Trading Bot Team
-Date: 2025
 """
 
 import unittest
