@@ -1,5 +1,7 @@
 # Trading Strategies Documentation
 
+> **Note**: This directory contains strategy descriptors for documentation and SQL-based analysis. For real-time signal generation, see the new executable strategies in `/backend/strategies_executable/`.
+
 ## RSI Momentum Divergence Swing Strategy
 
 ### Overview
@@ -187,3 +189,122 @@ For issues or questions:
 1. Check the strategy source code for detailed documentation
 2. Review the SQL queries for signal logic
 3. Examine the backtest results for historical performance
+
+---
+
+## New Executable Strategies
+
+### Overview
+
+In addition to the SQL-based strategy descriptors above, we now have executable strategy implementations that can generate signals in real-time from raw OHLCV data.
+
+### Key Features
+
+- **Real-time Signal Generation**: Calculate signals on-demand without database dependencies
+- **Standardized Interface**: All strategies implement the `TradingStrategy` abstract base class
+- **Market Regime Filtering**: Strategies can be enabled/disabled based on market conditions
+- **On-demand Indicators**: Uses pandas_ta to calculate indicators from OHLCV data
+- **Easy Testing**: Standardized interface makes unit testing straightforward
+
+### Available Executable Strategies
+
+1. **BollingerBandsMeanReversion** (`/backend/strategies_executable/bollinger_bands_strategy.py`)
+2. **RSIMomentumDivergence** (`/backend/strategies_executable/rsi_momentum_strategy.py`)
+3. **MACDMomentumCrossover** (`/backend/strategies_executable/macd_momentum_strategy.py`)
+4. **SMAGoldenCross** (`/backend/strategies_executable/sma_golden_cross_strategy.py`)
+
+### Usage with Strategy Bridge
+
+The `StrategyBridge` class provides a unified interface to work with both old descriptors and new executable strategies:
+
+```python
+from backend.strategy_bridge import UnifiedStrategyFactory
+import pandas as pd
+
+# Load your OHLCV data
+data = pd.read_csv('ohlcv_data.csv', index_col='timestamp', parse_dates=True)
+
+# Create a strategy bridge
+bridge = UnifiedStrategyFactory.create_strategy('RSI_Momentum_Divergence', data)
+
+# Get historical signals (SQL-based)
+historical_signals = bridge.get_historical_signals(limit=10)
+
+# Get live signal (executable-based)
+live_signal = bridge.get_live_signal()
+print(f"Signal: {live_signal['signal']}, Confidence: {live_signal['confidence']}")
+
+# Check if strategy is suitable for current market
+is_allowed = bridge.is_strategy_allowed('Bullish')
+```
+
+### Using Executable Strategies Directly
+
+```python
+from backend.strategies_executable import RSIMomentumDivergence
+import pandas as pd
+
+# Load OHLCV data
+data = pd.read_csv('ohlcv_data.csv', index_col='timestamp', parse_dates=True)
+
+# Create strategy instance
+strategy = RSIMomentumDivergence(data, config={'rsi_oversold': 25})
+
+# Check if we have enough data
+if strategy.has_sufficient_data():
+    # Get signal
+    signal = strategy.calculate_signal()
+    print(f"Signal: {signal['signal']}")
+    print(f"Reason: {signal['reason']}")
+    print(f"RSI: {signal['rsi']}")
+```
+
+### Integration with Enhanced Orchestrator
+
+The new `EnhancedMetaStrategyOrchestrator` automatically uses executable strategies:
+
+```python
+from backend.enhanced_meta_strategy_orchestrator import EnhancedMetaStrategyOrchestrator
+
+# Initialize orchestrator
+orchestrator = EnhancedMetaStrategyOrchestrator(
+    db_connection_string="sqlite:///trading_data.db",
+    symbols=['BTC/USDT', 'ETH/USDT'],
+    config_path="backend/config/strategy_config.json"
+)
+
+# Setup and run
+orchestrator.setup(primary_timeframe='H1')
+results = orchestrator.run()
+
+# Get composite signals
+for symbol, signal_data in results['composite_signals'].items():
+    print(f"{symbol}: {signal_data['signal']} (confidence: {signal_data['confidence']})")
+```
+
+### Configuration
+
+Strategy parameters can be configured via JSON:
+
+```json
+{
+    "strategies": {
+        "rsi_divergence": {
+            "class": "RSIMomentumDivergence",
+            "enabled": true,
+            "parameters": {
+                "rsi_length": 14,
+                "rsi_oversold": 30,
+                "rsi_overbought": 70
+            }
+        }
+    }
+}
+```
+
+### Migration Path
+
+1. **Phase 1**: Use StrategyBridge to run both systems in parallel
+2. **Phase 2**: Validate executable strategies match expected behavior
+3. **Phase 3**: Gradually migrate live trading to executable strategies
+4. **Phase 4**: Keep descriptors for documentation and SQL analysis only
