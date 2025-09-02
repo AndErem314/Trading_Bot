@@ -8,7 +8,7 @@
 
 ### 2. SMA Golden Cross Strategy Files (No longer a standalone strategy)
 - `backend/strategies_executable/sma_golden_cross_strategy.py`
-- `backend/Strategies/SMA_Golden_Cross_Strategy.py`
+- `backend/strategies/SMA_Golden_Cross_Strategy.py`
 
 ### 3. Old Market Regime Detector (Replaced by enhanced_market_regime_detector.py)
 - `backend/Indicators/market_regime_detector.py` - Old manual regime detection

@@ -19,10 +19,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 
 # Import the enhanced market regime detector
-from backend.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
+from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
 
 # Import executable strategies
-from backend.strategies_executable import (
+from backend.executable_workflow.strategies import (
     BollingerBandsMeanReversion,
     RSIMomentumDivergence,
     MACDMomentumCrossover,
@@ -34,7 +34,7 @@ from backend.strategies_executable import (
 )
 
 # Import the strategy interface
-from backend.trading_strategy_interface import TradingStrategy
+from backend.executable_workflow.interfaces.trading_strategy_interface import TradingStrategy
 
 # Configure logging
 logging.basicConfig(

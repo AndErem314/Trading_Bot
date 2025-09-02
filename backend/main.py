@@ -6,8 +6,8 @@ import sys
 import argparse
 from datetime import datetime
 
-from data_fetcher import DataCollector
-from Indicators import (
+from sql_workflow.data_collection.data_fetcher import DataCollector
+from core.indicators import (
     SimpleMovingAverageCalculator,
     BollingerBandsCalculator,
     IchimokuCloudCalculator,

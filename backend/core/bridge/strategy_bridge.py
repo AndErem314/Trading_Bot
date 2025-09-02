@@ -12,7 +12,7 @@ import pandas as pd
 import sqlite3
 
 # Import old strategy descriptors
-from backend.Strategies import (
+from backend.sql_workflow.strategies import (
     RSIMomentumDivergenceSwingStrategy,
     BollingerBandsMeanReversionStrategy,
     MACDMomentumCrossoverStrategy,
@@ -24,7 +24,7 @@ from backend.Strategies import (
 )
 
 # Import new executable strategies
-from backend.strategies_executable import (
+from backend.executable_workflow.strategies import (
     RSIMomentumDivergence,
     BollingerBandsMeanReversion,
     MACDMomentumCrossover,
@@ -35,7 +35,7 @@ from backend.strategies_executable import (
     GaussianChannelBreakoutMeanReversion
 )
 
-from backend.trading_strategy_interface import TradingStrategy
+from backend.executable_workflow.interfaces.trading_strategy_interface import TradingStrategy
 
 logger = logging.getLogger(__name__)
 

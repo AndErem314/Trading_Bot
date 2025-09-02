@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 import logging
 
 # Import the refined components
-from backend.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
-from backend.refined_meta_strategy_orchestrator import RefinedMetaStrategyOrchestrator
+from backend.executable_workflow.orchestration.refined_meta_strategy_orchestrator import RefinedMetaStrategyOrchestrator
+from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
 
 # Configure logging
 logging.basicConfig(
@@ -172,7 +172,7 @@ def test_mean_reversion_logic():
     logger.info("=" * 60)
     
     # Import the corrected strategy
-    from backend.strategies_executable.gaussian_channel_strategy import GaussianChannelBreakoutMeanReversion
+    from backend.executable_workflow.strategies.gaussian_channel_strategy import GaussianChannelBreakoutMeanReversion
     
     # Generate ranging market data
     data = generate_sample_data(trend='neutral', volatility='normal')
@@ -202,7 +202,7 @@ def test_crash_strategy():
     logger.info("=" * 60)
     
     # Import the crash strategy
-    from backend.strategies_executable.volatility_breakout_short_strategy import VolatilityBreakoutShort
+    from backend.executable_workflow.strategies.volatility_breakout_short_strategy import VolatilityBreakoutShort
     
     # Generate crash market data
     data = generate_sample_data(trend='crash', volatility='high')

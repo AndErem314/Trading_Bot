@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.Strategies import RSIMomentumDivergenceSwingStrategy
+from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
 
 
 def check_current_signals():

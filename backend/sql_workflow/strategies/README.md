@@ -128,7 +128,7 @@ To integrate this strategy with your trading system:
 
 1. **Import the strategy**:
 ```python
-from backend.Strategies import RSIMomentumDivergenceSwingStrategy
+from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
 
 strategy = RSIMomentumDivergenceSwingStrategy()
 ```
@@ -159,7 +159,7 @@ You can customize the strategy by modifying:
 - Holding periods (default: 4-168 hours)
 - Risk parameters (default: 2% risk per trade)
 
-Edit the strategy file: `backend/Strategies/RSI_Momentum_Divergence_Swing_Strategy.py`
+Edit the strategy file: `backend/strategies/RSI_Momentum_Divergence_Swing_Strategy.py`
 
 ### Troubleshooting
 
@@ -218,7 +218,7 @@ In addition to the SQL-based strategy descriptors above, we now have executable 
 The `StrategyBridge` class provides a unified interface to work with both old descriptors and new executable strategies:
 
 ```python
-from backend.strategy_bridge import UnifiedStrategyFactory
+from backend.core.bridge.strategy_bridge import UnifiedStrategyFactory
 import pandas as pd
 
 # Load your OHLCV data
@@ -241,7 +241,7 @@ is_allowed = bridge.is_strategy_allowed('Bullish')
 ### Using Executable Strategies Directly
 
 ```python
-from backend.strategies_executable import RSIMomentumDivergence
+from backend.executable_workflow.strategies import RSIMomentumDivergence
 import pandas as pd
 
 # Load OHLCV data

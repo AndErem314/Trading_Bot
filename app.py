@@ -19,16 +19,16 @@ import sys
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
-from backend.Strategies import RSIMomentumDivergenceSwingStrategy
-from backend.data_manager import DataManager
-from backend.data_fetcher import DataFetcher
-from backend.Indicators import (
+from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
+from backend.sql_workflow.data_collection.data_manager import DataManager
+from backend.sql_workflow.data_collection.data_fetcher import DataFetcher
+from backend.core.indicators import (
     SimpleMovingAverageCalculator, BollingerBandsCalculator,
     IchimokuCloudCalculator, MACDCalculator, ParabolicSARCalculator,
     FibonacciRetracementCalculator, GaussianChannelCalculator,
     calculate_rsi_for_symbol_timeframe
 )
-from backend.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
+from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
