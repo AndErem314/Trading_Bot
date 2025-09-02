@@ -178,16 +178,20 @@ class EnhancedMarketRegimeDetector:
         Calculate regime history for backtesting and analysis.
         
         Args:
-            lookback_periods: Number of periods to calculate
+            lookback_periods: Number of periods to calculate (if None, use all data)
             
         Returns:
             DataFrame with regime classifications
         """
         results = []
         
-        for i in range(len(self.data) - lookback_periods, len(self.data)):
-            if i < self.SMA_SLOW:  # Need enough data for SMA 200
-                continue
+        # Calculate starting index - if lookback_periods is equal to data length, start from beginning
+        if lookback_periods >= len(self.data):
+            start_idx = self.SMA_SLOW  # Start from when we have enough data for SMA 200
+        else:
+            start_idx = max(self.SMA_SLOW, len(self.data) - lookback_periods)
+        
+        for i in range(start_idx, len(self.data)):
                 
             # Get values at index i
             price = self.data['close'].iloc[i]

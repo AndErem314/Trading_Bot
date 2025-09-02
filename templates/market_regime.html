@@ -540,12 +540,27 @@
             
             // Create regime color mapping for chart
             const regimeColorMap = {
-                'Bull Trend': '#00D775',
-                'Bear Trend': '#FF3B30',
-                'Ranging / Accumulation': '#FFD60A',
-                'High Volatility / Breakout': '#FF9500',
-                'Crypto Crash': '#8B0000',
-                'Transitioning / Unknown': '#8E8E93'
+                'Bull Trend': '#00D775',  // Green
+                'Bear Trend': '#FF3B30',  // Red
+                'Ranging / Accumulation': '#808080',  // Grey
+                'High Volatility / Breakout': '#FF9500',  // Orange
+                'Crypto Crash': '#8B0000',  // Dark Red
+                'Transitioning / Unknown': '#8E8E93',  // Light Grey
+                // Additional mappings for different regime names (with spaces)
+                'STRONG BULLISH': '#00D775',  // Green
+                'BULLISH': '#00D775',  // Green
+                'STRONG BEARISH': '#FF3B30',  // Red
+                'BEARISH': '#FF3B30',  // Red
+                'NEUTRAL': '#808080',  // Grey
+                'NEUTRAL RANGING': '#808080',  // Grey
+                'RANGING': '#808080',  // Grey
+                'VOLATILE': '#FF9500',  // Orange
+                'CRASH': '#8B0000',  // Dark Red
+                // Mappings with underscores (actual format from backend)
+                'STRONG_BULLISH': '#00D775',  // Green
+                'STRONG_BEARISH': '#FF3B30',  // Red
+                'NEUTRAL_RANGING': '#808080',  // Grey
+                'CRASH_PANIC': '#8B0000'  // Dark Red
             };
             
             // Create traces for each regime

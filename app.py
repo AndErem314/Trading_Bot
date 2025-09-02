@@ -897,6 +897,10 @@ def get_market_regime_history(asset):
         df.set_index('timestamp', inplace=True)
         df.sort_index(inplace=True)
         
+        # Remove duplicate timestamps - keep last occurrence
+        if df.index.duplicated().any():
+            df = df[~df.index.duplicated(keep='last')]
+        
         # Convert to numeric
         for col in ['open', 'high', 'low', 'close', 'volume']:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -911,6 +915,9 @@ def get_market_regime_history(asset):
                     btc_df['timestamp'] = pd.to_datetime(btc_df['timestamp'], format='mixed', dayfirst=False)
                     btc_df.set_index('timestamp', inplace=True)
                     btc_df.sort_index(inplace=True)
+                    # Remove duplicate timestamps - keep last occurrence
+                    if btc_df.index.duplicated().any():
+                        btc_df = btc_df[~btc_df.index.duplicated(keep='last')]
                     for col in ['open', 'high', 'low', 'close', 'volume']:
                         btc_df[col] = pd.to_numeric(btc_df[col], errors='coerce')
                     benchmark = btc_df
@@ -918,9 +925,8 @@ def get_market_regime_history(asset):
         # Create detector and get history
         detector = EnhancedMarketRegimeDetector(df)
         
-        # Note: Enhanced detector doesn't have get_regime_history method
-        # We'll use the history method if available
-        regime_history = detector.get_regime_history() if hasattr(detector, 'get_regime_history') else pd.DataFrame()
+        # Get regime history for all available data points
+        regime_history = detector.get_regime_history(lookback_periods=len(df)) if hasattr(detector, 'get_regime_history') else pd.DataFrame()
         
         # Prepare data for frontend
         history_data = []
