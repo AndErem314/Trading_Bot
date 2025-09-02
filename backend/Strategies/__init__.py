@@ -13,8 +13,6 @@ from .Ichimoku_Cloud_Breakout_Strategy import IchimokuCloudBreakoutStrategy
 from .Parabolic_SAR_Trend_Following_Strategy import ParabolicSARTrendFollowingStrategy
 from .Fibonacci_Retracement_Support_Resistance_Strategy import FibonacciRetracementSupportResistanceStrategy
 from .Gaussian_Channel_Breakout_Mean_Reversion_Strategy import GaussianChannelBreakoutMeanReversionStrategy
-from .SMA_Golden_Cross_Strategy import SMAGoldenCrossStrategy
-
 __all__ = [
     'RSIMomentumDivergenceSwingStrategy',
     'MACDMomentumCrossoverStrategy',
@@ -22,6 +20,5 @@ __all__ = [
     'IchimokuCloudBreakoutStrategy',
     'ParabolicSARTrendFollowingStrategy',
     'FibonacciRetracementSupportResistanceStrategy',
-    'GaussianChannelBreakoutMeanReversionStrategy',
-    'SMAGoldenCrossStrategy'
+    'GaussianChannelBreakoutMeanReversionStrategy'
 ]

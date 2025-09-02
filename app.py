@@ -26,8 +26,9 @@ from backend.Indicators import (
     SimpleMovingAverageCalculator, BollingerBandsCalculator,
     IchimokuCloudCalculator, MACDCalculator, ParabolicSARCalculator,
     FibonacciRetracementCalculator, GaussianChannelCalculator,
-    calculate_rsi_for_symbol_timeframe, CryptoMarketRegimeDetector
+    calculate_rsi_for_symbol_timeframe
 )
+from backend.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -787,17 +788,13 @@ def get_market_regime():
                 # Create detector
                 # Use BTC as benchmark for ETH and SOL
                 benchmark = btc_df if asset != 'BTC' else None
-                detector = CryptoMarketRegimeDetector(
-                    df=df,
-                    asset_name=asset,
-                    benchmark_df=benchmark
-                )
+                detector = EnhancedMarketRegimeDetector(df)
                 
                 # Get current regime
-                regime, metrics = detector.classify_regime()
+                regime, metrics = detector.detect_market_regime()
                 
-                # Get regime statistics
-                stats = detector.get_regime_statistics()
+                # Get regime statistics (not available in enhanced detector)
+                stats = pd.DataFrame()
                 
                 # Calculate 24-hour price change
                 price_change_24h = None
@@ -887,13 +884,11 @@ def get_market_regime_history(asset):
                     benchmark = btc_df
         
         # Create detector and get history
-        detector = CryptoMarketRegimeDetector(
-            df=df,
-            asset_name=asset,
-            benchmark_df=benchmark
-        )
+        detector = EnhancedMarketRegimeDetector(df)
         
-        regime_history = detector.get_regime_history()
+        # Note: Enhanced detector doesn't have get_regime_history method
+        # We'll use the history method if available
+        regime_history = detector.get_regime_history() if hasattr(detector, 'get_regime_history') else pd.DataFrame()
         
         # Prepare data for frontend
         history_data = []
