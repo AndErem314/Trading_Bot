@@ -75,21 +75,21 @@
                             <label class="form-label">Select Symbol</label>
                             <div id="symbolCheckboxes">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="btcusdt" name="symbols[]" value="BTC/USDT" checked disabled>
+                                    <input class="form-check-input" type="checkbox" id="btcusdt" name="symbols[]" value="BTC/USDT" checked>
                                     <label class="form-check-label" for="btcusdt">
                                         <strong>BTC/USDT</strong> <span class="text-success">(Active)</span>
                                     </label>
                                 </div>
-                                <div class="form-check text-muted">
-                                    <input class="form-check-input" type="checkbox" id="ethusdt" name="symbols[]" value="ETH/USDT" disabled>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ethusdt" name="symbols[]" value="ETH/USDT" checked>
                                     <label class="form-check-label" for="ethusdt">
-                                        <s>ETH/USDT</s> <span class="text-warning">(Coming Soon)</span>
+                                        <strong>ETH/USDT</strong> <span class="text-success">(Active)</span>
                                     </label>
                                 </div>
-                                <div class="form-check text-muted">
-                                    <input class="form-check-input" type="checkbox" id="solusdt" name="symbols[]" value="SOL/USDT" disabled>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="solusdt" name="symbols[]" value="SOL/USDT" checked>
                                     <label class="form-check-label" for="solusdt">
-                                        <s>SOL/USDT</s> <span class="text-warning">(Coming Soon)</span>
+                                        <strong>SOL/USDT</strong> <span class="text-success">(Active)</span>
                                     </label>
                                 </div>
                                 <div class="form-check text-muted">
@@ -105,7 +105,7 @@
                                     </label>
                                 </div>
                                 <div class="alert alert-info mt-2" style="font-size: 0.9em;">
-                                    <i class="bi bi-info-circle"></i> Currently focusing on BTC trading. Other pairs will be available in future updates.
+                                    <i class="bi bi-info-circle"></i> Now supporting BTC, ETH, and SOL trading pairs! Each symbol has its own database.
                                 </div>
                             </div>
                         </div>
@@ -200,11 +200,7 @@
             $('#progressSection').show();
             $('#updateForm button').prop('disabled', true);
             
-            // Ensure BTC/USDT is included even though it's disabled
             let formData = $('#updateForm').serialize();
-            if (!formData.includes('BTC/USDT')) {
-                formData += '&symbols[]=BTC/USDT';
-            }
             
             $.ajax({
                 url: '/update_data',
@@ -246,14 +242,10 @@
 
         function selectAll() {
             $('input[type="checkbox"]:not(:disabled)').prop('checked', true);
-            // Keep BTC checked
-            $('#btcusdt').prop('checked', true);
         }
 
         function deselectAll() {
             $('input[type="checkbox"]:not(:disabled)').prop('checked', false);
-            // Keep BTC checked
-            $('#btcusdt').prop('checked', true);
         }
     </script>
 </body>

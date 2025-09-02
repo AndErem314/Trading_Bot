@@ -50,47 +50,70 @@ def index():
 def status():
     """Get database status and summary"""
     try:
-        # Get available symbols and timeframes with counts
-        with sqlite3.connect('data/trading_data_BTC.db') as conn:
-            # Get total records
-            total_query = "SELECT COUNT(*) FROM ohlcv_data"
-            total_records = conn.execute(total_query).fetchone()[0]
+        all_symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+        all_data_details = []
+        total_records = 0
+        symbols_set = set()
+        timeframes_set = set()
+        
+        # Check each symbol's database
+        for symbol in all_symbols:
+            symbol_short = symbol.split('/')[0]
+            db_path = f'data/trading_data_{symbol_short}.db'
             
-            # Get symbols
-            symbols_query = "SELECT DISTINCT symbol FROM symbols ORDER BY symbol"
-            symbols_df = pd.read_sql_query(symbols_query, conn)
-            symbols_list = symbols_df['symbol'].tolist() if not symbols_df.empty else []
-            
-            # Get timeframes
-            timeframes_query = "SELECT DISTINCT timeframe FROM timeframes ORDER BY timeframe"
-            timeframes_df = pd.read_sql_query(timeframes_query, conn)
-            timeframes_list = timeframes_df['timeframe'].tolist() if not timeframes_df.empty else []
-            
-            # Get detailed data info
-            query = """
-            SELECT DISTINCT s.symbol, t.timeframe, COUNT(o.id) as records,
-                   MIN(o.timestamp) as start_date, MAX(o.timestamp) as end_date
-            FROM symbols s
-            JOIN ohlcv_data o ON s.id = o.symbol_id
-            JOIN timeframes t ON o.timeframe_id = t.id
-            GROUP BY s.symbol, t.timeframe
-            ORDER BY s.symbol, t.timeframe
-            """
-            df = pd.read_sql_query(query, conn)
+            if os.path.exists(db_path):
+                with sqlite3.connect(db_path) as conn:
+                    # Get total records for this symbol
+                    try:
+                        records = conn.execute("SELECT COUNT(*) FROM ohlcv_data").fetchone()[0]
+                        total_records += records
+                    except:
+                        records = 0
+                    
+                    # Get symbols
+                    try:
+                        symbols_df = pd.read_sql_query("SELECT DISTINCT symbol FROM symbols ORDER BY symbol", conn)
+                        symbols_set.update(symbols_df['symbol'].tolist() if not symbols_df.empty else [])
+                    except:
+                        pass
+                    
+                    # Get timeframes
+                    try:
+                        timeframes_df = pd.read_sql_query("SELECT DISTINCT timeframe FROM timeframes ORDER BY timeframe", conn)
+                        timeframes_set.update(timeframes_df['timeframe'].tolist() if not timeframes_df.empty else [])
+                    except:
+                        pass
+                    
+                    # Get detailed data info
+                    try:
+                        query = """
+                        SELECT DISTINCT s.symbol, t.timeframe, COUNT(o.id) as records,
+                               MIN(o.timestamp) as start_date, MAX(o.timestamp) as end_date
+                        FROM symbols s
+                        JOIN ohlcv_data o ON s.id = o.symbol_id
+                        JOIN timeframes t ON o.timeframe_id = t.id
+                        GROUP BY s.symbol, t.timeframe
+                        ORDER BY s.symbol, t.timeframe
+                        """
+                        df = pd.read_sql_query(query, conn)
+                        if not df.empty:
+                            all_data_details.extend(df.to_dict('records'))
+                    except:
+                        pass
         
         return jsonify({
-            'database': 'data/trading_data_BTC.db',
+            'databases': [f'trading_data_{s.split("/")[0]}.db' for s in all_symbols],
             'total_records': total_records,
-            'symbols': symbols_list,
-            'timeframes': timeframes_list,
-            'integrity': True,  # Simplified for now
-            'data_details': df.to_dict('records') if not df.empty else []
+            'symbols': sorted(list(symbols_set)),
+            'timeframes': sorted(list(timeframes_set)),
+            'integrity': True,
+            'data_details': all_data_details
         })
     except Exception as e:
         # Return error response
         return jsonify({
             'error': str(e),
-            'database': 'data/trading_data_BTC.db',
+            'databases': [],
             'total_records': 0,
             'symbols': [],
             'timeframes': [],
@@ -120,18 +143,22 @@ def update_data():
                 completed = 0
                 
                 for symbol in symbols:
+                    # Get symbol-specific database path
+                    symbol_short = symbol.split('/')[0]
+                    db_path = f'data/trading_data_{symbol_short}.db'
+                    
                     for timeframe in timeframes:
                         task_status['message'] = f'Updating {symbol} ({timeframe})...'
                         
-                        # Run data collection
-                        cmd = [
-                            sys.executable, 'run_trading_bot.py',
-                            '--mode', 'collect',
-                            '--symbols', symbol,
-                            '--timeframes', timeframe,
-                            '--start-date', start_date
-                        ]
-                        subprocess.run(cmd, capture_output=True, text=True)
+                        # Use the data collection module directly
+                        from backend.sql_workflow.data_collection.data_fetcher import DataCollector
+                        
+                        try:
+                            collector = DataCollector(db_path=db_path)
+                            collector.collect_historical_data([symbol], [timeframe], start_date)
+                        except Exception as e:
+                            task_status['message'] = f'Error updating {symbol}: {str(e)}'
+                            print(f'Error updating {symbol}: {str(e)}')
                         
                         completed += 1
                         task_status['progress'] = int((completed / total_tasks) * 100)
@@ -926,4 +953,4 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

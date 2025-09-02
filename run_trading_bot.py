@@ -38,17 +38,42 @@ sys.path.insert(0, backend_path)
 def show_status():
     """Show database status and summary."""
     try:
-        from data_manager import DataManager
+        from backend.sql_workflow.data_collection.data_manager import DataManager
+        import pandas as pd
         
         print("\n=== TRADING DATABASE STATUS ===")
-        data_manager = DataManager()
-        summary = data_manager.get_data_summary()
         
-        print(f"Database: data/trading_data_BTC.db")
-        print(f"Total OHLCV Records: {summary.get('total_records', 'N/A')}")
-        print(f"Symbols: {summary.get('symbols', [])}")
-        print(f"Timeframes: {summary.get('timeframes', [])}")
-        print(f"Data Integrity: {'✅ Validated' if summary.get('integrity', False) else '❌ Issues Found'}")
+        # Check each symbol's database
+        all_symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+        total_records = 0
+        
+        for symbol in all_symbols:
+            symbol_short = symbol.split('/')[0]
+            db_path = f'data/trading_data_{symbol_short}.db'
+            
+            if os.path.exists(db_path):
+                data_manager = DataManager(db_path=db_path)
+                summary = data_manager.get_data_summary()
+                
+                if not summary.empty:
+                    symbol_records = summary['record_count'].sum()
+                    total_records += symbol_records
+                    
+                    print(f"\nDatabase: {db_path}")
+                    print(f"  Symbol: {symbol}")
+                    print(f"  Records: {symbol_records:,}")
+                    print(f"  Timeframes: {', '.join(summary['timeframe'].unique())}")
+                    
+                    # Get date range
+                    earliest = pd.to_datetime(summary['earliest'].min())
+                    latest = pd.to_datetime(summary['latest'].max())
+                    print(f"  Date Range: {earliest.strftime('%Y-%m-%d')} to {latest.strftime('%Y-%m-%d')}")
+                else:
+                    print(f"\nDatabase: {db_path} (empty)")
+            else:
+                print(f"\nDatabase: {db_path} (not found)")
+        
+        print(f"\nTotal Records: {total_records:,}")
         print("\nTechnical Indicators Available:")
         indicators = [
             "✅ Simple Moving Averages (SMA 50/200)",
