@@ -9,7 +9,9 @@ import sqlite3
 from datetime import datetime
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the project root directory to the Python path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, project_root)
 
 from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
 

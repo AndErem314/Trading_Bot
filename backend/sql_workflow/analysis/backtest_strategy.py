@@ -18,7 +18,9 @@ import pandas as pd
 import numpy as np
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the project root directory to the Python path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, project_root)
 
 from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
 
