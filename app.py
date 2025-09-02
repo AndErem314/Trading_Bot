@@ -770,6 +770,8 @@ def get_market_regime():
                 btc_df['timestamp'] = pd.to_datetime(btc_df['timestamp'], format='mixed', dayfirst=False)
                 btc_df.set_index('timestamp', inplace=True)
                 btc_df.sort_index(inplace=True)
+                # Remove duplicate timestamps (keep last)
+                btc_df = btc_df[~btc_df.index.duplicated(keep='last')]
                 # Convert to numeric
                 for col in ['open', 'high', 'low', 'close', 'volume']:
                     btc_df[col] = pd.to_numeric(btc_df[col], errors='coerce')
@@ -807,6 +809,9 @@ def get_market_regime():
                 df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed', dayfirst=False)
                 df.set_index('timestamp', inplace=True)
                 df.sort_index(inplace=True)
+                
+                # Remove duplicate timestamps (keep last)
+                df = df[~df.index.duplicated(keep='last')]
                 
                 # Convert to numeric
                 for col in ['open', 'high', 'low', 'close', 'volume']:
