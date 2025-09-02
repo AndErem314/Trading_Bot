@@ -9,6 +9,12 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import Dict, Tuple, Optional
+
+# Fix numpy compatibility issue with pandas_ta
+import numpy
+if not hasattr(numpy, 'NaN'):
+    numpy.NaN = numpy.nan
+
 import pandas_ta as ta
 
 logger = logging.getLogger(__name__)
@@ -151,18 +157,18 @@ class EnhancedMarketRegimeDetector:
             # Transitional state (ADX between 20-25 or mixed signals)
             regime = self.REGIME_NEUTRAL_RANGING
         
-        # Compile metrics
+        # Compile metrics (convert numpy types to Python native types for JSON serialization)
         regime_metrics = {
-            'adx': round(adx, 2),
-            'atr_percentage': round(atr_percentage, 2),
-            'sma_50': round(sma_50, 2),
-            'sma_200': round(sma_200, 2),
-            'current_price': round(current_price, 2),
-            'macd_line': round(macd_line, 4),
+            'adx': float(round(adx, 2)),
+            'atr_percentage': float(round(atr_percentage, 2)),
+            'sma_50': float(round(sma_50, 2)),
+            'sma_200': float(round(sma_200, 2)),
+            'current_price': float(round(current_price, 2)),
+            'macd_line': float(round(macd_line, 4)),
             'sma_alignment': 'bullish' if sma_bullish else ('bearish' if sma_bearish else 'neutral'),
             'macd_alignment': 'bullish' if macd_bullish else 'bearish',
             'trend_direction': 'bullish' if trend_bullish else ('bearish' if trend_bearish else 'neutral'),
-            'is_crash': is_crash
+            'is_crash': bool(is_crash)
         }
         
         return regime, regime_metrics
