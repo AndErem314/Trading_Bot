@@ -3,7 +3,7 @@ Script to collect all historical data from August 1st, 2020 for selected trading
 
 Uses a per-symbol SQLite database (data/trading_data_BTC.db) with a normalized schema.
 """
-from data_fetcher import DataCollector
+from .data_fetcher import DataCollector
 from datetime import datetime
 
 

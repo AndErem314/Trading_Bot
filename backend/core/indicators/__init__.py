@@ -29,8 +29,6 @@ try:
 except ImportError:
     pass
 
-from .market_regime_detector import MarketRegimeDetector
-
 __all__ = [
     'SimpleMovingAverageCalculator',
     'BollingerBandsCalculator', 
@@ -39,6 +37,5 @@ __all__ = [
     'calculate_rsi_for_symbol_timeframe',
     'ParabolicSARCalculator',
     'FibonacciRetracementCalculator',
-    'GaussianChannelCalculator',
-    'MarketRegimeDetector'
+    'GaussianChannelCalculator'
 ]
