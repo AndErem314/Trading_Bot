@@ -36,15 +36,17 @@
                 "volume_threshold": 1.5
             }
         },
-        "sma_golden_cross": {
-            "class": "SMAGoldenCross",
+        "volatility_breakout_short": {
+            "class": "VolatilityBreakoutShort",
             "enabled": true,
             "parameters": {
-                "fast_sma": 50,
-                "slow_sma": 200,
-                "volume_sma": 20,
                 "atr_period": 14,
-                "distance_threshold": 0.01
+                "lookback_period": 20,
+                "volume_multiplier": 2.0,
+                "rsi_period": 14,
+                "rsi_extreme": 20,
+                "atr_stop_multiplier": 2.0,
+                "atr_trail_multiplier": 1.5
             }
         },
         "ichimoku_cloud": {

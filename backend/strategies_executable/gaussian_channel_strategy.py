@@ -265,86 +265,73 @@ class GaussianChannelBreakoutMeanReversion(TradingStrategy):
             confidence = 0.0
             reason = "No signal"
             
-            # BREAKOUT SIGNALS
-            if breakout == 1 and channel_slope > 0.1:
-                # Bullish breakout
-                signal = 0.8
-                confidence = 0.8
-                reason = "Bullish channel breakout"
+            # PRIMARY MEAN REVERSION SIGNALS
+            # Buy when price touches/crosses LOWER band (oversold condition)
+            if channel_position <= 0.05 or current_close <= lower_band * 1.005:
+                # Strong BUY signal - expect reversion UP to mean
+                signal = 1.0
+                confidence = 0.9
+                reason = "MEAN REVERSION BUY: Price at lower band (oversold) - expect bounce UP"
                 
-                # Strong volume confirmation
-                if volume_ratio > 1.5:
-                    confidence = min(confidence + 0.1, 0.95)
-                    reason += " + volume surge"
-                
-                # Momentum confirmation
-                if momentum > 0 and rsi > 60:
-                    confidence = min(confidence + 0.05, 0.95)
-                    reason += " + momentum"
-            
-            elif breakout == -1 and channel_slope < -0.1:
-                # Bearish breakout
-                signal = -0.8
-                confidence = 0.8
-                reason = "Bearish channel breakout"
-                
-                # Strong volume confirmation
-                if volume_ratio > 1.5:
-                    confidence = min(confidence + 0.1, 0.95)
-                    reason += " + volume surge"
-                
-                # Momentum confirmation
-                if momentum < 0 and rsi < 40:
-                    confidence = min(confidence + 0.05, 0.95)
-                    reason += " + momentum"
-            
-            # MEAN REVERSION SIGNALS
-            elif abs(z_score) > 2:
-                # Extreme deviation from mean
-                if z_score > 2 and rsi > 70:
-                    # Overbought - sell signal
-                    signal = -0.9
-                    confidence = 0.85
-                    reason = "Extreme overbought (Z > 2)"
-                    
-                    # In narrow channel (more reliable)
-                    if channel_width_pct < 2:
-                        confidence = min(confidence + 0.1, 0.95)
-                        reason += " in tight channel"
-                
-                elif z_score < -2 and rsi < 30:
-                    # Oversold - buy signal
-                    signal = 0.9
-                    confidence = 0.85
-                    reason = "Extreme oversold (Z < -2)"
-                    
-                    # In narrow channel (more reliable)
-                    if channel_width_pct < 2:
-                        confidence = min(confidence + 0.1, 0.95)
-                        reason += " in tight channel"
-            
-            # BAND TOUCH SIGNALS
-            elif channel_position >= 0.95 and abs(channel_slope) < 0.5:
-                # At upper band in ranging market
-                signal = -0.6
-                confidence = 0.7
-                reason = "Upper band resistance"
-                
-                # RSI confirmation
-                if rsi > 65:
-                    confidence = min(confidence + 0.1, 0.85)
-                    reason += " + RSI overbought"
-            
-            elif channel_position <= 0.05 and abs(channel_slope) < 0.5:
-                # At lower band in ranging market
-                signal = 0.6
-                confidence = 0.7
-                reason = "Lower band support"
-                
-                # RSI confirmation
+                # RSI confirmation strengthens signal
                 if rsi < 35:
-                    confidence = min(confidence + 0.1, 0.85)
+                    confidence = min(confidence + 0.05, 0.95)
                     reason += " + RSI oversold"
+                
+                # Z-score extreme
+                if z_score < -2:
+                    confidence = min(confidence + 0.05, 0.95)
+                    reason += " + extreme deviation"
+            
+            # Sell when price touches/crosses UPPER band (overbought condition)
+            elif channel_position >= 0.95 or current_close >= upper_band * 0.995:
+                # Strong SELL signal - expect reversion DOWN to mean
+                signal = -1.0
+                confidence = 0.9
+                reason = "MEAN REVERSION SELL: Price at upper band (overbought) - expect pullback DOWN"
+                
+                # RSI confirmation strengthens signal
+                if rsi > 65:
+                    confidence = min(confidence + 0.05, 0.95)
+                    reason += " + RSI overbought"
+                
+                # Z-score extreme
+                if z_score > 2:
+                    confidence = min(confidence + 0.05, 0.95)
+                    reason += " + extreme deviation"
+            
+            # MODERATE MEAN REVERSION SIGNALS
+            # Approaching lower band
+            elif channel_position < 0.2 and z_score < -1.5:
+                signal = 0.7
+                confidence = 0.7
+                reason = "MEAN REVERSION BUY: Approaching lower band"
+                
+                if rsi < 40:
+                    confidence = min(confidence + 0.1, 0.85)
+                    reason += " + RSI confirming oversold"
+            
+            # Approaching upper band
+            elif channel_position > 0.8 and z_score > 1.5:
+                signal = -0.7
+                confidence = 0.7
+                reason = "MEAN REVERSION SELL: Approaching upper band"
+                
+                if rsi > 60:
+                    confidence = min(confidence + 0.1, 0.85)
+                    reason += " + RSI confirming overbought"
+            
+            # RANGING MARKET CONDITIONS (best for mean reversion)
+            elif abs(channel_slope) < 0.5 and channel_width_pct < 3:
+                # Tight, flat channel - perfect for mean reversion
+                if channel_position < 0.3:
+                    signal = 0.5
+                    confidence = 0.6
+                    reason = "MEAN REVERSION: Buy opportunity in ranging market"
+                elif channel_position > 0.7:
+                    signal = -0.5
+                    confidence = 0.6
+                    reason = "MEAN REVERSION: Sell opportunity in ranging market"
             
             # TREND FOLLOWING IN WIDE CHANNELS
             elif channel_width_pct > 4:
