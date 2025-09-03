@@ -18,8 +18,8 @@ import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 
-# Import the enhanced market regime detector
-from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
+# Import the improved market regime detector
+from backend.executable_workflow.orchestration.improved_market_regime_detector import ImprovedMarketRegimeDetector
 
 # Import executable strategies
 from backend.executable_workflow.strategies import (
@@ -79,6 +79,26 @@ class RefinedMetaStrategyOrchestrator:
             'fibonacci_retracement': 0.0,  # Support levels break in strong trends
             'volatility_breakout_short': 0.0  # Long-only in bull markets
         },
+        'BULLISH': {
+            'macd_momentum': 0.5,  # Good for trend confirmation
+            'ichimoku_cloud': 0.6,  # Trend-following
+            'parabolic_sar': 0.5,   # Trailing stops
+            'bollinger_bands': 0.1,  # Minor mean reversion
+            'rsi_divergence': 0.1,   # Minor mean reversion
+            'gaussian_channel': 0.1,  # Minor mean reversion
+            'fibonacci_retracement': 0.2,  # Support levels may hold
+            'volatility_breakout_short': 0.0  # Long-only in bull markets
+        },
+        'BEARISH': {
+            'macd_momentum': 0.4,  # For short signals
+            'ichimoku_cloud': 0.6,  # For short signals
+            'parabolic_sar': 0.5,   # For short signals
+            'bollinger_bands': 0.1,  # Minor mean reversion
+            'rsi_divergence': 0.1,   # Minor mean reversion
+            'gaussian_channel': 0.1,  # Minor mean reversion
+            'fibonacci_retracement': 0.2,  # Resistance levels may hold
+            'volatility_breakout_short': 0.0  # Not extreme enough
+        },
         'STRONG_BEARISH': {
             'macd_momentum': 0.4,  # For short signals
             'ichimoku_cloud': 0.7,  # For short signals
@@ -137,7 +157,7 @@ class RefinedMetaStrategyOrchestrator:
         self.config = self._load_config(config_path)
         
         # Initialize containers
-        self.regime_detectors: Dict[str, EnhancedMarketRegimeDetector] = {}
+        self.regime_detectors: Dict[str, ImprovedMarketRegimeDetector] = {}
         self.strategies: Dict[str, Dict[str, TradingStrategy]] = {}
         self.data_cache: Dict[str, pd.DataFrame] = {}
         
@@ -243,7 +263,7 @@ class RefinedMetaStrategyOrchestrator:
         # Initialize regime detectors
         for symbol in self.symbols:
             if symbol in self.data_cache and not self.data_cache[symbol].empty:
-                self.regime_detectors[symbol] = EnhancedMarketRegimeDetector(
+                self.regime_detectors[symbol] = ImprovedMarketRegimeDetector(
                     self.data_cache[symbol]
                 )
                 

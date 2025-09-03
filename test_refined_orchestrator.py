@@ -15,7 +15,7 @@ import logging
 
 # Import the refined components
 from backend.executable_workflow.orchestration.refined_meta_strategy_orchestrator import RefinedMetaStrategyOrchestrator
-from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
+from backend.executable_workflow.orchestration.improved_market_regime_detector import ImprovedMarketRegimeDetector
 
 # Configure logging
 logging.basicConfig(
@@ -131,7 +131,7 @@ def test_regime_detection():
         data = generate_sample_data(trend=trend, volatility=volatility)
         
         # Create detector
-        detector = EnhancedMarketRegimeDetector(data)
+        detector = ImprovedMarketRegimeDetector(data)
         
         # Detect regime
         regime, metrics = detector.detect_market_regime()
@@ -152,7 +152,7 @@ def test_strategy_weights():
         symbols=['BTC/USDT']
     )
     
-    regimes = ['STRONG_BULLISH', 'STRONG_BEARISH', 'NEUTRAL_RANGING', 'CRASH_PANIC']
+    regimes = ['STRONG_BULLISH', 'BULLISH', 'BEARISH', 'STRONG_BEARISH', 'NEUTRAL_RANGING', 'CRASH_PANIC']
     
     for regime in regimes:
         weights = orchestrator.STRATEGY_WEIGHTS[regime]
@@ -255,7 +255,7 @@ def test_full_orchestration():
     # Initialize regime detectors manually
     for symbol in orchestrator.symbols:
         if symbol in orchestrator.data_cache:
-            orchestrator.regime_detectors[symbol] = EnhancedMarketRegimeDetector(
+            orchestrator.regime_detectors[symbol] = ImprovedMarketRegimeDetector(
                 orchestrator.data_cache[symbol]
             )
     

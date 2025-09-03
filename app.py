@@ -28,7 +28,7 @@ from backend.core.indicators import (
     FibonacciRetracementCalculator, GaussianChannelCalculator,
     calculate_rsi_for_symbol_timeframe
 )
-from backend.executable_workflow.orchestration.enhanced_market_regime_detector import EnhancedMarketRegimeDetector
+from backend.executable_workflow.orchestration.improved_market_regime_detector import ImprovedMarketRegimeDetector
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -820,7 +820,7 @@ def get_market_regime():
                 # Create detector
                 # Use BTC as benchmark for ETH and SOL
                 benchmark = btc_df if asset != 'BTC' else None
-                detector = EnhancedMarketRegimeDetector(df)
+                detector = ImprovedMarketRegimeDetector(df)
                 
                 # Get current regime
                 regime, metrics = detector.detect_market_regime()
@@ -923,7 +923,7 @@ def get_market_regime_history(asset):
                     benchmark = btc_df
         
         # Create detector and get history
-        detector = EnhancedMarketRegimeDetector(df)
+        detector = ImprovedMarketRegimeDetector(df)
         
         # Get regime history for all available data points
         regime_history = detector.get_regime_history(lookback_periods=len(df)) if hasattr(detector, 'get_regime_history') else pd.DataFrame()
