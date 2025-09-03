@@ -15,6 +15,10 @@ from datetime import datetime
 from dataclasses import dataclass
 import logging
 from abc import ABC, abstractmethod
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import AI libraries conditionally
 try:
@@ -90,7 +94,7 @@ class GeminiLLMAnalyzer(BaseLLMAnalyzer):
 class OpenAILLMAnalyzer(BaseLLMAnalyzer):
     """OpenAI-specific LLM analyzer"""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini"):
         if not OPENAI_AVAILABLE:
             raise ImportError("openai package not installed. Run: pip install openai")
             
@@ -98,13 +102,15 @@ class OpenAILLMAnalyzer(BaseLLMAnalyzer):
         if not self.api_key:
             raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
         
-        openai.api_key = self.api_key
+        # Initialize OpenAI client with v1.0+ syntax
+        from openai import OpenAI
+        self.client = OpenAI(api_key=self.api_key)
         self.model = model
         
     def generate_analysis(self, prompt: str) -> str:
         """Generate analysis using OpenAI"""
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert quantitative trading analyst specializing in algorithmic trading strategy optimization."},
@@ -132,7 +138,7 @@ class LLMAnalyzer:
         self,
         provider: Literal["gemini", "openai", "auto"] = "auto",
         api_key: Optional[str] = None,
-        openai_model: str = "gpt-4"
+        openai_model: str = "gpt-4o-mini"
     ):
         """
         Initialize the LLM analyzer
@@ -247,13 +253,25 @@ class LLMAnalyzer:
             
             # Add duration calculation if timestamps exist
             if 'entry_timestamp' in trade_history.columns and 'exit_timestamp' in trade_history.columns:
-                trade_history['duration_hours'] = (
-                    pd.to_datetime(trade_history['exit_timestamp']) - 
-                    pd.to_datetime(trade_history['entry_timestamp'])
-                ).dt.total_seconds() / 3600
-                
-                trade_stats['avg_win_duration'] = winning_trades['duration_hours'].mean() if len(winning_trades) > 0 else 0
-                trade_stats['avg_loss_duration'] = losing_trades['duration_hours'].mean() if len(losing_trades) > 0 else 0
+                try:
+                    trade_history['duration_hours'] = (
+                        pd.to_datetime(trade_history['exit_timestamp']) - 
+                        pd.to_datetime(trade_history['entry_timestamp'])
+                    ).dt.total_seconds() / 3600
+                    
+                    if len(winning_trades) > 0 and 'duration_hours' in winning_trades.columns:
+                        trade_stats['avg_win_duration'] = winning_trades['duration_hours'].mean()
+                    else:
+                        trade_stats['avg_win_duration'] = 0
+                        
+                    if len(losing_trades) > 0 and 'duration_hours' in losing_trades.columns:
+                        trade_stats['avg_loss_duration'] = losing_trades['duration_hours'].mean()
+                    else:
+                        trade_stats['avg_loss_duration'] = 0
+                except Exception as e:
+                    logger.debug(f"Could not calculate trade durations: {e}")
+                    trade_stats['avg_win_duration'] = 0
+                    trade_stats['avg_loss_duration'] = 0
             
             trade_stats['best_trade_conditions'] = self._analyze_best_trades(trade_history, market_data)
             trade_stats['worst_trade_conditions'] = self._analyze_worst_trades(trade_history, market_data)

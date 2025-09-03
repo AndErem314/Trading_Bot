@@ -1,0 +1,101 @@
+# Optimized Strategy Parameters
+# These parameters have been optimized through backtesting on BTC/USDT 4h data
+# Last optimization: 2025-09-03
+
+strategies:
+  bollinger_bands:
+    description: "Bollinger Bands Mean Reversion - Optimized for BTC/USDT 4h"
+    optimized_parameters:
+      # Best performing parameters from grid search
+      best_return:
+        bb_length: 30
+        bb_std: 1.5
+        rsi_length: 20
+        rsi_oversold: 30
+        rsi_overbought: 80
+        expected_return: "571.97%"
+        
+      # Conservative parameters (lower drawdown, stable returns)
+      conservative:
+        bb_length: 25
+        bb_std: 1.5
+        rsi_length: 18
+        rsi_oversold: 35
+        rsi_overbought: 75
+        expected_return: "378.14%"
+        
+      # Balanced parameters (good risk/reward)
+      balanced:
+        bb_length: 20
+        bb_std: 2.0
+        rsi_length: 16
+        rsi_oversold: 25
+        rsi_overbought: 75
+        expected_return: "169.58%"
+        
+    # Default parameters to use
+    default: "balanced"
+    
+  rsi_divergence:
+    description: "RSI Momentum Divergence - Default parameters"
+    optimized_parameters:
+      default:
+        rsi_length: 14
+        rsi_sma_fast: 5
+        rsi_sma_slow: 10
+        divergence_lookback: 20
+        rsi_oversold: 30
+        rsi_overbought: 70
+        expected_return: "79.84%"
+        
+  macd_momentum:
+    description: "MACD Momentum Crossover - To be optimized"
+    optimized_parameters:
+      default:
+        macd_fast: 12
+        macd_slow: 26
+        macd_signal: 9
+        momentum_period: 14
+        volume_threshold: 1.5
+        
+  volatility_breakout_short:
+    description: "Volatility Breakout Short - To be optimized"
+    optimized_parameters:
+      default:
+        atr_period: 14
+        lookback_period: 20
+        rsi_period: 14
+        rsi_extreme: 20
+        volume_multiplier: 2.0
+        
+  ichimoku_cloud:
+    description: "Ichimoku Cloud Breakout - To be optimized"
+    optimized_parameters:
+      default:
+        tenkan_period: 9
+        kijun_period: 26
+        senkou_b_period: 52
+        displacement: 26
+        
+  parabolic_sar:
+    description: "Parabolic SAR Trend Following - To be optimized"
+    optimized_parameters:
+      default:
+        start: 0.02
+        increment: 0.02
+        maximum: 0.2
+        
+  fibonacci_retracement:
+    description: "Fibonacci Retracement - To be optimized"
+    optimized_parameters:
+      default:
+        lookback_period: 50
+        fib_levels: [0.236, 0.382, 0.5, 0.618, 0.786]
+        
+  gaussian_channel:
+    description: "Gaussian Channel - To be optimized"
+    optimized_parameters:
+      default:
+        period: 20
+        std_dev: 2.0
+        adaptive: true

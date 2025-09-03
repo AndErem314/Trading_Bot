@@ -172,9 +172,12 @@ class StrategyLoader:
                 """Generate signals based on strategy logic"""
                 df = data.copy()
                 
-                # Add timestamp column if not present
-                if 'timestamp' not in df.columns:
+                # Ensure we have a timestamp column and reset index to avoid duplicates
+                if df.index.name == 'timestamp':
+                    df = df.reset_index()
+                elif 'timestamp' not in df.columns:
                     df['timestamp'] = df.index
+                    df = df.reset_index(drop=True)
                 
                 # Initialize signal columns
                 df['signal'] = 0
@@ -199,8 +202,9 @@ class StrategyLoader:
                 elif strategy_name == 'gaussian_channel':
                     df = self._gaussian_channel_signals(df)
                 
-                # Return only signal columns
-                return df[['timestamp', 'signal', 'strength', 'price']]
+                # Return only signal columns with regular index (not timestamp)
+                result_df = df[['timestamp', 'signal', 'strength', 'price']].copy()
+                return result_df
             
             def _bollinger_bands_signals(self, df):
                 """Bollinger Bands Mean Reversion strategy"""

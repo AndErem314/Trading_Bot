@@ -1,0 +1,7 @@
+{
+  "strategy_name": "bollinger_bands",
+  "best_parameters": {},
+  "best_score": -Infinity,
+  "optimization_time": 340.740637,
+  "total_iterations": 0
+}

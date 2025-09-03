@@ -50,11 +50,11 @@ class DataLoader:
         Returns:
             DataFrame with OHLCV data indexed by timestamp
         """
-        # Convert symbol to database format (BTC/USDT -> BTCUSDT)
-        db_symbol = symbol.replace('/', '')
+        # Convert symbol to database format (BTC/USDT -> BTC)
+        db_symbol = symbol.split('/')[0]  # Extract base currency
         
-        # Construct database path
-        db_path = os.path.join(self.data_dir, f"{db_symbol}.db")
+        # Construct database path with correct naming convention
+        db_path = os.path.join(self.data_dir, f"trading_data_{db_symbol}.db")
         
         if not os.path.exists(db_path):
             logger.error(f"Database not found: {db_path}")
@@ -64,28 +64,39 @@ class DataLoader:
             # Connect to database
             conn = sqlite3.connect(db_path)
             
-            # Build query
-            table_name = f"klines_{timeframe}"
-            query = f"SELECT * FROM {table_name}"
+            # Build query for the actual database schema
+            query = """
+            SELECT 
+                o.timestamp,
+                o.open,
+                o.high,
+                o.low,
+                o.close,
+                o.volume
+            FROM ohlcv_data o
+            JOIN timeframes t ON o.timeframe_id = t.id
+            JOIN symbols s ON o.symbol_id = s.id
+            WHERE t.timeframe = ?
+            """
             
             # Add date filters if provided
             conditions = []
-            params = []
+            params = [timeframe]  # Start with timeframe parameter
             
             if start_date:
-                start_timestamp = pd.to_datetime(start_date).timestamp() * 1000
-                conditions.append("timestamp >= ?")
+                start_timestamp = pd.to_datetime(start_date).strftime('%Y-%m-%dT%H:%M:%S')
+                conditions.append("o.timestamp >= ?")
                 params.append(start_timestamp)
                 
             if end_date:
-                end_timestamp = pd.to_datetime(end_date).timestamp() * 1000
-                conditions.append("timestamp <= ?")
+                end_timestamp = pd.to_datetime(end_date).strftime('%Y-%m-%dT%H:%M:%S')
+                conditions.append("o.timestamp <= ?")
                 params.append(end_timestamp)
             
             if conditions:
-                query += " WHERE " + " AND ".join(conditions)
+                query += " AND " + " AND ".join(conditions)
                 
-            query += " ORDER BY timestamp"
+            query += " ORDER BY o.timestamp"
             
             # Load data
             df = pd.read_sql_query(query, conn, params=params)
@@ -95,8 +106,8 @@ class DataLoader:
                 logger.warning(f"No data found for {symbol} {timeframe} in specified range")
                 return pd.DataFrame()
             
-            # Convert timestamp to datetime
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            # Convert timestamp to datetime (ISO format in database)
+            df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
             df.set_index('timestamp', inplace=True)
             
             # Ensure numeric columns

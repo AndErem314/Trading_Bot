@@ -144,8 +144,19 @@ class BacktestEngine:
         self._reset()
         
         # Ensure data is sorted by timestamp
+        # Handle case where timestamp might be both index and column
+        if 'timestamp' in strategy_signals.columns and strategy_signals.index.name == 'timestamp':
+            strategy_signals = strategy_signals.reset_index(drop=True)
+        elif strategy_signals.index.name == 'timestamp' and 'timestamp' not in strategy_signals.columns:
+            strategy_signals = strategy_signals.reset_index()
+        
         strategy_signals = strategy_signals.sort_values('timestamp')
-        price_data = price_data.sort_values('timestamp')
+        
+        # Sort price data by index if timestamp is the index
+        if price_data.index.name == 'timestamp':
+            price_data = price_data.sort_index()
+        else:
+            price_data = price_data.sort_values('timestamp')
         
         # Iterate through each signal
         for idx, signal_row in strategy_signals.iterrows():
