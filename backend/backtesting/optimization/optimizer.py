@@ -239,10 +239,16 @@ class ParameterOptimizer:
                 )
                 self._update_best(params, score, metrics)
                 # Return negative score because skopt minimizes
+                # Handle infinite or very large values from evaluation
+                if np.isinf(score):
+                    # If score is -inf (constraints not met), return a large positive value for minimization
+                    # Otherwise, if it's +inf, also return a large positive value.
+                    return 1e9  # A large finite number indicating a very bad result
                 return -score
             except Exception as e:
                 logger.error(f"Error in Bayesian optimization: {e}")
-                return float('inf')
+                # Return a large finite number if an exception occurs during evaluation
+                return 1e9
         
         # Run Bayesian optimization
         n_calls = self.optimization_config.get('bayesian', {}).get('n_calls', 100)
@@ -289,6 +295,19 @@ class ParameterOptimizer:
             elif param_type == 'list':
                 param_values[param_name] = param_config['options']
         
+        # Helper to convert numpy types for JSON serialization
+    def _convert_numpy_types(self, obj):
+        if isinstance(obj, dict):
+            return {k: self._convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_numpy_types(elem) for elem in obj]
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        return obj
         # Generate all combinations
         keys = param_values.keys()
         values = param_values.values()
@@ -425,7 +444,7 @@ class ParameterOptimizer:
         with open(params_file, 'w') as f:
             json.dump({
                 'strategy_name': result.strategy_name,
-                'best_parameters': result.best_parameters,
+                'best_parameters': self._convert_numpy_types(result.best_parameters),
                 'best_score': result.best_score,
                 'optimization_time': result.optimization_time,
                 'total_iterations': result.total_iterations
@@ -434,7 +453,7 @@ class ParameterOptimizer:
         # Save optimization history
         history_file = os.path.join(output_dir, f"{result.strategy_name}_optimization_history.json")
         with open(history_file, 'w') as f:
-            json.dump(result.optimization_history, f, indent=2)
+            json.dump(self._convert_numpy_types(result.optimization_history), f, indent=2)
         
         # Save parameter importance if available
         if result.parameter_importance:

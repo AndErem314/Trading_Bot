@@ -220,8 +220,10 @@ class SingleStrategyBacktest:
                 if isinstance(v, (int, float)) and not k.startswith('_')
             }
             
-            # Get current parameters
+            # Get current parameters and convert numpy types
             current_params = results.get('parameters', {})
+            # Convert numpy types to native Python types
+            current_params = self._convert_numpy_types(current_params)
             
             # Get optimization ranges
             opt_ranges = self.optimization_config['strategies'].get(strategy_name, {}).get('parameters', {})
@@ -248,9 +250,36 @@ class SingleStrategyBacktest:
             # Generate report
             report = analyzer.generate_optimization_report([analysis])
             
-            # Save report
-            report_path = self.output_dir / strategy_name / f"{strategy_name}_llm_analysis.md"
-            report_path.parent.mkdir(exist_ok=True)
+            # Save report with LLM provider, date, and sequence number
+            # Map provider names to abbreviations
+            provider_abbr = {
+                'gemini': 'GM',
+                'openai': 'CT',
+                'auto': analyzer.active_provider[:2].upper() if hasattr(analyzer, 'active_provider') else 'XX'
+            }
+            
+            # Get abbreviation for the provider
+            abbr = provider_abbr.get(provider.lower(), provider[:2].upper())
+            if abbr == 'AU' and hasattr(analyzer, 'active_provider'):
+                # If auto mode, use actual provider
+                abbr = provider_abbr.get(analyzer.active_provider.lower(), analyzer.active_provider[:2].upper())
+            
+            # Generate filename with date and sequence number
+            today = datetime.now().strftime('%Y-%m-%d')
+            base_filename = f"{strategy_name}_llm_analysis_{abbr}_{today}"
+            
+            # Find next available sequence number
+            strategy_dir = self.output_dir / strategy_name
+            strategy_dir.mkdir(exist_ok=True)
+            
+            sequence = 1
+            while True:
+                report_path = strategy_dir / f"{base_filename}_{sequence}.md"
+                if not report_path.exists():
+                    break
+                sequence += 1
+            
+            # Save the report
             with open(report_path, 'w') as f:
                 f.write(report)
                 
@@ -270,7 +299,7 @@ class SingleStrategyBacktest:
         
         # Save metrics
         metrics_file = strategy_dir / f"{strategy_name}_metrics.json"
-        metrics_to_save = {k: v for k, v in results.items() 
+        metrics_to_save = {k: self._convert_numpy_types(v) for k, v in results.items() 
                           if k not in ['trades', 'equity_curve', 'monthly_returns']}
         with open(metrics_file, 'w') as f:
             json.dump(metrics_to_save, f, indent=2)
@@ -292,6 +321,21 @@ class SingleStrategyBacktest:
             f.write(summary)
             
         logger.info(f"Results saved to {strategy_dir}")
+    
+    def _convert_numpy_types(self, obj):
+        """Convert numpy types to native Python types"""
+        if isinstance(obj, dict):
+            return {k: self._convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_numpy_types(item) for item in obj]
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return obj
     
     def generate_report(self, strategy_name: str, results: Dict[str, Any]):
         """Generate comprehensive HTML report"""

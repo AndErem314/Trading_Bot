@@ -75,7 +75,7 @@ class GeminiLLMAnalyzer(BaseLLMAnalyzer):
             raise ValueError("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
     def generate_analysis(self, prompt: str) -> str:
         """Generate analysis using Gemini"""
