@@ -679,3 +679,28 @@ python backend/main.py --mode all_indicators
 - **Connection Pooling**: Efficient database connection management
 - **Flexible Operation Modes**: Batch processing and interactive selection
 - **Production Ready**: Fully tested unified workflow with comprehensive validation
+
+## Backtesting with AI Analysis
+
+The trading bot includes a comprehensive backtesting system with AI-powered analysis using Gemini or OpenAI.
+
+### Quick Start with Gemini (4-hour timeframe)
+```bash
+# Run strategy backtest with Gemini analysis
+python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --analyze --llm gemini
+
+# Optimize parameters and analyze results
+python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --analyze --llm gemini
+
+# Test combined strategies
+python backend/backtesting/scripts/run_combined_strategies.py bollinger_bands rsi_divergence macd_momentum
+```
+
+### Available Backtesting Features
+- **Parameter Optimization**: Grid search, random search, and Bayesian optimization
+- **AI Analysis**: Integration with Gemini and OpenAI for strategy insights
+- **Strategy Combinations**: Test multiple strategies working together
+- **Crypto-Specific Metrics**: Sharpe ratio, Sortino ratio, max drawdown, and more
+- **Performance Comparison**: Compare against buy-and-hold strategy
+
+For detailed backtesting documentation, see `backend/backtesting/README.md`.

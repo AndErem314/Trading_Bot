@@ -5,46 +5,46 @@
 
 RETURNS & PERFORMANCE
 --------------------
-Total Return:          $113.15 (1.13%)
-Buy & Hold Return:     270.72%
-Strategy vs B&H:       -269.59%
-Time in Market:        26.3%
-Avg Return/Trade:      0.000%
+Total Return:          $156.24 (1.56%)
+Buy & Hold Return:     270.04%
+Strategy vs B&H:       -268.48%
+Time in Market:        23.6%
+Avg Return/Trade:      0.002%
 
 RISK METRICS
 ------------
-Sharpe Ratio:          -0.59
-Sortino Ratio:         -0.00
-Calmar Ratio:          0.39
-Volatility:            2.51%
-Risk/Reward Ratio:     1.01
-VaR (95%):             -0.01%
-CVaR (95%):            -0.04%
-Tail Ratio:            1.01
+Sharpe Ratio:          0.72
+Sortino Ratio:         0.00
+Calmar Ratio:          1.01
+Volatility:            2.87%
+Risk/Reward Ratio:     1.19
+VaR (95%):             -0.02%
+CVaR (95%):            -0.06%
+Tail Ratio:            0.96
 
 DRAWDOWN
 --------
-Max Drawdown:          2.87%
-Avg Drawdown:          2.18%
-Max DD Duration:       18598 days
-Recovery Factor:       0.39
-Ulcer Index:           2.23
+Max Drawdown:          1.55%
+Avg Drawdown:          0.33%
+Max DD Duration:       2152 days
+Recovery Factor:       1.01
+Ulcer Index:           0.43
 
 TRADE STATISTICS
 ----------------
-Total Trades:          65
-Win Rate:              61.54%
-Profit Factor:         1.31
-Expectancy:            $1.89
-Avg Win:               $12.95
-Avg Loss:              $15.81
-Win/Loss Ratio:        0.82
-Payoff Ratio:          0.82
-Max Consec. Wins:      10
+Total Trades:          16
+Win Rate:              50.00%
+Profit Factor:         2.61
+Expectancy:            $9.93
+Avg Win:               $32.20
+Avg Loss:              $12.34
+Win/Loss Ratio:        2.61
+Payoff Ratio:          2.61
+Max Consec. Wins:      3
 Max Consec. Losses:    5
-Avg Trade Duration:    321.6 hours
-Max Trade Duration:    1256.0 hours
-Trades Per Week:       0.27
+Avg Trade Duration:    1168.5 hours
+Max Trade Duration:    2952.0 hours
+Trades Per Week:       0.07
 
 ═══════════════════════════════════════════════════════════════
         
