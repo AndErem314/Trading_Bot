@@ -233,16 +233,38 @@ class ParameterOptimizer:
             elif param_type == 'bool':
                 dimensions.append(Categorical([True, False], name=param_name))
             elif param_type == 'list':
-                dimensions.append(Categorical(param_config['options'], name=param_name))
+                # Handle list-type parameters (e.g., fib_levels which are lists)
+                # Convert lists to tuples for hashability or use indices
+                options = param_config['options']
+                if options and isinstance(options[0], list):
+                    # Create indices for the options
+                    dimensions.append(Categorical(range(len(options)), name=param_name + '_idx'))
+                else:
+                    dimensions.append(Categorical(options, name=param_name))
+        
+        # Track which parameters are list indices
+        list_param_indices = {}
+        for param_name, param_config in parameter_ranges.items():
+            if param_config.get('type') == 'list' and isinstance(param_config['options'][0], list):
+                list_param_indices[param_name + '_idx'] = (param_name, param_config['options'])
         
         # Define objective function for Bayesian optimization
         @use_named_args(dimensions)
         def objective(**params):
             try:
+                # Convert indices back to actual list values
+                converted_params = {}
+                for key, value in params.items():
+                    if key in list_param_indices:
+                        orig_name, options = list_param_indices[key]
+                        converted_params[orig_name] = options[value]
+                    else:
+                        converted_params[key] = value
+                
                 score, metrics = self._evaluate_parameters(
-                    strategy_name, params, objective_metric, constraints
+                    strategy_name, converted_params, objective_metric, constraints
                 )
-                self._update_best(params, score, metrics)
+                self._update_best(converted_params, score, metrics)
                 # Return negative score because skopt minimizes
                 # Handle infinite or very large values from evaluation
                 if np.isinf(score):
@@ -270,9 +292,23 @@ class ParameterOptimizer:
             random_state=42
         )
         
-        # Extract best parameters
-        best_params = dict(zip(param_names, result.x))
-        self.best_parameters = best_params
+        # Extract best parameters - need to reconstruct param names from dimensions
+        best_params = {}
+        for i, dim in enumerate(dimensions):
+            best_params[dim.name] = result.x[i]
+        
+        # Convert indices back to actual list values for best params
+        converted_best_params = {}
+        for key, value in best_params.items():
+            if key in list_param_indices:
+                orig_name, options = list_param_indices[key]
+                converted_best_params[orig_name] = options[value]
+            elif key.endswith('_idx'):  # Skip index parameters
+                continue
+            else:
+                converted_best_params[key] = value
+        
+        self.best_parameters = converted_best_params
         self.best_score = -result.fun
     
     def _generate_parameter_grid(self, parameter_ranges: Dict[str, Dict]) -> List[Dict[str, Any]]:
@@ -328,7 +364,11 @@ class ParameterOptimizer:
             elif param_type == 'bool':
                 params[param_name] = np.random.choice(param_config.get('options', [True, False]))
             elif param_type == 'list':
-                params[param_name] = np.random.choice(param_config['options'])
+                # For list type, we need to handle lists of lists (like fib_levels)
+                options = param_config['options']
+                # Use random.choice from standard library which can handle any object type
+                import random
+                params[param_name] = random.choice(options)
         
         return params
     

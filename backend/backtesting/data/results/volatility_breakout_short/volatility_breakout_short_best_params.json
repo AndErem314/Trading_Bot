@@ -1,0 +1,15 @@
+{
+  "strategy_name": "volatility_breakout_short",
+  "best_parameters": {
+    "atr_period": 18,
+    "lookback_period": 18,
+    "volume_multiplier": 2.669536500409154,
+    "rsi_period": 16,
+    "rsi_extreme": 22,
+    "atr_stop_multiplier": 1.6499623737270044,
+    "atr_trail_multiplier": 1.4592488919658673
+  },
+  "best_score": -1000000000.0,
+  "optimization_time": 212.228264,
+  "total_iterations": 0
+}
