@@ -1,0 +1,7 @@
+{
+  "strategy_name": "parabolic_sar",
+  "best_parameters": {},
+  "best_score": -Infinity,
+  "optimization_time": 451.033482,
+  "total_iterations": 0
+}

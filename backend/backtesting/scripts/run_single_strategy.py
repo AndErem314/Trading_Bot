@@ -158,6 +158,7 @@ class SingleStrategyBacktest:
         
         if not param_ranges:
             logger.error(f"No optimization ranges defined for {strategy_name}")
+            logger.error(f"Available strategies in config: {list(self.optimization_config.get('strategies', {}).keys())}")
             return {}
         
         # Create optimizer

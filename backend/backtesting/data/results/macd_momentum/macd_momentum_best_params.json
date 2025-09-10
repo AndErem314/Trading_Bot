@@ -1,0 +1,14 @@
+{
+  "strategy_name": "macd_momentum",
+  "best_parameters": {
+    "macd_fast": 14,
+    "macd_slow": 22,
+    "macd_signal": 11,
+    "momentum_period": 16,
+    "atr_period": 14,
+    "volume_threshold": 1.2799799326544024
+  },
+  "best_score": -1000000000.0,
+  "optimization_time": 42.644944,
+  "total_iterations": 0
+}

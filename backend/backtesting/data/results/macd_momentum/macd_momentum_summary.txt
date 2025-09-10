@@ -1,0 +1,50 @@
+
+═══════════════════════════════════════════════════════════════
+                    PERFORMANCE SUMMARY
+═══════════════════════════════════════════════════════════════
+
+RETURNS & PERFORMANCE
+--------------------
+Total Return:          $-6402.61 (-64.03%)
+Buy & Hold Return:     270.72%
+Strategy vs B&H:       -334.74%
+Time in Market:        16.7%
+Avg Return/Trade:      -0.027%
+
+RISK METRICS
+------------
+Sharpe Ratio:          -1.35
+Sortino Ratio:         -0.01
+Calmar Ratio:          -0.88
+Volatility:            30.83%
+Risk/Reward Ratio:     1.07
+VaR (95%):             -0.22%
+CVaR (95%):            -0.80%
+Tail Ratio:            0.90
+
+DRAWDOWN
+--------
+Max Drawdown:          72.75%
+Avg Drawdown:          55.59%
+Max DD Duration:       19580 days
+Recovery Factor:       -0.88
+Ulcer Index:           57.34
+
+TRADE STATISTICS
+----------------
+Total Trades:          140
+Win Rate:              29.29%
+Profit Factor:         0.56
+Expectancy:            $-42.22
+Avg Win:               $186.06
+Avg Loss:              $136.76
+Win/Loss Ratio:        1.36
+Payoff Ratio:          1.36
+Max Consec. Wins:      4
+Max Consec. Losses:    12
+Avg Trade Duration:    90.9 hours
+Max Trade Duration:    368.0 hours
+Trades Per Week:       0.59
+
+═══════════════════════════════════════════════════════════════
+        

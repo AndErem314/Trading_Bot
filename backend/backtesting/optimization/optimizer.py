@@ -144,6 +144,11 @@ class ParameterOptimizer:
         # Generate parameter grid
         param_grid = self._generate_parameter_grid(parameter_ranges)
         
+        if not param_grid:
+            logger.error(f"Failed to generate parameter grid for {strategy_name}")
+            logger.error(f"Parameter ranges: {parameter_ranges}")
+            return
+        
         logger.info(f"Grid search: Testing {len(param_grid)} parameter combinations")
         
         # Test each combination
@@ -295,19 +300,6 @@ class ParameterOptimizer:
             elif param_type == 'list':
                 param_values[param_name] = param_config['options']
         
-        # Helper to convert numpy types for JSON serialization
-    def _convert_numpy_types(self, obj):
-        if isinstance(obj, dict):
-            return {k: self._convert_numpy_types(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self._convert_numpy_types(elem) for elem in obj]
-        elif isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.bool_):
-            return bool(obj)
-        return obj
         # Generate all combinations
         keys = param_values.keys()
         values = param_values.values()
@@ -433,6 +425,20 @@ class ParameterOptimizer:
             importance = {k: v/total_importance for k, v in importance.items()}
         
         return importance
+    
+    def _convert_numpy_types(self, obj):
+        """Helper to convert numpy types for JSON serialization"""
+        if isinstance(obj, dict):
+            return {k: self._convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_numpy_types(elem) for elem in obj]
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        return obj
     
     def save_optimization_results(self, result: OptimizationResult, output_dir: str):
         """Save optimization results to files"""

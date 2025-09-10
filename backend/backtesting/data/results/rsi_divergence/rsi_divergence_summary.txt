@@ -5,46 +5,46 @@
 
 RETURNS & PERFORMANCE
 --------------------
-Total Return:          $7983.69 (79.84%)
+Total Return:          $5828.49 (58.28%)
 Buy & Hold Return:     270.72%
-Strategy vs B&H:       -190.88%
-Time in Market:        22.6%
-Avg Return/Trade:      0.018%
+Strategy vs B&H:       -212.43%
+Time in Market:        20.5%
+Avg Return/Trade:      0.015%
 
 RISK METRICS
 ------------
-Sharpe Ratio:          0.75
+Sharpe Ratio:          0.67
 Sortino Ratio:         0.00
-Calmar Ratio:          1.83
-Volatility:            45.17%
-Risk/Reward Ratio:     1.00
-VaR (95%):             -0.44%
-CVaR (95%):            -1.22%
+Calmar Ratio:          1.22
+Volatility:            37.16%
+Risk/Reward Ratio:     1.02
+VaR (95%):             -0.33%
+CVaR (95%):            -0.97%
 Tail Ratio:            1.11
 
 DRAWDOWN
 --------
-Max Drawdown:          43.59%
-Avg Drawdown:          10.25%
-Max DD Duration:       10570 days
-Recovery Factor:       1.83
-Ulcer Index:           14.12
+Max Drawdown:          47.78%
+Avg Drawdown:          18.21%
+Max DD Duration:       13180 days
+Recovery Factor:       1.22
+Ulcer Index:           21.35
 
 TRADE STATISTICS
 ----------------
-Total Trades:          30
-Win Rate:              56.67%
-Profit Factor:         1.80
-Expectancy:            $275.62
-Avg Win:               $1091.47
-Avg Loss:              $791.27
-Win/Loss Ratio:        1.38
-Payoff Ratio:          1.38
-Max Consec. Wins:      4
-Max Consec. Losses:    3
-Avg Trade Duration:    602.3 hours
-Max Trade Duration:    2336.0 hours
-Trades Per Week:       0.13
+Total Trades:          16
+Win Rate:              68.75%
+Profit Factor:         1.81
+Expectancy:            $372.20
+Avg Win:               $1213.19
+Avg Loss:              $1477.97
+Win/Loss Ratio:        0.82
+Payoff Ratio:          0.82
+Max Consec. Wins:      7
+Max Consec. Losses:    2
+Avg Trade Duration:    1032.5 hours
+Max Trade Duration:    2072.0 hours
+Trades Per Week:       0.08
 
 ═══════════════════════════════════════════════════════════════
         

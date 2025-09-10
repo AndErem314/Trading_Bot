@@ -15,6 +15,20 @@ import pandas as pd
 import numpy as np
 from abc import ABC, abstractmethod
 
+# Ensure numpy compatibility for pandas_ta
+try:
+    # Try absolute import first
+    from backend.core.indicators.numpy_compat import *
+except ImportError:
+    try:
+        # Try relative import
+        from ...core.indicators.numpy_compat import *
+    except ImportError:
+        # If all else fails, patch numpy directly here
+        if not hasattr(np, 'NaN'):
+            np.NaN = np.nan
+        sys.modules['numpy'].NaN = np.nan
+
 logger = logging.getLogger(__name__)
 
 
