@@ -47,10 +47,14 @@ class StrategyAnalysis:
     risk_assessment: str
     improvement_potential: float
     confidence_score: float  # 0-100 confidence in the analysis
+    token_usage: Optional[Dict[str, int]] = None  # Token usage statistics
 
 
 class BaseLLMAnalyzer(ABC):
     """Base class for LLM analyzers"""
+    
+    def __init__(self):
+        self.last_token_usage = None
     
     @abstractmethod
     def generate_analysis(self, prompt: str) -> str:
@@ -61,12 +65,17 @@ class BaseLLMAnalyzer(ABC):
     def is_available(self) -> bool:
         """Check if the LLM service is available"""
         pass
+    
+    def get_token_usage(self) -> Optional[Dict[str, int]]:
+        """Get token usage from last request"""
+        return self.last_token_usage
 
 
 class GeminiLLMAnalyzer(BaseLLMAnalyzer):
     """Gemini-specific LLM analyzer"""
     
     def __init__(self, api_key: Optional[str] = None):
+        super().__init__()
         if not GEMINI_AVAILABLE:
             raise ImportError("google-generativeai package not installed. Run: pip install google-generativeai")
             
@@ -76,12 +85,26 @@ class GeminiLLMAnalyzer(BaseLLMAnalyzer):
 
         # to change the model exchange name to ('gemini-2.5-pro'), ('gemini-2.5-flash'), ('gemini-2.0-flash') or ('gemini-1.5-flash')
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model_name = 'gemini-2.5-flash'
+        self.model = genai.GenerativeModel(self.model_name)
         
     def generate_analysis(self, prompt: str) -> str:
         """Generate analysis using Gemini"""
         try:
             response = self.model.generate_content(prompt)
+            
+            # Extract token usage from Gemini response
+            # Note: Gemini API doesn't provide exact token counts in the same way as OpenAI
+            # We'll estimate based on response metadata if available
+            self.last_token_usage = {
+                'prompt_tokens': len(prompt.split()) * 1.3,  # Rough estimate
+                'completion_tokens': len(response.text.split()) * 1.3,  # Rough estimate
+                'total_tokens': 0,
+                'model': self.model_name
+            }
+            self.last_token_usage['total_tokens'] = int(self.last_token_usage['prompt_tokens'] + 
+                                                       self.last_token_usage['completion_tokens'])
+            
             return response.text
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
@@ -96,6 +119,7 @@ class OpenAILLMAnalyzer(BaseLLMAnalyzer):
     """OpenAI-specific LLM analyzer"""
     
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini"):
+        super().__init__()
         if not OPENAI_AVAILABLE:
             raise ImportError("openai package not installed. Run: pip install openai")
             
@@ -120,6 +144,26 @@ class OpenAILLMAnalyzer(BaseLLMAnalyzer):
                 temperature=0.7,
                 max_tokens=2000
             )
+            
+            # Extract token usage from OpenAI response
+            if hasattr(response, 'usage'):
+                self.last_token_usage = {
+                    'prompt_tokens': response.usage.prompt_tokens,
+                    'completion_tokens': response.usage.completion_tokens,
+                    'total_tokens': response.usage.total_tokens,
+                    'model': self.model
+                }
+            else:
+                # Fallback if usage data not available
+                self.last_token_usage = {
+                    'prompt_tokens': len(prompt.split()) * 1.3,
+                    'completion_tokens': len(response.choices[0].message.content.split()) * 1.3,
+                    'total_tokens': 0,
+                    'model': self.model
+                }
+                self.last_token_usage['total_tokens'] = int(self.last_token_usage['prompt_tokens'] + 
+                                                           self.last_token_usage['completion_tokens'])
+            
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
@@ -217,6 +261,12 @@ class LLMAnalyzer:
                 response_text = self.llm.generate_analysis(prompt)
                 analysis = self._parse_llm_response(response_text, strategy_name, performance_metrics)
                 analysis.confidence_score = 85.0  # High confidence for LLM analysis
+                
+                # Add token usage information
+                if self.llm.get_token_usage():
+                    analysis.token_usage = self.llm.get_token_usage()
+                    analysis.token_usage['provider'] = self.active_provider
+                
                 logger.info(f"Successfully analyzed {strategy_name} strategy using {self.active_provider}")
                 return analysis
             except Exception as e:
@@ -690,12 +740,7 @@ Recommendations:
         report = f"""
 # Trading Strategy Optimization Report
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Analysis Provider: {self.active_provider or 'Heuristic'} 
-
-## Executive Summary
-
-This report analyzes {len(analyses)} trading strategies and provides {'AI-powered' if self.active_provider else 'heuristic-based'} 
-recommendations for parameter optimization to improve performance.
+Analysis Provider: {self.active_provider or 'Heuristic'}
 
 ### Overall Performance Summary
 
@@ -747,6 +792,37 @@ recommendations for parameter optimization to improve performance.
 - **Confidence Score**: {analysis.confidence_score:.1f}%
 
 ---
+"""
+            
+            # Add token usage section if available
+            if analysis.token_usage:
+                token_info = f"""
+### Analysis Token Usage
+- **Provider**: {analysis.token_usage.get('provider', 'Unknown')}
+- **Model**: {analysis.token_usage.get('model', 'Unknown')}
+- **Prompt Tokens**: {analysis.token_usage.get('prompt_tokens', 0):.0f}
+- **Completion Tokens**: {analysis.token_usage.get('completion_tokens', 0):.0f}
+- **Total Tokens**: {analysis.token_usage.get('total_tokens', 0):.0f}
+
+---
+"""
+                report = report.rstrip('\n---\n') + token_info
+        
+        # Add summary of total token usage if any AI analysis was used
+        total_tokens = sum(analysis.token_usage.get('total_tokens', 0) 
+                          for analysis in analyses if analysis.token_usage)
+        if total_tokens > 0:
+            report += f"""
+## Token Usage Summary
+
+Total tokens used across all analyses: {total_tokens:,}
+"""
+        
+        report += f"""
+## Executive Summary
+
+This report analyzes {len(analyses)} trading strategies and provides {'AI-powered' if self.active_provider else 'heuristic-based'} 
+recommendations for parameter optimization to improve performance.
 """
         
         # Add footer with disclaimer
