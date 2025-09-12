@@ -1,0 +1,88 @@
+def _create_analysis_prompt_v1(self, context: Dict[str, Any]) -> str:
+    """Enhanced prompt with technical indicator-specific focus"""
+
+    # Extract indicator types from parameter names
+    indicator_types = set()
+    for param_name in context['current_parameters'].keys():
+        if 'rsi' in param_name.lower():
+            indicator_types.add('RSI')
+        elif 'bb' in param_name.lower() or 'bollinger' in param_name.lower():
+            indicator_types.add('Bollinger Bands')
+        elif 'macd' in param_name.lower():
+            indicator_types.add('MACD')
+        elif 'ma' in param_name.lower() or 'sma' in param_name.lower() or 'ema' in param_name.lower():
+            indicator_types.add('Moving Average')
+        elif 'atr' in param_name.lower():
+            indicator_types.add('ATR')
+        elif 'stoch' in param_name.lower():
+            indicator_types.add('Stochastic')
+
+    indicator_list = ", ".join(indicator_types) if indicator_types else "Unknown indicators"
+
+    prompt = f"""
+You are an expert quantitative trading analyst specializing in technical indicator optimization. Analyze the following backtesting results for the {context['strategy_name']} strategy using {indicator_list} and provide specific, data-driven recommendations.
+
+STRATEGY PERFORMANCE ASSESSMENT:
+- Total Return: {context['performance_metrics'].get('total_return', 0):.2f}% (Target: >20%)
+- Sharpe Ratio: {context['performance_metrics'].get('sharpe_ratio', 0):.2f} (Target: >1.5)
+- Max Drawdown: {context['performance_metrics'].get('max_drawdown', 0):.2f}% (Target: <15%)
+- Win Rate: {context['performance_metrics'].get('win_rate', 0):.2f}% (Target: >55%)
+- Profit Factor: {context['performance_metrics'].get('profit_factor', 0):.2f} (Target: >1.8)
+- Total Trades: {context['performance_metrics'].get('total_trades', 0)} (Adequate sample: >100)
+
+CURRENT INDICATOR CONFIGURATION:
+{json.dumps(context['current_parameters'], indent=2)}
+
+OPTIMIZATION BOUNDARIES:
+{json.dumps(context['optimization_ranges'], indent=2)}
+
+MARKET ENVIRONMENT ANALYSIS:
+Volatility Regime: {context['market_analysis'].get('volatility', {}).get('regime', 'unknown')}
+Trend Direction: {context['market_analysis'].get('trend', {}).get('direction', 'unknown')}
+Price Range: {context['market_analysis'].get('price_range', {}).get('range_pct', 0):.1f}%
+
+TRADE STATISTICS:
+- Best trades occurred during: {context['trade_stats'].get('best_trade_conditions', {}).get('avg_volatility', 0):.1f}% volatility
+- Worst trades occurred during: {context['trade_stats'].get('worst_trade_conditions', {}).get('avg_volatility', 0):.1f}% volatility
+
+Please provide your technical analysis with the following JSON structure:
+
+{{
+    "indicator_optimization": {{
+        // Optimized parameter values for each technical indicator
+        // Example: "rsi_period": 14, "rsi_oversold": 30, "rsi_overbought": 70
+    }},
+    "performance_projections": {{
+        "expected_sharpe_improvement": 0.0,  // Expected change in Sharpe ratio
+        "expected_drawdown_reduction": 0.0,   // Expected reduction in max drawdown (%)
+        "expected_win_rate_improvement": 0.0  // Expected improvement in win rate (%)
+    }},
+    "optimal_market_regimes": [
+        // Specific market conditions where this indicator configuration excels
+        // Example: "High volatility mean-reversion environments", "Low volatility breakout conditions"
+    ],
+    "indicator_specific_insights": [
+        // Technical insights about each indicator's behavior
+        // Example: "RSI shows better predictive power below 30 in high volatility",
+        // "Bollinger Bands provide better signals when period is increased during trends"
+    ],
+    "risk_management_enhancements": [
+        // Specific risk management adjustments for this indicator set
+    ],
+    "confidence_factors": {{
+        "parameter_confidence": 0.0,  // 0-100 confidence in parameter recommendations
+        "market_regime_confidence": 0.0  // 0-100 confidence in market condition analysis
+    }}
+}}
+
+FOCUS AREAS:
+1. Indicator convergence/divergence patterns that predict performance
+2. Parameter sensitivity analysis for each technical indicator
+3. Timeframe optimization for indicator parameters
+4. Volatility-adjusted parameter scaling
+5. Correlation between indicator signals and market regimes
+6. Stop-loss and take-profit optimization based on indicator behavior
+7. Position sizing adjustments for different indicator confidence levels
+"""
+
+    return prompt

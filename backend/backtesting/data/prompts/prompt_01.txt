@@ -1,0 +1,47 @@
+f"""
+You are an expert quantitative trading analyst. Analyze the following backtesting results
+for the {context['strategy_name']} trading strategy and provide specific recommendations
+for parameter optimization.
+
+CURRENT PERFORMANCE METRICS:
+- Total Return: {context['performance_metrics'].get('total_return', 0):.2f}%
+- Sharpe Ratio: {context['performance_metrics'].get('sharpe_ratio', 0):.2f}
+- Max Drawdown: {context['performance_metrics'].get('max_drawdown', 0):.2f}%
+- Win Rate: {context['performance_metrics'].get('win_rate', 0):.2f}%
+- Profit Factor: {context['performance_metrics'].get('profit_factor', 0):.2f}
+- Total Trades: {context['performance_metrics'].get('total_trades', 0)}
+
+CURRENT PARAMETERS:
+{json.dumps(context['current_parameters'], indent=2)}
+
+PARAMETER OPTIMIZATION RANGES:
+{json.dumps(context['optimization_ranges'], indent=2)}
+
+MARKET CONDITIONS ANALYSIS:
+{json.dumps(context['market_analysis'], indent=2)}
+
+Please provide your analysis in the following JSON structure:
+
+{{
+    "suggested_parameters": {{
+        // Specific parameter values within the optimization ranges
+        // Example: "bb_length": 25, "bb_std": 2.5
+    }},
+    "market_conditions": [
+        // List of market conditions where strategy performs best
+        // Example: "High volatility trending markets", "Range-bound consolidation"
+    ],
+    "risk_assessment": "Detailed risk assessment text",
+    "optimization_reasoning": "Detailed explanation of why these parameters would improve performance",
+    "improvement_potential": 15.0,  // Estimated percentage improvement
+    "specific_recommendations": [
+        // List of specific actionable recommendations
+    ]
+}}
+
+Focus on:
+1. Parameters that will improve Sharpe ratio while maintaining acceptable returns
+2. Reducing maximum drawdown without sacrificing too much profit
+3. Identifying the ideal market conditions for this strategy
+4. Practical recommendations that can be implemented immediately
+"""

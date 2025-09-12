@@ -1,0 +1,84 @@
+def _create_analysis_prompt_v2(self, context: Dict[str, Any]) -> str:
+    """Advanced prompt with statistical and machine learning focus"""
+
+    prompt = f"""
+You are an advanced quantitative researcher with expertise in statistical arbitrage and machine learning for trading strategies. Conduct a deep analysis of the {context['strategy_name']} strategy using sophisticated statistical techniques.
+
+PERFORMANCE BENCHMARKING:
+- Strategy Return: {context['performance_metrics'].get('total_return', 0):.2f}%
+- Sharpe Ratio: {context['performance_metrics'].get('sharpe_ratio', 0):.2f} (Benchmark: >2.0 for professional strategies)
+- Sortino Ratio: {context['performance_metrics'].get('sortino_ratio', 0):.2f} if available
+- Calmar Ratio: {context['performance_metrics'].get('calmar_ratio', 0):.2f} if available
+- Maximum Drawdown: {context['performance_metrics'].get('max_drawdown', 0):.2f}% (Acceptable: <12%)
+- Profit Factor: {context['performance_metrics'].get('profit_factor', 0):.2f} (Target: >2.0)
+
+STATISTICAL SIGNIFICANCE ANALYSIS:
+- Sample Size: {context['performance_metrics'].get('total_trades', 0)} trades
+- Required sample for 95% confidence: {max(30, int(100/(context['performance_metrics'].get('win_rate', 50)/100)))} trades
+
+PARAMETER SPACE ANALYSIS:
+Current Configuration:
+{json.dumps(context['current_parameters'], indent=2)}
+
+Optimization Domain:
+{json.dumps(context['optimization_ranges'], indent=2)}
+
+MARKET REGIME ANALYSIS:
+{json.dumps(context['market_analysis'], indent=2)}
+
+TRADE-LEVEL ANALYTICS:
+- Best trade conditions: {json.dumps(context['trade_stats'].get('best_trade_conditions', {}), indent=2)}
+- Worst trade conditions: {json.dumps(context['trade_stats'].get('worst_trade_conditions', {}), indent=2)}
+
+Please provide a comprehensive statistical analysis with this JSON structure:
+
+{{
+    "statistically_optimized_parameters": {{
+        // Parameters with highest statistical significance
+        // Include confidence intervals where appropriate
+    }},
+    "parameter_interaction_effects": {{
+        // How parameters interact with each other
+        // Example: "rsi_period and bb_std show negative correlation in optimization"
+    }},
+    "market_regime_specific_parameters": {{
+        // Different optimal parameters for different market conditions
+        "high_volatility": {{}},
+        "low_volatility": {{}},
+        "trending": {{}},
+        "mean_reverting": {{}}
+    }},
+    "statistical_significance_metrics": {{
+        "p_value_improvement": 0.0,  // Statistical significance of improvements
+        "confidence_interval_95": [0, 0],  // Range of expected improvement
+        "out_of_sample_expected": 0.0  // Expected performance on new data
+    }},
+    "advanced_optimization_techniques": [
+        // Suggestions for Bayesian optimization, genetic algorithms, etc.
+    ],
+    "risk_adjusted_recommendations": [
+        // Recommendations considering statistical uncertainty
+    ],
+    "monte_carlo_simulation_results": {{
+        "probability_of_improvement": 0.0,  // % chance improvements will work
+        "expected_value_improvement": 0.0,  // EV of suggested changes
+        "value_at_risk": 0.0  // Statistical VAR of new configuration
+    }}
+}}
+
+ANALYTICAL FOCUS AREAS:
+1. Bayesian optimization principles for parameter tuning
+2. Statistical significance of parameter changes
+3. Overfitting risk assessment and mitigation
+4. Regime-switching parameter optimization
+5. Confidence interval analysis for performance metrics
+6. Bootstrapping and Monte Carlo simulation insights
+7. Sensitivity analysis for each parameter
+8. Expected value calculation for proposed changes
+9. Statistical arbitrage opportunities
+10. Machine learning approaches for parameter optimization
+
+Use statistical rigor in your recommendations and quantify uncertainty where appropriate.
+"""
+
+    return prompt

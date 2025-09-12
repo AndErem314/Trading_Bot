@@ -180,6 +180,37 @@ open backend/backtesting/data/results/rsi_divergence/rsi_divergence_trades.csv
 open backend/backtesting/data/results/rsi_divergence/rsi_divergence_equity_curve.png
 ```
 
+### Step 2a: Update Optimized Parameters Configuration
+
+**Important**: After receiving parameter recommendations from the LLM analysis, you need to manually update the optimized parameters configuration:
+
+1. **Update the optimized strategies file**:
+```bash
+# Open the optimized strategies configuration
+nano backend/backtesting/config/optimized_strategies.yaml
+```
+
+2. **Add your optimized parameters** under the appropriate strategy section. For example, if you got recommendations for `gaussian_channel`:
+```yaml
+gaussian_channel:
+  description: "Gaussian Channel - Optimized based on LLM analysis"
+  optimized_parameters:
+    default:
+      period: 20
+      std_dev: 2.0
+      adaptive: true
+      expected_return: "TBD - Run backtest to verify"
+```
+
+3. **Note**: These optimized parameters will **NOT** automatically update `strategy_config.json` for live trading. You must:
+   - Either manually update `/backend/config/strategy_config.json` with the tested parameters
+   - Or use the `run_optimized_strategy.py` script which reads from `optimized_strategies.yaml`
+
+4. **Verify the optimization** by running:
+```bash
+python3 backend/backtesting/scripts/run_optimized_strategy.py gaussian_channel
+```
+
 ### Step 3: Create Optimized Config
 ```bash
 # Create config file with AI suggestions
@@ -226,6 +257,21 @@ configs/strategies/
 
 **No additional reporting steps needed** - everything is generated automatically!
 
+## Parameter Optimization Workflow Summary
+
+### From Backtesting to Live Trading
+
+1. **Run backtest with LLM analysis** → Get parameter recommendations
+2. **Manually update** `backend/backtesting/config/optimized_strategies.yaml` with the recommended parameters
+3. **Test the optimized parameters** using `run_optimized_strategy.py`
+4. **For live trading**, manually update `backend/config/strategy_config.json` with the tested parameters
+
+**Key Points:**
+- LLM parameter recommendations are NOT automatically applied
+- `optimized_strategies.yaml` stores optimization results for backtesting
+- `strategy_config.json` controls live trading parameters
+- Always test optimized parameters before using in live trading
+
 ---
 
-*That's it! Run strategy → Read AI analysis → Apply suggestions → Compare results*
+*That's it! Run strategy → Read AI analysis → Apply suggestions → Compare results → Update configs → Deploy to live trading*

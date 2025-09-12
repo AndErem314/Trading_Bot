@@ -73,7 +73,8 @@ class GeminiLLMAnalyzer(BaseLLMAnalyzer):
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
         if not self.api_key:
             raise ValueError("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
-        
+
+        # to change the model exchange name to ('gemini-2.5-pro'), ('gemini-2.5-flash'), ('gemini-2.0-flash') or ('gemini-1.5-flash')
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel('gemini-1.5-flash')
         
