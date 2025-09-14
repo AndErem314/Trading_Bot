@@ -5,46 +5,46 @@
 
 RETURNS & PERFORMANCE
 --------------------
-Total Return:          $8822.35 (88.22%)
+Total Return:          $3568.55 (35.69%)
 Buy & Hold Return:     270.72%
-Strategy vs B&H:       -182.49%
-Time in Market:        25.8%
-Avg Return/Trade:      0.016%
+Strategy vs B&H:       -235.03%
+Time in Market:        27.2%
+Avg Return/Trade:      0.010%
 
 RISK METRICS
 ------------
-Sharpe Ratio:          0.79
-Sortino Ratio:         0.01
-Calmar Ratio:          1.63
-Volatility:            44.48%
-Risk/Reward Ratio:     1.09
-VaR (95%):             -0.48%
-CVaR (95%):            -1.17%
+Sharpe Ratio:          0.47
+Sortino Ratio:         0.00
+Calmar Ratio:          0.63
+Volatility:            45.79%
+Risk/Reward Ratio:     1.08
+VaR (95%):             -0.50%
+CVaR (95%):            -1.22%
 Tail Ratio:            1.05
 
 DRAWDOWN
 --------
-Max Drawdown:          54.02%
-Avg Drawdown:          23.91%
-Max DD Duration:       12784 days
-Recovery Factor:       1.63
-Ulcer Index:           28.17
+Max Drawdown:          56.56%
+Avg Drawdown:          27.55%
+Max DD Duration:       13038 days
+Recovery Factor:       0.63
+Ulcer Index:           31.74
 
 TRADE STATISTICS
 ----------------
-Total Trades:          146
-Win Rate:              34.25%
-Profit Factor:         1.42
-Expectancy:            $69.49
-Avg Win:               $685.85
-Avg Loss:              $251.53
-Win/Loss Ratio:        2.73
-Payoff Ratio:          2.73
-Max Consec. Wins:      4
+Total Trades:          162
+Win Rate:              31.48%
+Profit Factor:         1.20
+Expectancy:            $29.60
+Avg Win:               $557.90
+Avg Loss:              $213.14
+Win/Loss Ratio:        2.62
+Payoff Ratio:          2.62
+Max Consec. Wins:      5
 Max Consec. Losses:    10
-Avg Trade Duration:    137.1 hours
-Max Trade Duration:    688.0 hours
-Trades Per Week:       0.61
+Avg Trade Duration:    129.8 hours
+Max Trade Duration:    636.0 hours
+Trades Per Week:       0.67
 
 ═══════════════════════════════════════════════════════════════
         

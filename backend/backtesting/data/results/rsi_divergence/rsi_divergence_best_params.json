@@ -1,15 +1,7 @@
 {
   "strategy_name": "rsi_divergence",
-  "best_parameters": {
-    "rsi_length": 18,
-    "rsi_sma_fast": 4,
-    "rsi_sma_slow": 13,
-    "rsi_oversold": 29,
-    "rsi_overbought": 72,
-    "momentum_lookback": 4,
-    "divergence_lookback": 19
-  },
-  "best_score": -1000000000.0,
-  "optimization_time": 42.291063,
+  "best_parameters": {},
+  "best_score": -Infinity,
+  "optimization_time": 344.917456,
   "total_iterations": 0
 }

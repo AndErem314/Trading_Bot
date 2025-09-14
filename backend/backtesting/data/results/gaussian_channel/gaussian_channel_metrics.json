@@ -42,11 +42,7 @@
   "min_trade_duration": 0.0,
   "trades_per_week": 1.108431353167935,
   "strategy_name": "gaussian_channel",
-  "parameters": {
-    "period": 20,
-    "std_dev": 2.0,
-    "adaptive": true
-  },
+  "parameters": {},
   "symbol": "BTC/USDT",
   "timeframe": "4h",
   "start_date": "2021-01-01",

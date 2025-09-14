@@ -85,7 +85,7 @@ class GeminiLLMAnalyzer(BaseLLMAnalyzer):
 
         # to change the model exchange name to ('gemini-2.5-pro'), ('gemini-2.5-flash'), ('gemini-2.0-flash') or ('gemini-1.5-flash')
         genai.configure(api_key=self.api_key)
-        self.model_name = 'gemini-2.5-flash'
+        self.model_name = 'gemini-2.5-pro'
         self.model = genai.GenerativeModel(self.model_name)
         
     def generate_analysis(self, prompt: str) -> str:

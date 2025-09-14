@@ -1,12 +1,7 @@
 {
   "strategy_name": "ichimoku_cloud",
-  "best_parameters": {
-    "tenkan_period": 11,
-    "kijun_period": 22,
-    "senkou_b_period": 56,
-    "displacement": 26
-  },
-  "best_score": -1000000000.0,
-  "optimization_time": 43.281594,
+  "best_parameters": {},
+  "best_score": -Infinity,
+  "optimization_time": 345.856373,
   "total_iterations": 0
 }

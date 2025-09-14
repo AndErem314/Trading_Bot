@@ -1,15 +1,7 @@
 {
   "strategy_name": "fibonacci_retracement",
-  "best_parameters": {
-    "lookback_period": 86,
-    "fib_levels": [
-      0.236,
-      0.382,
-      0.5,
-      0.618
-    ]
-  },
-  "best_score": -1000000000.0,
-  "optimization_time": 42.684165,
+  "best_parameters": {},
+  "best_score": -Infinity,
+  "optimization_time": 8.673956,
   "total_iterations": 0
 }
