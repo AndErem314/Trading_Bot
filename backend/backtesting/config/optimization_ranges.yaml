@@ -212,13 +212,10 @@ strategies:
 
 # Optimization Algorithm Settings
 optimization:
-  method: "grid_search"  # grid_search, random_search, bayesian
+  method: "grid_search"  # grid_search, bayesian
   grid_search:
     exhaustive: false  # If true, test all combinations
     max_combinations: 1000
-  random_search:
-    n_iter: 100
-    random_state: 42
   bayesian:
     n_initial_points: 20
     n_calls: 100

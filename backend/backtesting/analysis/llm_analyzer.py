@@ -41,6 +41,7 @@ class StrategyAnalysis:
     """Container for strategy analysis results"""
     strategy_name: str
     current_performance: Dict[str, float]
+    current_parameters: Dict[str, Any]  # Parameters used in the current run
     suggested_parameters: Dict[str, Any]
     optimization_reasoning: str
     market_conditions: List[str]
@@ -197,16 +198,16 @@ class LLMAnalyzer:
         self.llm: Optional[BaseLLMAnalyzer] = None
         
         if provider == "auto":
-            # Try OpenAI first, then Gemini
+            # Try Gemini first, then OpenAI
             try:
-                self.llm = OpenAILLMAnalyzer(api_key, openai_model)
-                self.active_provider = "openai"
-                logger.info("Using OpenAI for LLM analysis")
+                self.llm = GeminiLLMAnalyzer(api_key)
+                self.active_provider = "gemini"
+                logger.info("Using Gemini for LLM analysis")
             except (ImportError, ValueError):
                 try:
-                    self.llm = GeminiLLMAnalyzer(api_key)
-                    self.active_provider = "gemini"
-                    logger.info("Using Gemini for LLM analysis")
+                    self.llm = OpenAILLMAnalyzer(api_key, openai_model)
+                    self.active_provider = "openai"
+                    logger.info("Using OpenAI for LLM analysis")
                 except (ImportError, ValueError):
                     logger.warning("No LLM provider available. Analysis will use fallback methods.")
                     self.active_provider = None
@@ -259,7 +260,7 @@ class LLMAnalyzer:
         if self.llm and self.llm.is_available():
             try:
                 response_text = self.llm.generate_analysis(prompt)
-                analysis = self._parse_llm_response(response_text, strategy_name, performance_metrics)
+                analysis = self._parse_llm_response(response_text, strategy_name, performance_metrics, current_parameters)
                 analysis.confidence_score = 85.0  # High confidence for LLM analysis
                 
                 # Add token usage information
@@ -348,7 +349,7 @@ for the {context['strategy_name']} trading strategy and provide specific recomme
 for parameter optimization.
 
 CURRENT PERFORMANCE METRICS:
-- Total Return: {context['performance_metrics'].get('total_return', 0):.2f}%
+- Total Return: {context['performance_metrics'].get('total_return_pct', 0):.2f}%
 - Sharpe Ratio: {context['performance_metrics'].get('sharpe_ratio', 0):.2f}
 - Max Drawdown: {context['performance_metrics'].get('max_drawdown', 0):.2f}%
 - Win Rate: {context['performance_metrics'].get('win_rate', 0):.2f}%
@@ -520,7 +521,8 @@ Focus on:
         self,
         response_text: str,
         strategy_name: str,
-        performance_metrics: Dict[str, float]
+        performance_metrics: Dict[str, float],
+        current_parameters: Dict[str, Any]
     ) -> StrategyAnalysis:
         """Parse the LLM response into a structured format"""
         
@@ -537,6 +539,7 @@ Focus on:
                 return StrategyAnalysis(
                     strategy_name=strategy_name,
                     current_performance=performance_metrics,
+                    current_parameters=current_parameters,
                     suggested_parameters=parsed_data.get('suggested_parameters', {}),
                     optimization_reasoning=parsed_data.get('optimization_reasoning', ''),
                     market_conditions=parsed_data.get('market_conditions', []),
@@ -546,20 +549,21 @@ Focus on:
                 )
             else:
                 # Fallback to text parsing
-                return self._parse_text_response(response_text, strategy_name, performance_metrics)
+                return self._parse_text_response(response_text, strategy_name, performance_metrics, current_parameters)
                 
         except json.JSONDecodeError:
             logger.warning("Could not parse JSON from LLM response, using text parsing")
-            return self._parse_text_response(response_text, strategy_name, performance_metrics)
+            return self._parse_text_response(response_text, strategy_name, performance_metrics, current_parameters)
         except Exception as e:
             logger.error(f"Error parsing LLM response: {e}")
-            return self._create_fallback_analysis(strategy_name, performance_metrics, {})
+            return self._create_fallback_analysis(strategy_name, performance_metrics, current_parameters)
     
     def _parse_text_response(
         self,
         response_text: str,
         strategy_name: str,
-        performance_metrics: Dict[str, float]
+        performance_metrics: Dict[str, float],
+        current_parameters: Dict[str, Any]
     ) -> StrategyAnalysis:
         """Parse non-JSON text response from LLM"""
         
@@ -590,6 +594,7 @@ Focus on:
         return StrategyAnalysis(
             strategy_name=strategy_name,
             current_performance=performance_metrics,
+            current_parameters=current_parameters,
             suggested_parameters=suggested_parameters,
             optimization_reasoning=response_text[:500],  # First 500 chars as summary
             market_conditions=market_conditions if market_conditions else ["General market conditions"],
@@ -695,6 +700,7 @@ Recommendations:
         return StrategyAnalysis(
             strategy_name=strategy_name,
             current_performance=performance_metrics,
+            current_parameters=current_parameters,
             suggested_parameters=suggested_parameters,
             optimization_reasoning=optimization_reasoning.strip(),
             market_conditions=market_conditions,
@@ -714,6 +720,7 @@ Recommendations:
         return StrategyAnalysis(
             strategy_name=strategy_name,
             current_performance=performance_metrics,
+            current_parameters=current_parameters,
             suggested_parameters=current_parameters,
             optimization_reasoning="Unable to generate detailed analysis. Please check configuration.",
             market_conditions=["Analysis unavailable"],
@@ -750,7 +757,7 @@ Analysis Provider: {self.active_provider or 'Heuristic'}
         
         for analysis in analyses:
             report += f"| {analysis.strategy_name} | "
-            report += f"{analysis.current_performance.get('total_return', 0):.2f}% | "
+            report += f"{analysis.current_performance.get('total_return_pct', 0):.2f}% | "
             report += f"{analysis.current_performance.get('sharpe_ratio', 0):.2f} | "
             report += f"{analysis.current_performance.get('max_drawdown', 0):.2f}% | "
             report += f"{analysis.current_performance.get('win_rate', 0):.1f}% | "
@@ -764,12 +771,18 @@ Analysis Provider: {self.active_provider or 'Heuristic'}
 ## {analysis.strategy_name} Strategy
 
 ### Current Performance
-- **Total Return**: {analysis.current_performance.get('total_return', 0):.2f}%
+- **Total Return**: {analysis.current_performance.get('total_return_pct', 0):.2f}%
 - **Sharpe Ratio**: {analysis.current_performance.get('sharpe_ratio', 0):.2f}
 - **Max Drawdown**: {analysis.current_performance.get('max_drawdown', 0):.2f}%
 - **Win Rate**: {analysis.current_performance.get('win_rate', 0):.2f}%
 - **Profit Factor**: {analysis.current_performance.get('profit_factor', 0):.2f}
 - **Total Trades**: {analysis.current_performance.get('total_trades', 0)}
+
+### Current Parameters Used
+
+```json
+{json.dumps(analysis.current_parameters, indent=2)}
+```
 
 ### Optimization Recommendations
 

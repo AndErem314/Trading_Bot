@@ -59,6 +59,14 @@ class SingleStrategyBacktest:
         with open(opt_config_path, 'r') as f:
             self.optimization_config = yaml.safe_load(f)
             
+        # Load optimized strategies configuration
+        optimized_config_path = os.path.join(
+            os.path.dirname(config_path),
+            'optimized_strategies.yaml'
+        )
+        with open(optimized_config_path, 'r') as f:
+            self.optimized_strategies = yaml.safe_load(f)
+            
         # Initialize components
         self.data_loader = DataLoader(self.config['backtest']['data'])
         self.strategy_loader = StrategyLoader()
@@ -199,7 +207,7 @@ class SingleStrategyBacktest:
         self,
         strategy_name: str,
         results: Dict[str, Any],
-        provider: str = "auto"
+        provider: str = "gemini"
     ) -> str:
         """
         Analyze results using LLM
@@ -352,7 +360,7 @@ def main():
     parser.add_argument('strategy', help='Strategy name (e.g., bollinger_bands)')
     parser.add_argument('--optimize', action='store_true', help='Run parameter optimization')
     parser.add_argument('--method', default='grid_search', 
-                       choices=['grid_search', 'random_search', 'bayesian'],
+                       choices=['grid_search', 'bayesian'],
                        help='Optimization method')
     parser.add_argument('--analyze', action='store_true', help='Run LLM analysis')
     parser.add_argument('--llm', default='auto', 
@@ -373,15 +381,21 @@ def main():
         results = backtester.optimize_strategy(args.strategy, args.method)
         final_results = results['final_backtest']
     else:
-        # Use provided parameters or defaults
+        # Use provided parameters or defaults from optimized_strategies.yaml
         if args.params:
             parameters = json.loads(args.params)
         else:
-            # Load default parameters from strategy config
-            strategy_config_path = 'backend/config/strategy_config.json'
-            with open(strategy_config_path, 'r') as f:
-                strategy_config = json.load(f)
-            parameters = strategy_config['strategies'].get(args.strategy, {}).get('parameters', {})
+            # Load default parameters from optimized_strategies.yaml
+            if args.strategy in backtester.optimized_strategies.get('strategies', {}):
+                strategy_config = backtester.optimized_strategies['strategies'][args.strategy]
+                parameters = strategy_config.get('optimized_parameters', {}).get('default', {})
+                # Remove non-parameter fields
+                parameters = {k: v for k, v in parameters.items() if k != 'expected_return'}
+                logger.info(f"Using optimized parameters for {args.strategy}: {parameters}")
+            else:
+                # Fallback to empty parameters if strategy not found
+                logger.warning(f"No optimized parameters found for {args.strategy}, using empty parameters")
+                parameters = {}
         
         # Run single backtest
         final_results = backtester.run_backtest(args.strategy, parameters)

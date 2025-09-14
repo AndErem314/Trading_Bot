@@ -29,6 +29,7 @@ strategies:
 
   macd_momentum:
     description: "MACD Momentum Crossover - Optimized for BTC/USDT 4h"
+    optimized_parameters:
       default:
         macd_fast: 14
         macd_slow: 28
@@ -47,7 +48,7 @@ strategies:
         rsi_period: 14
         rsi_extreme: 25
         atr_stop_multiplier: 2.0
-        atr_tril_multiplier: 1.5
+        atr_trail_multiplier: 1.5
         
   ichimoku_cloud:
     description: "Ichimoku Cloud Breakout - Optimized for BTC/USDT 4h"
@@ -71,7 +72,7 @@ strategies:
     optimized_parameters:
       default:
         lookback_period: 50
-        fib_levels: [0.236, 0.382, 0.5, 0.618, 0.618, 0.786]
+        fib_levels: [0.236, 0.382, 0.5, 0.618, 0.786]
         
   gaussian_channel:
     description: "Gaussian Channel - Optimized for BTC/USDT 4h"

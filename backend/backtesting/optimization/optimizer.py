@@ -85,7 +85,7 @@ class ParameterOptimizer:
             strategy_name: Name of the strategy to optimize
             parameter_ranges: Parameter ranges to search
             objective_metric: Metric to optimize (e.g., sharpe_ratio)
-            method: Optimization method (grid_search, random_search, bayesian)
+            method: Optimization method (grid_search, bayesian)
             constraints: Optional constraints on metrics
             
         Returns:
@@ -102,8 +102,6 @@ class ParameterOptimizer:
         # Choose optimization method
         if method == "grid_search":
             self._grid_search(strategy_name, parameter_ranges, objective_metric, constraints)
-        elif method == "random_search":
-            self._random_search(strategy_name, parameter_ranges, objective_metric, constraints)
         elif method == "bayesian":
             if SKOPT_AVAILABLE:
                 self._bayesian_optimization(strategy_name, parameter_ranges, objective_metric, constraints)
@@ -183,32 +181,6 @@ class ParameterOptimizer:
                     self._update_best(params, score, metrics)
                 except Exception as e:
                     logger.error(f"Error evaluating parameters {params}: {e}")
-    
-    def _random_search(
-        self,
-        strategy_name: str,
-        parameter_ranges: Dict[str, Dict],
-        objective_metric: str,
-        constraints: Optional[Dict[str, float]]
-    ):
-        """Perform random search optimization"""
-        n_iter = self.optimization_config.get('random_search', {}).get('n_iter', 100)
-        random_state = self.optimization_config.get('random_search', {}).get('random_state', 42)
-        
-        np.random.seed(random_state)
-        logger.info(f"Random search: Testing {n_iter} random parameter combinations")
-        
-        for i in tqdm(range(n_iter), desc="Random Search Progress"):
-            # Generate random parameters
-            params = self._generate_random_parameters(parameter_ranges)
-            
-            try:
-                score, metrics = self._evaluate_parameters(
-                    strategy_name, params, objective_metric, constraints
-                )
-                self._update_best(params, score, metrics)
-            except Exception as e:
-                logger.error(f"Error evaluating parameters {params}: {e}")
     
     def _bayesian_optimization(
         self,
@@ -349,28 +321,6 @@ class ParameterOptimizer:
             combinations = combinations[:max_combinations]
         
         return combinations
-    
-    def _generate_random_parameters(self, parameter_ranges: Dict[str, Dict]) -> Dict[str, Any]:
-        """Generate random parameters within specified ranges"""
-        params = {}
-        
-        for param_name, param_config in parameter_ranges.items():
-            param_type = param_config.get('type', 'float')
-            
-            if param_type == 'int':
-                params[param_name] = np.random.randint(param_config['min'], param_config['max'] + 1)
-            elif param_type == 'float':
-                params[param_name] = np.random.uniform(param_config['min'], param_config['max'])
-            elif param_type == 'bool':
-                params[param_name] = np.random.choice(param_config.get('options', [True, False]))
-            elif param_type == 'list':
-                # For list type, we need to handle lists of lists (like fib_levels)
-                options = param_config['options']
-                # Use random.choice from standard library which can handle any object type
-                import random
-                params[param_name] = random.choice(options)
-        
-        return params
     
     def _evaluate_parameters(
         self,

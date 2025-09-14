@@ -146,14 +146,9 @@ This will:
 3. Generate AI analysis for the best results
 4. Save all results with optimization history
 
-### Option 3: Other Optimization Methods
+### Option 3: Bayesian Optimization
 ```bash
-# Random search (faster for large parameter spaces)
-python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands \
-  --optimize --method random_search \
-  --analyze --llm gemini
-
-# Bayesian optimization (most efficient)
+# Bayesian optimization (most efficient for complex parameter spaces)
 python3 backend/backtesting/scripts/run_single_strategy.py macd_momentum \
   --optimize --method bayesian \
   --analyze --llm gemini
@@ -202,14 +197,14 @@ gaussian_channel:
       expected_return: "TBD - Run backtest to verify"
 ```
 
-3. **Note**: These optimized parameters will **NOT** automatically update `strategy_config.json` for live trading. You must:
-   - Either manually update `/backend/config/strategy_config.json` with the tested parameters
-   - Or use the `run_optimized_strategy.py` script which reads from `optimized_strategies.yaml`
+3. **Note**: These optimized parameters will **NOT** automatically update `strategy_config.json` for live trading. You must manually update `/backend/config/strategy_config.json` with the tested parameters for live trading.
 
-4. **Verify the optimization** by running:
+4. **Verify the optimization** by running the same strategy again:
 ```bash
-python3 backend/backtesting/scripts/run_optimized_strategy.py gaussian_channel
+python3 backend/backtesting/scripts/run_single_strategy.py gaussian_channel --analyze
 ```
+
+The script will automatically use the parameters from `optimized_strategies.yaml`.
 
 ### Step 3: Create Optimized Config
 ```bash
@@ -263,7 +258,7 @@ configs/strategies/
 
 1. **Run backtest with LLM analysis** → Get parameter recommendations
 2. **Manually update** `backend/backtesting/config/optimized_strategies.yaml` with the recommended parameters
-3. **Test the optimized parameters** using `run_optimized_strategy.py`
+3. **Test the optimized parameters** by running the same strategy again (it will use the updated parameters)
 4. **For live trading**, manually update `backend/config/strategy_config.json` with the tested parameters
 
 **Key Points:**

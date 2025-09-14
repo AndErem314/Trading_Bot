@@ -31,7 +31,8 @@ backend/backtesting/
 │   └── strategy_loader.py    # Load and initialize strategies
 ├── config/                    # Configuration files
 │   ├── backtest_config.yaml      # Main configuration
-│   └── optimization_ranges.yaml  # Parameter optimization ranges
+│   ├── optimization_ranges.yaml  # Parameter optimization ranges
+│   └── optimized_strategies.yaml # Optimized strategy parameters
 ├── data/                      # Data storage
 │   ├── historical/           # Historical price data
 │   ├── results/              # Backtesting results
@@ -80,9 +81,6 @@ python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --opti
 ```bash
 # Grid search (default)
 python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method grid_search
-
-# Random search
-python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method random_search
 
 # Bayesian optimization
 python backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method bayesian

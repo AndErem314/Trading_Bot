@@ -35,7 +35,7 @@ The Trading Bot employs a dual-strategy system with two distinct but complementa
 └──────────────────────────┘      └──────────────────────────────┘
 ```
 
-## 1. SQL-based Strategy Descriptors (Original System)
+## 1. SQL-based Strategy Descriptors (Historical Analysis)
 
 ### Purpose
 - Historical signal analysis
@@ -62,6 +62,44 @@ The Trading Bot employs a dual-strategy system with two distinct but complementa
    - Performance analysis
    - Strategy optimization
 
+### Streamlined Backtesting Workflow
+
+#### Single Configuration Source
+All strategy parameters are now managed in `/backend/backtesting/config/optimized_strategies.yaml`:
+
+```yaml
+strategies:
+  bollinger_bands:
+    description: "Bollinger Bands Mean Reversion - Optimized for BTC/USDT 4h"
+    optimized_parameters:
+      default:
+        bb_length: 25
+        bb_std: 2.5
+        rsi_length: 18
+        rsi_oversold: 40
+        rsi_overbought: 80
+```
+
+#### Running Backtests
+```bash
+# Run with default optimized parameters
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --analyze
+
+# Run with parameter optimization (grid search or bayesian)
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method grid_search
+
+# Run with custom parameters
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --params '{"bb_length": 20, "bb_std": 2.0}'
+```
+
+#### Analysis Reports
+All backtests automatically generate comprehensive reports including:
+- **Current Parameters Used**: Shows exact parameters for the run
+- **Performance Metrics**: Returns, Sharpe ratio, drawdown, etc.
+- **Suggested Parameters**: AI-powered recommendations via Gemini
+- **Risk Assessment**: Detailed risk analysis
+- **Market Conditions**: Optimal conditions for the strategy
+
 ### Example SQL Query (RSI Momentum Strategy)
 ```sql
 WITH signal_data AS (
@@ -82,7 +120,7 @@ ORDER BY timestamp DESC
 LIMIT 100;
 ```
 
-## 2. Executable Strategy Implementations (New System)
+## 2. Executable Strategy Implementations (Live Trading)
 
 ### Purpose
 - Real-time signal generation
@@ -227,22 +265,41 @@ current_signal = bridge.get_live_signal()  # Uses executable
    - Calculate indicators on-demand
    - Use database for historical queries only
 
-## Migration Considerations
+## Streamlined Workflow Benefits
 
-### Phase 1 (Current)
-- Both systems run in parallel
-- SQL for backtesting and analysis
-- Executables for paper trading validation
+### Single Source of Truth
+- All strategy parameters in `optimized_strategies.yaml`
+- No separate workflow for optimized vs non-optimized runs
+- Easy to track and version control parameter changes
 
-### Phase 2 (Testing)
-- Compare signals between systems
-- Validate executable strategies match SQL logic
-- Performance testing under load
+### Iterative Optimization Process
+1. **Initial Run**: Test strategy with current parameters
+2. **AI Analysis**: Gemini provides parameter recommendations
+3. **Manual Update**: Update parameters in `optimized_strategies.yaml`
+4. **Re-test**: Run again with new parameters
+5. **Compare**: Analyze improvement in performance
 
-### Phase 3 (Production)
-- Executable strategies for all live trading
-- SQL descriptors for research and backtesting
-- Database as historical record, not dependency
+### Optimization Methods
+- **Grid Search**: Exhaustive search through parameter combinations
+- **Bayesian Optimization**: Intelligent search using probabilistic model
+- **No Random Search**: Removed for consistency and reproducibility
+
+### Example Workflow
+```bash
+# Step 1: Test current parameters
+python3 backend/backtesting/scripts/run_single_strategy.py gaussian_channel --analyze
+
+# Step 2: Review AI recommendations in the report
+# Report shows current parameters and suggested improvements
+
+# Step 3: Update optimized_strategies.yaml with new parameters
+# Edit the file manually based on recommendations
+
+# Step 4: Run again with updated parameters
+python3 backend/backtesting/scripts/run_single_strategy.py gaussian_channel --analyze
+
+# Step 5: Compare performance improvements
+```
 
 ## Summary
 
