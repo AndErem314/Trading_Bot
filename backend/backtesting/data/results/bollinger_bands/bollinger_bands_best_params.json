@@ -2,6 +2,6 @@
   "strategy_name": "bollinger_bands",
   "best_parameters": {},
   "best_score": -Infinity,
-  "optimization_time": 338.020826,
+  "optimization_time": 336.806672,
   "total_iterations": 0
 }

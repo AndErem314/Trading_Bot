@@ -4,7 +4,7 @@
 1. [Running a Single Strategy](#running-single-strategy)
 2. [Understanding the Results](#understanding-results)  
 3. [Implementing Optimizations](#implementing-optimizations)
-4. [Running with Optimized Parameters](#running-optimized)
+4. [Best Workflow Approach](#best-workflow)
 5. [Complete Workflow Example](#complete-workflow)
 
 ## 1. Running a Single Strategy {#running-single-strategy}
@@ -59,62 +59,33 @@ Look for the **"Suggested Parameter Adjustments"** section - these are the optim
 
 ## 3. Implementing Optimizations {#implementing-optimizations}
 
-### Method 1: Create an Optimized Configuration File
+### Method 1: Update optimized_strategies.yaml (Recommended)
 
-#### Step 1: Create a New Config File
+After getting AI recommendations, update the central configuration:
+
 ```bash
-nano configs/strategies/rsi_divergence_optimized.yaml
+# Open the optimized strategies configuration
+nano backend/backtesting/config/optimized_strategies.yaml
 ```
 
-#### Step 2: Copy Suggested Parameters from LLM Analysis
-Example content based on LLM suggestions:
+Update your strategy section with the recommended parameters:
 ```yaml
-# Optimized RSI Divergence Strategy Configuration
-# Based on LLM Analysis
-
-strategy:
-  name: rsi_divergence
-  version: "1.1"
-  description: "Optimized parameters from Gemini analysis"
-
-parameters:
-  # RSI Settings - Adjusted for better signal quality
-  rsi_length: 16  # Increased from 14 for smoother signals
-  rsi_sma_fast: 5
-  rsi_sma_slow: 12  # Increased from 10 for better trend detection
-  
-  # Thresholds - Tightened for higher win rate
-  rsi_oversold: 25  # Lowered from 30
-  rsi_overbought: 75  # Raised from 70
-  
-  # Divergence Detection
-  momentum_lookback: 7  # Increased from 5
-  divergence_lookback: 25  # Increased from 20
-
-# Risk Management - Added based on recommendations
-risk_management:
-  position_size: 0.02  # 2% per trade (reduced from default)
-  stop_loss_pct: 0.03  # 3% stop loss
-  take_profit_pct: 0.09  # 9% take profit (3:1 reward/risk)
-
-# Backtesting Configuration
-backtest:
-  symbol: "BTC/USDT"
-  timeframe: "4h"
-  start_date: "2020-01-01"
-  end_date: "2025-09-01"
-```
-
-#### Step 3: Run with Config File
-```bash
-python3 backend/backtesting/scripts/run_single_strategy.py rsi_divergence \
-  --config configs/strategies/rsi_divergence_optimized.yaml \
-  --analyze --llm gemini
+rsi_divergence:
+  description: "RSI Momentum Divergence - Optimized for BTC/USDT 4h"
+  optimized_parameters:
+    default:
+      rsi_length: 16  # AI recommended: increased from 14
+      rsi_sma_fast: 5
+      rsi_sma_slow: 12
+      rsi_oversold: 25  # AI recommended: lowered from 30
+      rsi_overbought: 75  # AI recommended: raised from 70
+      momentum_lookback: 7
+      divergence_lookback: 25
 ```
 
 ### Method 2: Direct Parameter Input
 
-Run the strategy with suggested parameters directly:
+For quick testing without updating the configuration:
 
 ```bash
 python3 backend/backtesting/scripts/run_single_strategy.py rsi_divergence \
@@ -122,37 +93,48 @@ python3 backend/backtesting/scripts/run_single_strategy.py rsi_divergence \
   --analyze
 ```
 
-## 4. Running with Optimized Parameters {#running-optimized}
+## 4. Best Workflow Approach {#best-workflow}
 
-### Option 1: Test Specific Parameters (Recommended)
-Use the parameters from the AI analysis:
+### Recommended Sequence:
+
+#### 1. Initial Baseline Test
+First, run the strategy with current parameters from `optimized_strategies.yaml`:
 ```bash
-python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands \
-  --params '{"bb_length": 25, "bb_std": 2.5}' \
-  --analyze --llm gemini
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --analyze --llm gemini
+```
+This gives you a baseline performance and AI recommendations.
+
+#### 2. Review and Update Parameters
+- Review the AI recommendations in the report
+- The report shows both "Current Parameters Used" and "Suggested Parameter Adjustments"
+- Manually update `optimized_strategies.yaml` with the suggested parameters
+
+#### 3. Test Updated Parameters
+Run again with the updated parameters:
+```bash
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --analyze --llm gemini
 ```
 
-### Option 2: Running Grid Search Optimization
-Let the system test all parameter combinations automatically:
+#### 4. Optional: Run Optimization
+If you want to explore the parameter space more thoroughly:
 ```bash
-python3 backend/backtesting/scripts/run_single_strategy.py rsi_divergence \
-  --optimize --method grid_search \
-  --analyze --llm gemini
+# Grid search (tests all combinations)
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method grid_search
+
+# Or Bayesian optimization (smarter search)
+python3 backend/backtesting/scripts/run_single_strategy.py bollinger_bands --optimize --method bayesian
 ```
 
-This will:
-1. Test multiple parameter combinations systematically
-2. Find the best performing parameter set
-3. Generate AI analysis for the best results
-4. Save all results with optimization history
+### Key Points:
+1. **Without `--optimize`**: Uses parameters from `optimized_strategies.yaml`
+2. **With `--optimize`**: Searches for new optimal parameters
+3. **AI Analysis**: Always provides suggestions based on the results
 
-### Option 3: Bayesian Optimization
-```bash
-# Bayesian optimization (most efficient for complex parameter spaces)
-python3 backend/backtesting/scripts/run_single_strategy.py macd_momentum \
-  --optimize --method bayesian \
-  --analyze --llm gemini
-```
+### Viewing Optimization Results
+When using `--optimize`, the results are saved in:
+- `{strategy}_best_params.json` - Best parameters found
+- `{strategy}_optimization_history.json` - All tested combinations (for grid search)
+- `{strategy}_metrics.json` - Performance metrics of the final run
 
 ## 5. Complete Workflow Example {#complete-workflow}
 
@@ -175,9 +157,9 @@ open backend/backtesting/data/results/rsi_divergence/rsi_divergence_trades.csv
 open backend/backtesting/data/results/rsi_divergence/rsi_divergence_equity_curve.png
 ```
 
-### Step 2a: Update Optimized Parameters Configuration
+### Step 3: Update Optimized Parameters Configuration
 
-**Important**: After receiving parameter recommendations from the LLM analysis, you need to manually update the optimized parameters configuration:
+After receiving parameter recommendations from the LLM analysis:
 
 1. **Update the optimized strategies file**:
 ```bash
@@ -185,7 +167,7 @@ open backend/backtesting/data/results/rsi_divergence/rsi_divergence_equity_curve
 nano backend/backtesting/config/optimized_strategies.yaml
 ```
 
-2. **Add your optimized parameters** under the appropriate strategy section. For example, if you got recommendations for `gaussian_channel`:
+2. **Add your optimized parameters** under the appropriate strategy section:
 ```yaml
 gaussian_channel:
   description: "Gaussian Channel - Optimized based on LLM analysis"
@@ -194,17 +176,16 @@ gaussian_channel:
       period: 20
       std_dev: 2.0
       adaptive: true
-      expected_return: "TBD - Run backtest to verify"
 ```
 
-3. **Note**: These optimized parameters will **NOT** automatically update `strategy_config.json` for live trading. You must manually update `/backend/config/strategy_config.json` with the tested parameters for live trading.
-
-4. **Verify the optimization** by running the same strategy again:
+3. **Verify the optimization** by running the same strategy again:
 ```bash
 python3 backend/backtesting/scripts/run_single_strategy.py gaussian_channel --analyze
 ```
 
-The script will automatically use the parameters from `optimized_strategies.yaml`.
+The script will automatically use the updated parameters from `optimized_strategies.yaml`.
+
+**Note**: For live trading, manually update `/backend/config/strategy_config.json` with the tested parameters.
 
 ### Step 3: Create Optimized Config
 ```bash
@@ -252,21 +233,20 @@ configs/strategies/
 
 **No additional reporting steps needed** - everything is generated automatically!
 
-## Parameter Optimization Workflow Summary
+## Summary
 
-### From Backtesting to Live Trading
+### Workflow Overview
+1. **Run strategy** with current parameters from `optimized_strategies.yaml`
+2. **Review AI analysis** showing current vs suggested parameters
+3. **Update** `optimized_strategies.yaml` with recommendations
+4. **Re-test** to verify improvements
+5. **Optional**: Run full optimization for deeper parameter exploration
 
-1. **Run backtest with LLM analysis** → Get parameter recommendations
-2. **Manually update** `backend/backtesting/config/optimized_strategies.yaml` with the recommended parameters
-3. **Test the optimized parameters** by running the same strategy again (it will use the updated parameters)
-4. **For live trading**, manually update `backend/config/strategy_config.json` with the tested parameters
-
-**Key Points:**
-- LLM parameter recommendations are NOT automatically applied
-- `optimized_strategies.yaml` stores optimization results for backtesting
-- `strategy_config.json` controls live trading parameters
-- Always test optimized parameters before using in live trading
+### Important Files
+- **Configuration**: `backend/backtesting/config/optimized_strategies.yaml`
+- **Results**: `backend/backtesting/data/results/{strategy_name}/`
+- **Live Trading**: `backend/config/strategy_config.json` (update manually)
 
 ---
 
-*That's it! Run strategy → Read AI analysis → Apply suggestions → Compare results → Update configs → Deploy to live trading*
+*Remember: Always test parameter changes thoroughly before deploying to live trading!*
