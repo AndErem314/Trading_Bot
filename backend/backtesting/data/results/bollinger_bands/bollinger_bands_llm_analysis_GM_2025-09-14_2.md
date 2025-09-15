@@ -1,55 +1,67 @@
 
 # Trading Strategy Optimization Report
-Generated: 2025-09-14 12:05:45
+Generated: 2025-09-14 16:54:15
 Analysis Provider: gemini
 
 ### Overall Performance Summary
 
 | Strategy | Total Return | Sharpe Ratio | Max Drawdown | Win Rate | Improvement Potential |
 |----------|-------------|--------------|--------------|----------|---------------------|
-| bollinger_bands | 0.58% | -2.61 | 1.31% | 68.4% | 25.0% |
+| bollinger_bands | -0.11% | -2.24 | 1.08% | 60.0% | 25.0% |
 
 ---
 
 ## bollinger_bands Strategy
 
 ### Current Performance
-- **Total Return**: 0.58%
-- **Sharpe Ratio**: -2.61
-- **Max Drawdown**: 1.31%
-- **Win Rate**: 68.42%
-- **Profit Factor**: 1.59
-- **Total Trades**: 19
+- **Total Return**: -0.11%
+- **Sharpe Ratio**: -2.24
+- **Max Drawdown**: 1.08%
+- **Win Rate**: 60.00%
+- **Profit Factor**: 0.99
+- **Total Trades**: 105
 
-### Optimization Recommendations
-
-The current performance is poor due to a mismatch between the strategy's mean-reversion nature and the market's bullish trend. The parameters are too slow and wide, resulting in very few trades and exposure to large losses when the trend does not revert. My recommendations are designed to address this:
-
-1.  **Increase Trade Frequency and Sensitivity:** Reducing `bb_length` from 25 to 20 and `bb_std` from 2.5 to 2.0 will make the bands tighter and more responsive to recent price action. This will significantly increase the number of trading opportunities, providing a more statistically robust backtest and potentially increasing total return.
-
-2.  **Improve Entry Signal Quality:** The current `rsi_oversold` of 40 is too permissive, allowing long entries on minor dips that may not be truly oversold. Lowering it to the standard of 30 provides a stricter filter, ensuring the strategy only enters on more significant pullbacks, which have a higher probability of reverting. This is key to cutting the large losses that are destroying the Sharpe Ratio.
-
-3.  **Standardize and Align Indicators:** Changing `rsi_length` from 18 to 14 (a common standard) and `rsi_overbought` from 80 to 70 aligns the confirmation indicator's speed and sensitivity with the newly adjusted, faster Bollinger Bands. This ensures better synchronization between the entry signal and its confirmation.
-
-### Suggested Parameter Adjustments
+### Current Parameters Used
 
 ```json
 {
   "bb_length": 20,
   "bb_std": 2.0,
-  "rsi_length": 14,
-  "rsi_oversold": 30,
+  "rsi_length": 12,
+  "rsi_oversold": 35,
   "rsi_overbought": 70
 }
 ```
 
+### Optimization Recommendations
+
+The current performance, characterized by a high win rate (60%) but a negative Sharpe Ratio (-2.24) and a Profit Factor below 1, is a classic symptom of a mean-reversion strategy fighting a strong trend. The strategy is correctly identifying minor pullbacks but is being severely punished on the trades that fail when the trend resumes. The optimization reasoning is as follows:
+
+1.  **Widen Bollinger Bands (`bb_std`: 2.0 -> 2.5):** In a strong trend, prices can 'walk the band' for extended periods. Increasing the standard deviation requires a much more significant price extension away from the mean to trigger a signal. This will filter out low-probability trades and focus only on moments of genuine over-extension, which have a higher chance of reverting. This is the single most important change to reduce drawdown and improve the quality of each trade.
+
+2.  **Lengthen Lookback Periods (`bb_length`: 20 -> 25, `rsi_length`: 12 -> 14):** Using longer lookback periods for both the Bollinger Bands and RSI makes the indicators less sensitive to short-term price noise. This helps the strategy focus on a more significant, longer-term mean and momentum, preventing premature entries against the primary trend.
+
+3.  **Asymmetrical RSI Thresholds (`rsi_oversold`: 35, `rsi_overbought`: 75):** The market is in a strong bullish trend. Therefore, we must adapt. Raising the `rsi_overbought` threshold to 75 makes it significantly harder to initiate a short (counter-trend) position, requiring extreme buying exhaustion. Conversely, keeping the `rsi_oversold` at a less extreme level like 35 allows the strategy to enter long positions on shallower dips, which are common in a strong uptrend. This aligns the strategy's entry logic with the prevailing market direction.
+
+### Suggested Parameter Adjustments
+
+```json
+{
+  "bb_length": 25,
+  "bb_std": 2.5,
+  "rsi_length": 14,
+  "rsi_oversold": 35,
+  "rsi_overbought": 75
+}
+```
+
 ### Optimal Market Conditions
-- Range-bound / consolidating markets
-- High volatility without a strong directional trend
-- Markets exhibiting clear mean-reversion characteristics
+- Range-bound markets with normal to high volatility
+- Weakly trending or choppy markets where price oscillates around a mean
+- Markets showing signs of trend exhaustion after a prolonged move
 
 ### Risk Assessment
-The primary risk of the current strategy is its poor performance in a strongly trending market, as evidenced by the market analysis. A negative Sharpe Ratio (-2.61) combined with a high Win Rate (68.42%) strongly suggests that the strategy generates many small wins but suffers from infrequent, large losses that erase all profits and more. This is a classic 'picking up pennies in front of a steamroller' risk profile. Furthermore, the extremely low trade count (19) indicates a high risk of curve-fitting and statistical insignificance; the results may not be representative of future performance. The suggested optimizations aim to mitigate these risks by increasing trade frequency and improving the quality of entry signals, but the fundamental risk of using a mean-reversion strategy against a strong trend remains.
+The primary risk for this strategy is strong, persistent trending markets. The current negative performance is a clear indicator that its mean-reversion logic is failing in the prevailing bullish trend. The strategy is designed to sell strength and buy weakness, which leads to repeated small wins but catastrophic losses when the trend does not revert. The suggested parameter changes aim to mitigate this 'trend risk' by making the entry signals far more selective. However, this introduces a secondary risk of 'overfitting' to the backtest period and potentially reducing the total number of trades, which could lead to lower returns in more suitable, range-bound market conditions. A sudden shift from a trending to a ranging market might not be captured effectively with these more conservative parameters.
 
 ### Performance Improvement Potential
 - **Estimated Improvement**: 25.0%
@@ -58,14 +70,14 @@ The primary risk of the current strategy is its poor performance in a strongly t
 - **Provider**: gemini
 - **Model**: gemini-2.5-pro
 - **Prompt Tokens**: 363
-- **Completion Tokens**: 722
-- **Total Tokens**: 1084
+- **Completion Tokens**: 801
+- **Total Tokens**: 1163
 
 ---
 
 ## Token Usage Summary
 
-Total tokens used across all analyses: 1,084
+Total tokens used across all analyses: 1,163
 
 ## Executive Summary
 

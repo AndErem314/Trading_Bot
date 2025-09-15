@@ -100,7 +100,12 @@ class StrategyLoader:
         self.strategies_path = strategies_path
         self.loaded_strategies = {}
         
-        # Add strategies path to Python path
+        # Add backend directory to Python path for proper imports
+        backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if backend_dir not in sys.path:
+            sys.path.insert(0, backend_dir)
+        
+        # Also add strategies path
         if self.strategies_path not in sys.path:
             sys.path.insert(0, self.strategies_path)
     
@@ -156,11 +161,28 @@ class StrategyLoader:
         
         # Try to import from existing strategies
         try:
-            # Import from backend.executable_workflow.strategies
-            module = importlib.import_module(f'executable_workflow.strategies.{strategy_name}')
-            strategy_class = getattr(module, class_name)
-            return strategy_class
-        except (ImportError, AttributeError) as e:
+            # Try different import paths
+            import_attempts = [
+                f'backend.executable_workflow.strategies.{strategy_name}_strategy',
+                f'executable_workflow.strategies.{strategy_name}_strategy',
+                f'backend.executable_workflow.strategies.{strategy_name}',
+                f'executable_workflow.strategies.{strategy_name}'
+            ]
+            
+            for module_path in import_attempts:
+                try:
+                    module = importlib.import_module(module_path)
+                    strategy_class = getattr(module, class_name)
+                    logger.info(f"Successfully imported {strategy_name} from {module_path}")
+                    return strategy_class
+                except (ImportError, AttributeError) as e:
+                    logger.debug(f"Failed to import {module_path}: {e}")
+                    continue
+            
+            # If all attempts failed, raise the last exception
+            raise ImportError(f"Could not import strategy {strategy_name} from any known path")
+            
+        except ImportError as e:
             logger.warning(f"Could not import existing strategy {strategy_name}: {e}")
             
         # If not found, create a wrapper using the strategy definition
@@ -304,7 +326,7 @@ class StrategyLoader:
                 return df
             
             def _macd_momentum_signals(self, df):
-                """MACD Momentum Crossover strategy"""
+                """Enhanced MACD Momentum Crossover strategy with ADX and advanced filters"""
                 # Calculate MACD
                 macd_fast = self.parameters.get('macd_fast', 12)
                 macd_slow = self.parameters.get('macd_slow', 26)
@@ -316,27 +338,89 @@ class StrategyLoader:
                 df['macd_signal'] = df['macd'].ewm(span=macd_signal).mean()
                 df['macd_histogram'] = df['macd'] - df['macd_signal']
                 
-                # Momentum
+                # Calculate ADX for trend strength
+                adx_period = self.parameters.get('adx_period', 14)
+                adx_threshold = self.parameters.get('adx_threshold', 25)
+                
+                # True Range
+                df['tr'] = np.maximum(
+                    df['high'] - df['low'],
+                    np.maximum(
+                        abs(df['high'] - df['close'].shift(1)),
+                        abs(df['low'] - df['close'].shift(1))
+                    )
+                )
+                df['atr'] = df['tr'].rolling(window=adx_period).mean()
+                
+                # Directional Movement
+                df['dm_plus'] = np.where(
+                    (df['high'] - df['high'].shift(1)) > (df['low'].shift(1) - df['low']),
+                    np.maximum(df['high'] - df['high'].shift(1), 0),
+                    0
+                )
+                df['dm_minus'] = np.where(
+                    (df['low'].shift(1) - df['low']) > (df['high'] - df['high'].shift(1)),
+                    np.maximum(df['low'].shift(1) - df['low'], 0),
+                    0
+                )
+                
+                # Directional Indicators
+                df['di_plus'] = 100 * (df['dm_plus'].rolling(window=adx_period).mean() / df['atr'])
+                df['di_minus'] = 100 * (df['dm_minus'].rolling(window=adx_period).mean() / df['atr'])
+                
+                # ADX
+                df['dx'] = 100 * abs(df['di_plus'] - df['di_minus']) / (df['di_plus'] + df['di_minus'])
+                df['adx'] = df['dx'].rolling(window=adx_period).mean()
+                
+                # Momentum and ROC
                 momentum_period = self.parameters.get('momentum_period', 14)
                 df['momentum'] = df['close'] - df['close'].shift(momentum_period)
+                df['roc'] = ((df['close'] - df['close'].shift(momentum_period)) / df['close'].shift(momentum_period)) * 100
                 
                 # Volume filter
                 volume_threshold = self.parameters.get('volume_threshold', 1.5)
                 df['volume_sma'] = df['volume'].rolling(window=20).mean()
                 high_volume = df['volume'] > (df['volume_sma'] * volume_threshold)
                 
-                # Generate signals
-                # Buy: MACD crosses above signal with positive momentum and high volume
+                # Enhanced signal generation
                 macd_cross_up = (df['macd'] > df['macd_signal']) & (df['macd'].shift(1) <= df['macd_signal'].shift(1))
-                buy_condition = macd_cross_up & (df['momentum'] > 0) & high_volume
-                
-                # Sell: MACD crosses below signal with negative momentum
                 macd_cross_down = (df['macd'] < df['macd_signal']) & (df['macd'].shift(1) >= df['macd_signal'].shift(1))
-                sell_condition = macd_cross_down & (df['momentum'] < 0)
                 
-                df.loc[buy_condition, 'signal'] = 1
-                df.loc[sell_condition, 'signal'] = -1
-                df.loc[df['signal'] != 0, 'strength'] = 0.7
+                # Histogram expansion/contraction
+                hist_expanding = (abs(df['macd_histogram']) > abs(df['macd_histogram'].shift(1))) & \
+                                (abs(df['macd_histogram'].shift(1)) > abs(df['macd_histogram'].shift(2)))
+                
+                # Strong signals require ADX > threshold and MACD position relative to zero
+                strong_buy = macd_cross_up & (df['macd'] < 0) & (df['momentum'] > 0) & \
+                            (df['roc'] > 0) & high_volume & (df['adx'] > adx_threshold)
+                strong_sell = macd_cross_down & (df['macd'] > 0) & (df['momentum'] < 0) & \
+                             (df['roc'] < 0) & high_volume & (df['adx'] > adx_threshold)
+                
+                # Moderate signals for trending conditions
+                moderate_buy = (df['macd'] > df['macd_signal']) & (df['macd_histogram'] > 0) & \
+                              hist_expanding & (df['momentum'] > 0) & (df['adx'] > 20)
+                moderate_sell = (df['macd'] < df['macd_signal']) & (df['macd_histogram'] < 0) & \
+                               hist_expanding & (df['momentum'] < 0) & (df['adx'] > 20)
+                
+                # Apply signals with appropriate strength
+                df.loc[strong_buy, 'signal'] = 1
+                df.loc[strong_buy, 'strength'] = 0.9
+                
+                df.loc[strong_sell, 'signal'] = -1
+                df.loc[strong_sell, 'strength'] = 0.9
+                
+                df.loc[moderate_buy & (df['signal'] == 0), 'signal'] = 1
+                df.loc[moderate_buy & (df['signal'] == 1), 'strength'] = 0.6
+                
+                df.loc[moderate_sell & (df['signal'] == 0), 'signal'] = -1
+                df.loc[moderate_sell & (df['signal'] == -1), 'strength'] = 0.6
+                
+                # Reduce strength in choppy markets (low ADX)
+                df.loc[(df['adx'] < 20) & (df['signal'] != 0), 'strength'] *= 0.7
+                
+                # No signals in extremely choppy markets
+                df.loc[df['adx'] < 15, 'signal'] = 0
+                df.loc[df['adx'] < 15, 'strength'] = 0
                 
                 return df
             

@@ -1,71 +1,80 @@
 
 # Trading Strategy Optimization Report
-Generated: 2025-09-14 14:56:41
+Generated: 2025-09-14 16:57:24
 Analysis Provider: gemini
 
 ### Overall Performance Summary
 
 | Strategy | Total Return | Sharpe Ratio | Max Drawdown | Win Rate | Improvement Potential |
 |----------|-------------|--------------|--------------|----------|---------------------|
-| bollinger_bands | 0.12% | -2.63 | 0.81% | 62.5% | 15.0% |
+| bollinger_bands | 0.93% | -2.56 | 0.71% | 60.7% | 20.0% |
 
 ---
 
 ## bollinger_bands Strategy
 
 ### Current Performance
-- **Total Return**: 0.12%
-- **Sharpe Ratio**: -2.63
-- **Max Drawdown**: 0.81%
-- **Win Rate**: 62.50%
-- **Profit Factor**: 1.10
-- **Total Trades**: 112
+- **Total Return**: 0.93%
+- **Sharpe Ratio**: -2.56
+- **Max Drawdown**: 0.71%
+- **Win Rate**: 60.71%
+- **Profit Factor**: 1.86
+- **Total Trades**: 56
 
-### Optimization Recommendations
-
-The current performance profile (high win rate, low profit factor, negative Sharpe) is a classic sign of over-trading and poor risk-reward. The strategy is winning often but not making money, likely taking profit too early on small reversions while getting caught in larger moves. The proposed optimization addresses this by making the entry criteria more stringent:
-
-1.  **Wider Bands (`bb_length`: 25, `bb_std`: 2.5):** Increasing the lookback period and standard deviation requires a more significant price deviation to trigger a signal. This will filter out market noise, reduce the total number of trades, and focus on higher-probability reversion opportunities. This should directly improve the profit factor and, by extension, the Sharpe ratio.
-
-2.  **More Extreme RSI Levels (`rsi_oversold`: 25, `rsi_overbought`: 75):** In a choppy but bullish market, short signals are inherently risky. Raising the `rsi_overbought` threshold to 75 demands a much stronger overextension before initiating a short, reducing the chance of fighting a strong uptrend. Similarly, lowering `rsi_oversold` to 25 ensures long entries are taken only on more significant dips, offering a better potential risk-reward ratio.
-
-3.  **Smoother RSI (`rsi_length`: 16):** A slightly longer RSI period will smooth the indicator, making it less prone to generating premature signals in volatile conditions.
-
-### Suggested Parameter Adjustments
+### Current Parameters Used
 
 ```json
 {
   "bb_length": 25,
   "bb_std": 2.5,
-  "rsi_length": 16,
-  "rsi_oversold": 25,
+  "rsi_length": 14,
+  "rsi_oversold": 35,
   "rsi_overbought": 75
 }
 ```
 
+### Optimization Recommendations
+
+The current performance indicates the strategy is being penalized for fighting the strong bullish trend. The optimization goal is to increase signal quality and avoid counter-trend trades that result in large drawdowns. 
+1. **Increasing `bb_length` to 30 and `bb_std` to 3.0**: This makes the Bollinger Bands wider and less sensitive to short-term price fluctuations. It requires a much more significant deviation from the mean to generate a signal, effectively filtering out noise and weak signals that occur when a security 'walks the band' in a strong trend. This directly targets reducing the large losing trades, which will improve both Max Drawdown and the Sharpe Ratio.
+2. **Adjusting RSI thresholds (`rsi_oversold`: 40, `rsi_overbought`: 80)**: In a strong bull market, RSI will naturally stay in the upper portion of its range. Raising the `rsi_overbought` threshold to 80 makes short-selling signals extremely rare, preventing disastrous entries against the primary trend. Concurrently, raising the `rsi_oversold` level to 40 acknowledges that in an uptrend, significant pullbacks are rare, and buying a less severe dip is a more viable strategy. This asymmetry better adapts the strategy to the bullish market conditions.
+3. **Lengthening `rsi_length` to 18**: A longer RSI period smooths the indicator, reducing whipsaws and confirming that a price level is genuinely extended before generating a signal. This complements the wider Bollinger Bands to focus on higher-conviction setups.
+
+### Suggested Parameter Adjustments
+
+```json
+{
+  "bb_length": 30,
+  "bb_std": 3.0,
+  "rsi_length": 18,
+  "rsi_oversold": 40,
+  "rsi_overbought": 80
+}
+```
+
 ### Optimal Market Conditions
-- Range-bound, non-trending markets
-- High-volatility consolidation phases
-- Choppy markets with strong mean-reversion characteristics
+- Low-to-normal volatility, range-bound markets
+- Markets with no clear directional trend (sideways consolidation)
+- Mean-reverting currency pairs or assets
 
 ### Risk Assessment
-The primary risk for this mean-reversion strategy is a strong, sustained trend. The current negative Sharpe Ratio, despite a high win rate, indicates that the strategy is likely suffering from a few large losses that erase many small gains. This happens when the market begins to trend and does not revert to the mean as expected. The analyzed market condition ('bullish' but with low 'consistency') is particularly challenging, as the strategy is fighting the underlying upward pressure on its short trades. The suggested parameter changes aim to mitigate this by being more selective, but trend risk remains the most significant threat. Overfitting is another key risk; these parameters must be validated on out-of-sample data.
+The primary risk is a fundamental strategy-market mismatch. The current backtest applies a mean-reversion strategy to a strongly bullish, trending market. This is evidenced by the extremely poor Sharpe Ratio (-2.56) despite a high Win Rate (60.71%). This pattern is characteristic of strategies that generate many small wins but suffer infrequent, catastrophic losses when fighting a strong trend (e.g., shorting into a bull market). The low total trade count (56) also introduces a risk of overfitting and suggests the results may not be statistically significant. The suggested conservative parameters may further reduce trade frequency, increasing this risk.
 
 ### Performance Improvement Potential
-- **Estimated Improvement**: 15.0%
+- **Estimated Improvement**: 20.0%
 - **Confidence Score**: 85.0%
 ### Analysis Token Usage
 - **Provider**: gemini
 - **Model**: gemini-2.5-pro
-- **Prompt Tokens**: 348
-- **Completion Tokens**: 663
-- **Total Tokens**: 1011
+- **Prompt Tokens**: 363
+- **Completion Tokens**: 781
+- **Total Tokens**: 1144
 
 ---
 
 ## Token Usage Summary
 
-Total tokens used across all analyses: 1,011
+Total tokens used across all analyses: 1,144
 
 ## Executive Summary
 

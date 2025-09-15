@@ -16,7 +16,11 @@ import os
 
 # Add parent directory to path to import the interface
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend.executable_workflow.interfaces.trading_strategy_interface import TradingStrategy
+try:
+    from interfaces.trading_strategy_interface import TradingStrategy
+except ImportError:
+    # Try alternative import path
+    from executable_workflow.interfaces.trading_strategy_interface import TradingStrategy
 
 logger = logging.getLogger(__name__)
 

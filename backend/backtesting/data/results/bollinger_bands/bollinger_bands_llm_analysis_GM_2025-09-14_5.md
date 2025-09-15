@@ -1,83 +1,81 @@
 
 # Trading Strategy Optimization Report
-Generated: 2025-09-14 16:03:54
+Generated: 2025-09-14 17:03:03
 Analysis Provider: gemini
 
 ### Overall Performance Summary
 
 | Strategy | Total Return | Sharpe Ratio | Max Drawdown | Win Rate | Improvement Potential |
 |----------|-------------|--------------|--------------|----------|---------------------|
-| bollinger_bands | 1.13% | -0.59 | 2.87% | 61.5% | 25.0% |
+| bollinger_bands | 0.44% | -1.43 | 1.35% | 60.0% | 15.0% |
 
 ---
 
 ## bollinger_bands Strategy
 
 ### Current Performance
-- **Total Return**: 1.13%
-- **Sharpe Ratio**: -0.59
-- **Max Drawdown**: 2.87%
-- **Win Rate**: 61.54%
-- **Profit Factor**: 1.31
+- **Total Return**: 0.44%
+- **Sharpe Ratio**: -1.43
+- **Max Drawdown**: 1.35%
+- **Win Rate**: 60.00%
+- **Profit Factor**: 1.25
 - **Total Trades**: 65
 
 ### Current Parameters Used
 
 ```json
 {
-  "bb_length": 26,
-  "bb_std": 1.7751521847992457,
-  "rsi_length": 18,
-  "rsi_oversold": 32,
-  "rsi_overbought": 69
+  "bb_length": 20,
+  "bb_std": 2.0,
+  "rsi_length": 14,
+  "rsi_oversold": 30,
+  "rsi_overbought": 70
 }
 ```
 
 ### Optimization Recommendations
 
-The current performance indicates a classic mean-reversion pitfall: fighting a strong trend. The strategy is winning often but losing big. The optimization aims to improve the quality of trade signals and increase the profit per trade, thereby boosting the Sharpe Ratio and Profit Factor.
+The current performance metrics (negative Sharpe, low Profit Factor despite a 60% Win Rate) strongly suggest the strategy is generating too many low-quality signals. It's winning small but not enough to cover the losses, which is typical in a choppy market where standard parameters are too sensitive. My recommendations are designed to address this by increasing signal selectivity:
 
-1.  **Widening Bollinger Bands (`bb_std`: 1.775 -> 2.5):** This is the most critical change. The current narrow bands are generating signals on minor, insignificant pullbacks. Widening the bands to 2.5 standard deviations requires a much more statistically significant price extension to trigger a trade. This will filter out market noise, reduce the number of low-quality trades against the trend, and improve the probability of a meaningful price reversion.
+1.  **Widen the Bollinger Bands (`bb_length`: 25, `bb_std`: 2.5):** The standard 20-period, 2.0-std deviation bands are being touched too frequently in this 'normal' volatility environment. Increasing the length to 25 makes the moving average baseline more stable, while increasing the standard deviation to 2.5 requires a more significant price deviation to trigger a signal. This will filter out market noise and focus only on more statistically significant price extensions, which have a higher probability of reverting to the mean.
 
-2.  **Shortening Lookback Periods (`bb_length`: 26 -> 20, `rsi_length`: 18 -> 14):** In a choppy but trending market, making the indicators more responsive to recent price action is beneficial. A shorter `bb_length` adapts the bands more quickly to recent volatility, while a standard 14-period RSI provides a more timely confirmation of momentum exhaustion.
-
-3.  **Stricter RSI Thresholds (`rsi_oversold`: 32 -> 25, `rsi_overbought`: 69 -> 75):** The current RSI filters are too lenient for a trending market. By requiring a deeper oversold condition (25) for buys and a more extreme overbought condition (75) for sells, we add a stronger confirmation layer. This ensures the strategy only acts on significant pullbacks or blow-off tops, which have a higher chance of reverting, rather than on minor dips within the trend.
+2.  **Increase RSI Selectivity (`rsi_length`: 12, `rsi_oversold`: 25, `rsi_overbought`: 75):** The standard 14-period RSI with 30/70 thresholds is not providing sufficient confirmation. Lowering the `rsi_length` to 12 makes it slightly more responsive to recent price action. More importantly, making the thresholds more extreme (25 for oversold, 75 for overbought) ensures that we only enter a trade when momentum is significantly exhausted, providing stronger confirmation for the Bollinger Band signal. This combination aims to reduce the number of trades while significantly increasing the average profit per trade, which should directly boost the Profit Factor and, consequently, the Sharpe Ratio.
 
 ### Suggested Parameter Adjustments
 
 ```json
 {
-  "bb_length": 20,
+  "bb_length": 25,
   "bb_std": 2.5,
-  "rsi_length": 14,
+  "rsi_length": 12,
   "rsi_oversold": 25,
   "rsi_overbought": 75
 }
 ```
 
 ### Optimal Market Conditions
-- Range-bound / sideways markets
-- High-volatility, non-trending environments
-- Markets exhibiting clear mean-reverting characteristics
+- Range-bound / consolidating markets
+- Markets with high short-term volatility but no consistent long-term trend
+- Choppy markets with frequent price oscillations (mean-reversion)
 
 ### Risk Assessment
-The primary risk for this mean-reversion strategy is **trend risk**. The provided market data indicates a 'bullish' trend, which is fundamentally at odds with the strategy's logic. The current negative Sharpe Ratio (-0.59) despite a high Win Rate (61.54%) confirms that the strategy is likely capturing small profits on minor pullbacks but suffering large losses when the primary trend resumes. This results in a poor risk/reward profile. A secondary risk is a sudden regime shift to a low-volatility trending market, where the price can 'walk the band' for extended periods, generating no signals or repeated losing trades. The suggested parameters aim to mitigate this by demanding more significant price deviations for trade entry, but the fundamental risk of fighting a strong trend remains.
+The current strategy's primary risk is underperformance and capital erosion through transaction costs, a 'death by a thousand cuts' scenario. Its extremely low Sharpe Ratio (-1.43) indicates it is not compensating for the risk taken. While the Max Drawdown is low, this is a byproduct of its failure to capture any significant gains. The proposed parameter changes aim to increase selectivity, which introduces a new risk: missed opportunities. By waiting for more extreme conditions, the strategy will trade less frequently and may miss smaller, profitable moves. There is also a risk of over-fitting; these new parameters must be validated with out-of-sample and walk-forward testing to ensure they are robust across different market regimes and not just curve-fit to the historical data provided.
 
 ### Performance Improvement Potential
-- **Estimated Improvement**: 25.0%
+- **Estimated Improvement**: 15.0%
 - **Confidence Score**: 85.0%
 ### Analysis Token Usage
 - **Provider**: gemini
 - **Model**: gemini-2.5-pro
 - **Prompt Tokens**: 363
-- **Completion Tokens**: 707
-- **Total Tokens**: 1069
+- **Completion Tokens**: 706
+- **Total Tokens**: 1068
 
 ---
 
 ## Token Usage Summary
 
-Total tokens used across all analyses: 1,069
+Total tokens used across all analyses: 1,068
 
 ## Executive Summary
 

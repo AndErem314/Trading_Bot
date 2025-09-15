@@ -7,11 +7,11 @@ strategies:
     description: "Bollinger Bands Mean Reversion - Optimized for BTC/USDT 4h"
     optimized_parameters:
       default:
-        bb_length: 25
-        bb_std: 2.5
+        bb_length: 26
+        bb_std: 1.77
         rsi_length: 18
-        rsi_oversold: 40
-        rsi_overbought: 80
+        rsi_oversold: 32
+        rsi_overbought: 69
 
     
   rsi_divergence:
@@ -31,12 +31,14 @@ strategies:
     description: "MACD Momentum Crossover - Optimized for BTC/USDT 4h"
     optimized_parameters:
       default:
-        macd_fast: 14
-        macd_slow: 28
-        macd_signal: 10
-        momentum_period: 18
+        macd_fast: 12
+        macd_slow: 30
+        macd_signal: 11
+        momentum_period: 20
         atr_period: 20
-        volume_threshold: 1.6
+        volume_threshold: 2.0
+        adx_period: 14
+        adx_threshold: 25
 
 
   volatility_breakout_short:
@@ -54,9 +56,9 @@ strategies:
     description: "Ichimoku Cloud Breakout - Optimized for BTC/USDT 4h"
     optimized_parameters:
       default:
-        tenkan_period: 11
-        kijun_period: 28
-        senkou_b_period: 56
+        tenkan_period: 12
+        kijun_period: 30
+        senkou_b_period: 60
         displacement: 28
         
   parabolic_sar:
