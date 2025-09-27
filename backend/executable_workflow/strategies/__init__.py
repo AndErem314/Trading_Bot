@@ -14,7 +14,11 @@ from .parabolic_sar_strategy import ParabolicSARTrendFollowing
 from .fibonacci_retracement_strategy import FibonacciRetracementSupportResistance
 from .gaussian_channel_strategy import GaussianChannelBreakoutMeanReversion
 
+# Dynamic strategy builder
+from .strategy_builder import StrategyBuilder, Position, Trade, ExitType
+
 __all__ = [
+    # Static strategy implementations
     'BollingerBandsMeanReversion',
     'RSIMomentumDivergence',
     'MACDMomentumCrossover',
@@ -22,5 +26,10 @@ __all__ = [
     'IchimokuCloudBreakout',
     'ParabolicSARTrendFollowing',
     'FibonacciRetracementSupportResistance',
-    'GaussianChannelBreakoutMeanReversion'
+    'GaussianChannelBreakoutMeanReversion',
+    # Dynamic strategy builder
+    'StrategyBuilder',
+    'Position',
+    'Trade',
+    'ExitType'
 ]
