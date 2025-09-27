@@ -1,0 +1,1278 @@
+"""
+Professional Reporting System for Trading Strategy Backtests
+
+This module provides comprehensive report generation in multiple formats:
+- PDF reports with charts and analysis
+- Interactive HTML reports
+- JSON/CSV data exports
+"""
+
+import os
+import json
+import pandas as pd
+import numpy as np
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Union
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.backends.backend_pdf import PdfPages
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+from jinja2 import Template
+import pdfkit
+from io import BytesIO
+import base64
+import warnings
+warnings.filterwarnings('ignore')
+
+# Set matplotlib style
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
+
+
+class ReportGenerator:
+    """
+    Professional report generator for trading strategy backtests.
+    Supports PDF, HTML, and data export formats.
+    """
+    
+    def __init__(self, output_dir: str = "frontend/reports"):
+        """
+        Initialize report generator.
+        
+        Args:
+            output_dir: Directory for saving reports
+        """
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Report metadata
+        self.report_metadata = {
+            'generated_at': datetime.now(),
+            'generator_version': '1.0.0',
+            'company': 'Trading Bot Analytics'
+        }
+        
+    def generate_backtest_report(self, 
+                               results: Dict[str, Any],
+                               format: str = 'all',
+                               filename_prefix: str = 'backtest_report') -> Dict[str, str]:
+        """
+        Generate comprehensive backtest report in specified format(s).
+        
+        Args:
+            results: Backtest results dictionary containing:
+                - data: Price data DataFrame
+                - trades: Trades DataFrame
+                - equity_curve: Equity curve DataFrame
+                - metrics: Performance metrics
+                - strategy_config: Strategy configuration
+            format: Report format ('pdf', 'html', 'json', 'csv', 'all')
+            filename_prefix: Prefix for output files
+            
+        Returns:
+            Dictionary with paths to generated reports
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_filename = f"{filename_prefix}_{timestamp}"
+        
+        generated_reports = {}
+        
+        # Generate reports based on format
+        if format in ['pdf', 'all']:
+            pdf_path = self._generate_pdf_report(results, base_filename)
+            generated_reports['pdf'] = pdf_path
+            
+        if format in ['html', 'all']:
+            html_path = self._generate_html_report(results, base_filename)
+            generated_reports['html'] = html_path
+            
+        if format in ['json', 'all']:
+            json_path = self._export_json(results, base_filename)
+            generated_reports['json'] = json_path
+            
+        if format in ['csv', 'all']:
+            csv_paths = self._export_csv(results, base_filename)
+            generated_reports['csv'] = csv_paths
+            
+        return generated_reports
+        
+    def create_executive_summary(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create executive summary with key insights and recommendations.
+        
+        Args:
+            metrics: Performance metrics dictionary
+            
+        Returns:
+            Executive summary dictionary
+        """
+        # Extract key metrics
+        total_return = metrics.get('total_return', 0)
+        sharpe_ratio = metrics.get('sharpe_ratio', 0)
+        max_drawdown = metrics.get('max_drawdown', 0)
+        win_rate = metrics.get('win_rate', 0)
+        profit_factor = metrics.get('profit_factor', 0)
+        total_trades = metrics.get('total_trades', 0)
+        
+        # Performance assessment
+        performance_rating = self._assess_performance(metrics)
+        
+        # Risk assessment
+        risk_assessment = self._assess_risk(metrics)
+        
+        # Generate insights
+        insights = self._generate_insights(metrics)
+        
+        # Create summary
+        executive_summary = {
+            'overview': {
+                'total_return': f"{total_return:.2%}",
+                'sharpe_ratio': f"{sharpe_ratio:.2f}",
+                'max_drawdown': f"{max_drawdown:.2%}",
+                'win_rate': f"{win_rate:.2%}",
+                'profit_factor': f"{profit_factor:.2f}",
+                'total_trades': total_trades
+            },
+            'performance_rating': performance_rating,
+            'risk_assessment': risk_assessment,
+            'key_insights': insights,
+            'recommendations': self._generate_recommendations(metrics, performance_rating, risk_assessment)
+        }
+        
+        return executive_summary
+        
+    def _assess_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """Assess overall strategy performance"""
+        sharpe = metrics.get('sharpe_ratio', 0)
+        total_return = metrics.get('total_return', 0)
+        win_rate = metrics.get('win_rate', 0)
+        
+        # Performance scoring
+        if sharpe > 2 and total_return > 0.5 and win_rate > 0.6:
+            rating = "Excellent"
+            score = 5
+        elif sharpe > 1.5 and total_return > 0.3 and win_rate > 0.55:
+            rating = "Good"
+            score = 4
+        elif sharpe > 1 and total_return > 0.15 and win_rate > 0.5:
+            rating = "Satisfactory"
+            score = 3
+        elif sharpe > 0.5 and total_return > 0:
+            rating = "Below Average"
+            score = 2
+        else:
+            rating = "Poor"
+            score = 1
+            
+        return {
+            'rating': rating,
+            'score': score,
+            'details': {
+                'sharpe_rating': 'Excellent' if sharpe > 2 else 'Good' if sharpe > 1 else 'Poor',
+                'return_rating': 'Excellent' if total_return > 0.5 else 'Good' if total_return > 0.2 else 'Poor',
+                'consistency_rating': 'Excellent' if win_rate > 0.6 else 'Good' if win_rate > 0.5 else 'Poor'
+            }
+        }
+        
+    def _assess_risk(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """Assess strategy risk profile"""
+        max_dd = abs(metrics.get('max_drawdown', 0))
+        avg_loss = abs(metrics.get('avg_loss', 0))
+        loss_std = metrics.get('loss_std', 0)
+        var_95 = abs(metrics.get('var_95', 0))
+        
+        # Risk scoring
+        if max_dd < 0.1 and var_95 < 0.02:
+            risk_level = "Low"
+            risk_score = 1
+        elif max_dd < 0.2 and var_95 < 0.03:
+            risk_level = "Moderate"
+            risk_score = 2
+        elif max_dd < 0.3 and var_95 < 0.05:
+            risk_level = "High"
+            risk_score = 3
+        else:
+            risk_level = "Very High"
+            risk_score = 4
+            
+        return {
+            'risk_level': risk_level,
+            'risk_score': risk_score,
+            'max_drawdown': f"{max_dd:.2%}",
+            'value_at_risk_95': f"{var_95:.2%}",
+            'risk_metrics': {
+                'drawdown_severity': 'Severe' if max_dd > 0.3 else 'Moderate' if max_dd > 0.15 else 'Mild',
+                'loss_consistency': 'High Variance' if loss_std > avg_loss * 2 else 'Moderate Variance' if loss_std > avg_loss else 'Low Variance',
+                'tail_risk': 'High' if var_95 > 0.05 else 'Moderate' if var_95 > 0.03 else 'Low'
+            }
+        }
+        
+    def _generate_insights(self, metrics: Dict[str, Any]) -> List[str]:
+        """Generate key insights from metrics"""
+        insights = []
+        
+        # Performance insights
+        if metrics.get('sharpe_ratio', 0) > 1.5:
+            insights.append("Strategy shows strong risk-adjusted returns with Sharpe ratio > 1.5")
+        elif metrics.get('sharpe_ratio', 0) < 0.5:
+            insights.append("Low Sharpe ratio indicates poor risk-adjusted performance")
+            
+        # Win rate insights
+        win_rate = metrics.get('win_rate', 0)
+        if win_rate > 0.6:
+            insights.append(f"High win rate of {win_rate:.1%} suggests consistent strategy")
+        elif win_rate < 0.4:
+            insights.append(f"Low win rate of {win_rate:.1%} indicates need for entry signal refinement")
+            
+        # Profit factor insights
+        profit_factor = metrics.get('profit_factor', 0)
+        if profit_factor > 2:
+            insights.append(f"Excellent profit factor of {profit_factor:.2f} shows strong edge")
+        elif profit_factor < 1.2:
+            insights.append("Profit factor near 1.0 suggests marginal profitability")
+            
+        # Drawdown insights
+        max_dd = abs(metrics.get('max_drawdown', 0))
+        if max_dd > 0.25:
+            insights.append(f"High maximum drawdown of {max_dd:.1%} poses significant risk")
+        elif max_dd < 0.1:
+            insights.append("Low drawdown indicates good capital preservation")
+            
+        # Trading frequency
+        total_trades = metrics.get('total_trades', 0)
+        avg_trades_per_month = total_trades / max(1, metrics.get('months_traded', 12))
+        if avg_trades_per_month < 2:
+            insights.append("Low trading frequency may limit profit potential")
+        elif avg_trades_per_month > 20:
+            insights.append("High trading frequency increases transaction cost impact")
+            
+        return insights
+        
+    def _generate_recommendations(self, 
+                                metrics: Dict[str, Any],
+                                performance: Dict[str, Any],
+                                risk: Dict[str, Any]) -> List[str]:
+        """Generate optimization recommendations"""
+        recommendations = []
+        
+        # Performance-based recommendations
+        if performance['score'] < 3:
+            recommendations.append("Consider optimizing entry signals for better performance")
+            recommendations.append("Review and adjust Ichimoku parameters using walk-forward analysis")
+            
+        # Risk-based recommendations
+        if risk['risk_score'] > 2:
+            recommendations.append("Implement tighter stop-loss levels to reduce drawdown")
+            recommendations.append("Consider position sizing based on volatility")
+            
+        # Win rate recommendations
+        if metrics.get('win_rate', 0) < 0.45:
+            recommendations.append("Add confirmation signals to improve entry accuracy")
+            recommendations.append("Consider trend strength filters to avoid false signals")
+            
+        # Profit factor recommendations
+        if metrics.get('profit_factor', 0) < 1.5:
+            recommendations.append("Optimize take-profit levels to improve risk/reward ratio")
+            recommendations.append("Consider trailing stops to capture larger trends")
+            
+        # General recommendations
+        recommendations.append("Validate strategy on out-of-sample data before live trading")
+        recommendations.append("Monitor strategy performance and adjust for changing market conditions")
+        
+        return recommendations
+        
+    def _generate_pdf_report(self, results: Dict[str, Any], base_filename: str) -> str:
+        """Generate PDF report with charts and analysis"""
+        pdf_path = self.output_dir / f"{base_filename}.pdf"
+        
+        # Create PDF with multiple pages
+        with PdfPages(pdf_path) as pdf:
+            # Page 1: Title and Executive Summary
+            self._create_title_page(pdf, results)
+            
+            # Page 2: Performance Overview
+            self._create_performance_overview_page(pdf, results)
+            
+            # Page 3: Trading Analysis
+            self._create_trading_analysis_page(pdf, results)
+            
+            # Page 4: Risk Analysis
+            self._create_risk_analysis_page(pdf, results)
+            
+            # Page 5: Trade Details
+            self._create_trade_details_page(pdf, results)
+            
+            # Page 6: Optimization Recommendations
+            self._create_recommendations_page(pdf, results)
+            
+            # Save PDF metadata
+            d = pdf.infodict()
+            d['Title'] = f'Backtest Report - {results.get("strategy_config", {}).get("name", "Strategy")}'
+            d['Author'] = 'Trading Bot Analytics'
+            d['Subject'] = 'Trading Strategy Backtest Report'
+            d['Keywords'] = 'Trading, Backtest, Ichimoku, Performance'
+            d['CreationDate'] = datetime.now()
+            
+        return str(pdf_path)
+        
+    def _create_title_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create title page with executive summary"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Trading Strategy Backtest Report', fontsize=24, y=0.95)
+        
+        # Get executive summary
+        metrics = results.get('metrics', {}).get('performance_metrics', {})
+        summary = self.create_executive_summary(metrics)
+        
+        # Strategy info
+        strategy_name = results.get('strategy_config', {}).get('name', 'Ichimoku Strategy')
+        
+        # Create text content
+        text_content = f"""
+Strategy: {strategy_name}
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+EXECUTIVE SUMMARY
+{'='*50}
+
+Performance Overview:
+• Total Return: {summary['overview']['total_return']}
+• Sharpe Ratio: {summary['overview']['sharpe_ratio']}
+• Maximum Drawdown: {summary['overview']['max_drawdown']}
+• Win Rate: {summary['overview']['win_rate']}
+• Profit Factor: {summary['overview']['profit_factor']}
+• Total Trades: {summary['overview']['total_trades']}
+
+Performance Rating: {summary['performance_rating']['rating']} ({summary['performance_rating']['score']}/5)
+Risk Level: {summary['risk_assessment']['risk_level']}
+
+Key Insights:
+"""
+        for i, insight in enumerate(summary['key_insights'][:5], 1):
+            text_content += f"{i}. {insight}\n"
+            
+        # Add text to figure
+        plt.text(0.1, 0.85, text_content, transform=fig.transFigure, 
+                fontsize=10, verticalalignment='top', fontfamily='monospace')
+        
+        plt.axis('off')
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def _create_performance_overview_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create performance overview page with charts"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Performance Overview', fontsize=18, y=0.98)
+        
+        # Create subplots
+        gs = fig.add_gridspec(3, 2, height_ratios=[2, 1, 1], hspace=0.3, wspace=0.3)
+        
+        # 1. Equity curve
+        ax1 = fig.add_subplot(gs[0, :])
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        if not equity_curve.empty:
+            ax1.plot(equity_curve.index, equity_curve['equity'], 'b-', linewidth=2)
+            ax1.fill_between(equity_curve.index, equity_curve['equity'], 
+                           equity_curve['equity'].iloc[0], alpha=0.3)
+            ax1.set_title('Portfolio Equity Curve')
+            ax1.set_xlabel('Date')
+            ax1.set_ylabel('Equity ($)')
+            ax1.grid(True, alpha=0.3)
+            
+        # 2. Monthly returns
+        ax2 = fig.add_subplot(gs[1, 0])
+        if 'returns' in equity_curve.columns:
+            monthly_returns = equity_curve['returns'].resample('M').apply(
+                lambda x: (1 + x).prod() - 1
+            )
+            colors = ['g' if r > 0 else 'r' for r in monthly_returns]
+            ax2.bar(range(len(monthly_returns)), monthly_returns.values, color=colors, alpha=0.7)
+            ax2.set_title('Monthly Returns')
+            ax2.set_xlabel('Month')
+            ax2.set_ylabel('Return (%)')
+            ax2.grid(True, alpha=0.3)
+            
+        # 3. Drawdown
+        ax3 = fig.add_subplot(gs[1, 1])
+        if 'drawdown' in equity_curve.columns:
+            ax3.fill_between(equity_curve.index, 0, equity_curve['drawdown'], 
+                           color='red', alpha=0.5)
+            ax3.set_title('Drawdown Chart')
+            ax3.set_xlabel('Date')
+            ax3.set_ylabel('Drawdown (%)')
+            ax3.grid(True, alpha=0.3)
+            
+        # 4. Win/Loss distribution
+        ax4 = fig.add_subplot(gs[2, :])
+        trades = results.get('trades', pd.DataFrame())
+        if not trades.empty and 'pnl' in trades.columns:
+            wins = trades[trades['pnl'] > 0]['pnl']
+            losses = trades[trades['pnl'] <= 0]['pnl']
+            
+            bins = 30
+            ax4.hist(wins, bins=bins, alpha=0.6, label='Wins', color='green')
+            ax4.hist(losses, bins=bins, alpha=0.6, label='Losses', color='red')
+            ax4.set_title('Trade P&L Distribution')
+            ax4.set_xlabel('P&L ($)')
+            ax4.set_ylabel('Frequency')
+            ax4.legend()
+            ax4.grid(True, alpha=0.3)
+            
+        plt.tight_layout()
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def _create_trading_analysis_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create trading analysis page"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Trading Analysis', fontsize=18, y=0.98)
+        
+        trades = results.get('trades', pd.DataFrame())
+        
+        if not trades.empty:
+            # Create subplots
+            gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+            
+            # 1. Trade duration distribution
+            ax1 = fig.add_subplot(gs[0, 0])
+            if 'duration_hours' in trades.columns:
+                ax1.hist(trades['duration_hours'], bins=20, alpha=0.7, color='blue')
+                ax1.set_title('Trade Duration Distribution')
+                ax1.set_xlabel('Duration (hours)')
+                ax1.set_ylabel('Frequency')
+                ax1.grid(True, alpha=0.3)
+                
+            # 2. P&L by day of week
+            ax2 = fig.add_subplot(gs[0, 1])
+            if 'entry_time' in trades.columns and 'pnl' in trades.columns:
+                trades['dow'] = pd.to_datetime(trades['entry_time']).dt.dayofweek
+                dow_pnl = trades.groupby('dow')['pnl'].sum()
+                days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                ax2.bar(range(len(dow_pnl)), dow_pnl.values, alpha=0.7)
+                ax2.set_xticks(range(len(dow_pnl)))
+                ax2.set_xticklabels([days[i] for i in dow_pnl.index])
+                ax2.set_title('P&L by Day of Week')
+                ax2.set_ylabel('Total P&L ($)')
+                ax2.grid(True, alpha=0.3)
+                
+            # 3. Win rate over time
+            ax3 = fig.add_subplot(gs[1, :])
+            if 'exit_time' in trades.columns:
+                trades_sorted = trades.sort_values('exit_time')
+                trades_sorted['cumulative_win_rate'] = (
+                    (trades_sorted['pnl'] > 0).cumsum() / (trades_sorted.index + 1)
+                )
+                ax3.plot(pd.to_datetime(trades_sorted['exit_time']), 
+                        trades_sorted['cumulative_win_rate'], 'g-', linewidth=2)
+                ax3.axhline(y=0.5, color='r', linestyle='--', alpha=0.5)
+                ax3.set_title('Cumulative Win Rate Over Time')
+                ax3.set_xlabel('Date')
+                ax3.set_ylabel('Win Rate')
+                ax3.grid(True, alpha=0.3)
+                
+            # 4. Entry signal distribution
+            ax4 = fig.add_subplot(gs[2, 0])
+            if 'entry_signal' in trades.columns:
+                signal_counts = trades['entry_signal'].value_counts()
+                ax4.pie(signal_counts.values, labels=signal_counts.index, autopct='%1.1f%%')
+                ax4.set_title('Entry Signal Distribution')
+                
+            # 5. Exit reason distribution
+            ax5 = fig.add_subplot(gs[2, 1])
+            if 'exit_reason' in trades.columns:
+                exit_counts = trades['exit_reason'].value_counts()
+                ax5.pie(exit_counts.values, labels=exit_counts.index, autopct='%1.1f%%')
+                ax5.set_title('Exit Reason Distribution')
+                
+        plt.tight_layout()
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def _create_risk_analysis_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create risk analysis page"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Risk Analysis', fontsize=18, y=0.98)
+        
+        metrics = results.get('metrics', {}).get('performance_metrics', {})
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        
+        # Create subplots
+        gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+        
+        # 1. Rolling volatility
+        ax1 = fig.add_subplot(gs[0, :])
+        if 'returns' in equity_curve.columns:
+            rolling_vol = equity_curve['returns'].rolling(30).std() * np.sqrt(252)
+            ax1.plot(rolling_vol.index, rolling_vol, 'b-', linewidth=1.5)
+            ax1.set_title('30-Day Rolling Volatility (Annualized)')
+            ax1.set_xlabel('Date')
+            ax1.set_ylabel('Volatility')
+            ax1.grid(True, alpha=0.3)
+            
+        # 2. Risk metrics table
+        ax2 = fig.add_subplot(gs[1, :])
+        ax2.axis('tight')
+        ax2.axis('off')
+        
+        risk_data = [
+            ['Metric', 'Value'],
+            ['Maximum Drawdown', f"{metrics.get('max_drawdown', 0):.2%}"],
+            ['Average Drawdown', f"{metrics.get('avg_drawdown', 0):.2%}"],
+            ['Drawdown Duration', f"{metrics.get('max_drawdown_duration_days', 0):.0f} days"],
+            ['Value at Risk (95%)', f"{metrics.get('var_95', 0):.2%}"],
+            ['Conditional VaR (95%)', f"{metrics.get('cvar_95', 0):.2%}"],
+            ['Downside Deviation', f"{metrics.get('downside_deviation', 0):.4f}"],
+            ['Sortino Ratio', f"{metrics.get('sortino_ratio', 0):.2f}"],
+            ['Calmar Ratio', f"{metrics.get('calmar_ratio', 0):.2f}"]
+        ]
+        
+        table = ax2.table(cellText=risk_data, loc='center', cellLoc='left')
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1.2, 1.5)
+        
+        # Style header row
+        for i in range(len(risk_data[0])):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+            
+        # 3. Underwater chart
+        ax3 = fig.add_subplot(gs[2, :])
+        if 'drawdown' in equity_curve.columns:
+            ax3.fill_between(equity_curve.index, equity_curve['drawdown'], 0, 
+                           color='red', alpha=0.5)
+            ax3.set_title('Underwater Chart (Drawdown from Peak)')
+            ax3.set_xlabel('Date')
+            ax3.set_ylabel('Drawdown (%)')
+            ax3.grid(True, alpha=0.3)
+            
+        plt.tight_layout()
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def _create_trade_details_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create trade details page"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Trade Details', fontsize=18, y=0.98)
+        
+        trades = results.get('trades', pd.DataFrame())
+        
+        if not trades.empty:
+            # Prepare trade summary table
+            ax = fig.add_subplot(111)
+            ax.axis('tight')
+            ax.axis('off')
+            
+            # Select top 20 trades by absolute P&L
+            trades_sorted = trades.reindex(trades['pnl'].abs().sort_values(ascending=False).index)
+            top_trades = trades_sorted.head(20)
+            
+            # Prepare data for table
+            table_data = [['Entry Time', 'Exit Time', 'Direction', 'Entry Price', 
+                          'Exit Price', 'P&L', 'Return %', 'Signal']]
+            
+            for _, trade in top_trades.iterrows():
+                entry_time = pd.to_datetime(trade.get('entry_time', '')).strftime('%Y-%m-%d %H:%M')
+                exit_time = pd.to_datetime(trade.get('exit_time', '')).strftime('%Y-%m-%d %H:%M')
+                direction = trade.get('direction', 'long')
+                entry_price = f"${trade.get('entry_price', 0):.2f}"
+                exit_price = f"${trade.get('exit_price', 0):.2f}"
+                pnl = trade.get('pnl', 0)
+                pnl_str = f"${pnl:.2f}"
+                return_pct = trade.get('return_pct', 0) * 100
+                return_str = f"{return_pct:.2f}%"
+                signal = trade.get('entry_signal', 'N/A')
+                
+                table_data.append([entry_time, exit_time, direction, entry_price, 
+                                 exit_price, pnl_str, return_str, signal])
+                
+            # Create table
+            table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(7)
+            table.scale(1, 2)
+            
+            # Style header row
+            for i in range(len(table_data[0])):
+                table[(0, i)].set_facecolor('#40466e')
+                table[(0, i)].set_text_props(weight='bold', color='white')
+                
+            # Color code P&L cells
+            for i in range(1, len(table_data)):
+                pnl_val = float(table_data[i][5].replace('$', ''))
+                if pnl_val > 0:
+                    table[(i, 5)].set_facecolor('#90EE90')
+                else:
+                    table[(i, 5)].set_facecolor('#FFB6C1')
+                    
+            ax.set_title('Top 20 Trades by Absolute P&L', pad=20)
+            
+        plt.tight_layout()
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def _create_recommendations_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Create optimization recommendations page"""
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('Optimization Recommendations', fontsize=18, y=0.95)
+        
+        # Get recommendations
+        metrics = results.get('metrics', {}).get('performance_metrics', {})
+        recommendations = self.generate_optimization_recommendations(metrics, results)
+        
+        # Create text content
+        text_content = f"""
+OPTIMIZATION RECOMMENDATIONS
+{'='*50}
+
+Based on the backtest analysis, here are specific recommendations
+for improving strategy performance:
+
+"""
+        
+        # Add parameter optimization suggestions
+        text_content += f"""
+1. PARAMETER OPTIMIZATION
+   {'-'*40}
+"""
+        for rec in recommendations['parameter_optimization']:
+            text_content += f"   • {rec}\n"
+            
+        # Add signal improvement suggestions
+        text_content += f"""
+
+2. SIGNAL IMPROVEMENTS
+   {'-'*40}
+"""
+        for rec in recommendations['signal_improvements']:
+            text_content += f"   • {rec}\n"
+            
+        # Add risk management suggestions
+        text_content += f"""
+
+3. RISK MANAGEMENT
+   {'-'*40}
+"""
+        for rec in recommendations['risk_management']:
+            text_content += f"   • {rec}\n"
+            
+        # Add next steps
+        text_content += f"""
+
+4. NEXT STEPS
+   {'-'*40}
+"""
+        for rec in recommendations['next_steps']:
+            text_content += f"   • {rec}\n"
+            
+        # Add text to figure
+        plt.text(0.1, 0.9, text_content, transform=fig.transFigure, 
+                fontsize=10, verticalalignment='top', fontfamily='monospace')
+        
+        plt.axis('off')
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+        
+    def generate_optimization_recommendations(self, 
+                                           metrics: Dict[str, Any],
+                                           results: Dict[str, Any]) -> Dict[str, List[str]]:
+        """
+        Generate detailed optimization recommendations based on backtest results.
+        
+        Args:
+            metrics: Performance metrics
+            results: Full backtest results
+            
+        Returns:
+            Dictionary of categorized recommendations
+        """
+        recommendations = {
+            'parameter_optimization': [],
+            'signal_improvements': [],
+            'risk_management': [],
+            'next_steps': []
+        }
+        
+        # Analyze current parameters
+        strategy_config = results.get('strategy_config', {})
+        ichimoku_params = strategy_config.get('parameters', {}).get('ichimoku_params', {})
+        
+        # Parameter optimization recommendations
+        if metrics.get('sharpe_ratio', 0) < 1:
+            recommendations['parameter_optimization'].append(
+                "Run walk-forward optimization to find more robust Ichimoku parameters"
+            )
+            recommendations['parameter_optimization'].append(
+                f"Current Tenkan period ({ichimoku_params.get('tenkan_period', 9)}) "
+                "may benefit from testing range 7-12"
+            )
+            
+        if metrics.get('total_trades', 0) < 50:
+            recommendations['parameter_optimization'].append(
+                "Consider shorter Ichimoku periods to increase trading frequency"
+            )
+            
+        # Signal improvement recommendations
+        if metrics.get('win_rate', 0) < 0.45:
+            recommendations['signal_improvements'].append(
+                "Add momentum confirmation (RSI > 50) to filter false breakouts"
+            )
+            recommendations['signal_improvements'].append(
+                "Implement volume confirmation for cloud breakout signals"
+            )
+            
+        if metrics.get('avg_win', 0) < metrics.get('avg_loss', 0) * 1.5:
+            recommendations['signal_improvements'].append(
+                "Consider trend strength filters to capture larger moves"
+            )
+            recommendations['signal_improvements'].append(
+                "Test adding Chikou span confirmation for stronger signals"
+            )
+            
+        # Risk management recommendations
+        if abs(metrics.get('max_drawdown', 0)) > 0.2:
+            recommendations['risk_management'].append(
+                f"Implement dynamic position sizing to reduce drawdown below 20%"
+            )
+            recommendations['risk_management'].append(
+                "Consider volatility-based stop losses instead of fixed percentage"
+            )
+            
+        if metrics.get('largest_loss', 0) > metrics.get('avg_loss', 0) * 3:
+            recommendations['risk_management'].append(
+                "Add maximum loss limits to prevent catastrophic trades"
+            )
+            recommendations['risk_management'].append(
+                "Implement correlated asset filters during high volatility"
+            )
+            
+        # Next steps
+        recommendations['next_steps'].append(
+            "Run parameter optimization with suggested ranges"
+        )
+        recommendations['next_steps'].append(
+            "Validate improvements on out-of-sample data (last 3-6 months)"
+        )
+        recommendations['next_steps'].append(
+            "Implement Monte Carlo simulation for robustness testing"
+        )
+        recommendations['next_steps'].append(
+            "Consider market regime filters for adaptive parameter selection"
+        )
+        
+        return recommendations
+        
+    def _generate_html_report(self, results: Dict[str, Any], base_filename: str) -> str:
+        """Generate interactive HTML report"""
+        html_path = self.output_dir / f"{base_filename}.html"
+        
+        # Create HTML template
+        html_template = self._get_html_template()
+        
+        # Prepare data for template
+        metrics = results.get('metrics', {}).get('performance_metrics', {})
+        executive_summary = self.create_executive_summary(metrics)
+        
+        # Create interactive charts
+        charts = {
+            'equity_curve': self._create_plotly_equity_curve(results),
+            'drawdown_chart': self._create_plotly_drawdown_chart(results),
+            'monthly_returns': self._create_plotly_monthly_returns(results),
+            'trade_analysis': self._create_plotly_trade_analysis(results),
+            'performance_metrics': self._create_metrics_table(metrics)
+        }
+        
+        # Render template
+        template = Template(html_template)
+        html_content = template.render(
+            title=f"Backtest Report - {results.get('strategy_config', {}).get('name', 'Strategy')}",
+            generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            executive_summary=executive_summary,
+            charts=charts,
+            strategy_config=results.get('strategy_config', {}),
+            recommendations=self.generate_optimization_recommendations(metrics, results)
+        )
+        
+        # Save HTML file
+        with open(html_path, 'w') as f:
+            f.write(html_content)
+            
+        return str(html_path)
+        
+    def _get_html_template(self) -> str:
+        """Get HTML report template"""
+        return '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .metric-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .chart-container {
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .recommendation-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .recommendation-list li {
+            padding: 10px 0;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin: 10px 0;
+        }
+        .performance-rating {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .rating-excellent { background-color: #27ae60; color: white; }
+        .rating-good { background-color: #3498db; color: white; }
+        .rating-satisfactory { background-color: #f39c12; color: white; }
+        .rating-poor { background-color: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+            <p>Generated: {{ generated_at }}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Executive Summary</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">{{ executive_summary.overview.total_return }}</div>
+                    <div class="metric-label">Total Return</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{{ executive_summary.overview.sharpe_ratio }}</div>
+                    <div class="metric-label">Sharpe Ratio</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{{ executive_summary.overview.max_drawdown }}</div>
+                    <div class="metric-label">Max Drawdown</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{{ executive_summary.overview.win_rate }}</div>
+                    <div class="metric-label">Win Rate</div>
+                </div>
+            </div>
+            
+            <p><strong>Performance Rating:</strong> 
+                <span class="performance-rating rating-{{ executive_summary.performance_rating.rating.lower() }}">
+                    {{ executive_summary.performance_rating.rating }}
+                </span>
+            </p>
+            <p><strong>Risk Level:</strong> {{ executive_summary.risk_assessment.risk_level }}</p>
+            
+            <h3>Key Insights</h3>
+            <ul>
+                {% for insight in executive_summary.key_insights %}
+                <li>{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>Performance Analysis</h2>
+            <div class="chart-container" id="equity-curve"></div>
+            <div class="chart-container" id="drawdown-chart"></div>
+            <div class="chart-container" id="monthly-returns"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Trading Analysis</h2>
+            <div class="chart-container" id="trade-analysis"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Performance Metrics</h2>
+            {{ charts.performance_metrics | safe }}
+        </div>
+        
+        <div class="section">
+            <h2>Optimization Recommendations</h2>
+            
+            <h3>Parameter Optimization</h3>
+            <ul class="recommendation-list">
+                {% for rec in recommendations.parameter_optimization %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+            
+            <h3>Signal Improvements</h3>
+            <ul class="recommendation-list">
+                {% for rec in recommendations.signal_improvements %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+            
+            <h3>Risk Management</h3>
+            <ul class="recommendation-list">
+                {% for rec in recommendations.risk_management %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+            
+            <h3>Next Steps</h3>
+            <ul class="recommendation-list">
+                {% for rec in recommendations.next_steps %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Render Plotly charts
+        {{ charts.equity_curve | safe }}
+        {{ charts.drawdown_chart | safe }}
+        {{ charts.monthly_returns | safe }}
+        {{ charts.trade_analysis | safe }}
+    </script>
+</body>
+</html>
+'''
+        
+    def _create_plotly_equity_curve(self, results: Dict[str, Any]) -> str:
+        """Create Plotly equity curve chart"""
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        
+        if equity_curve.empty:
+            return ""
+            
+        fig = go.Figure()
+        
+        # Add equity curve
+        fig.add_trace(go.Scatter(
+            x=equity_curve.index,
+            y=equity_curve['equity'],
+            mode='lines',
+            name='Equity',
+            line=dict(color='blue', width=2),
+            fill='tonexty',
+            fillcolor='rgba(0, 100, 255, 0.1)'
+        ))
+        
+        # Add baseline
+        fig.add_trace(go.Scatter(
+            x=equity_curve.index,
+            y=[equity_curve['equity'].iloc[0]] * len(equity_curve),
+            mode='lines',
+            name='Initial Capital',
+            line=dict(color='gray', width=1, dash='dash')
+        ))
+        
+        fig.update_layout(
+            title='Portfolio Equity Curve',
+            xaxis_title='Date',
+            yaxis_title='Equity ($)',
+            hovermode='x unified',
+            height=400
+        )
+        
+        # Convert to JavaScript code
+        return f"Plotly.newPlot('equity-curve', {fig.to_json()});"
+        
+    def _create_plotly_drawdown_chart(self, results: Dict[str, Any]) -> str:
+        """Create Plotly drawdown chart"""
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        
+        if equity_curve.empty or 'drawdown' not in equity_curve.columns:
+            return ""
+            
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=equity_curve.index,
+            y=equity_curve['drawdown'],
+            mode='lines',
+            name='Drawdown',
+            line=dict(color='red', width=1),
+            fill='tozeroy',
+            fillcolor='rgba(255, 0, 0, 0.2)'
+        ))
+        
+        fig.update_layout(
+            title='Drawdown Chart',
+            xaxis_title='Date',
+            yaxis_title='Drawdown (%)',
+            hovermode='x unified',
+            height=300
+        )
+        
+        return f"Plotly.newPlot('drawdown-chart', {fig.to_json()});"
+        
+    def _create_plotly_monthly_returns(self, results: Dict[str, Any]) -> str:
+        """Create Plotly monthly returns heatmap"""
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        
+        if equity_curve.empty or 'returns' not in equity_curve.columns:
+            return ""
+            
+        # Calculate monthly returns
+        monthly_returns = equity_curve['returns'].resample('M').apply(
+            lambda x: (1 + x).prod() - 1
+        )
+        
+        # Create year-month matrix
+        returns_df = pd.DataFrame(monthly_returns)
+        returns_df['Year'] = returns_df.index.year
+        returns_df['Month'] = returns_df.index.month
+        
+        # Pivot for heatmap
+        heatmap_data = returns_df.pivot(index='Year', columns='Month', values='returns')
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=heatmap_data.values * 100,  # Convert to percentage
+            x=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            y=heatmap_data.index,
+            colorscale='RdYlGn',
+            text=heatmap_data.values * 100,
+            texttemplate='%{text:.1f}%',
+            textfont={"size": 10},
+            colorbar=dict(title='Return %')
+        ))
+        
+        fig.update_layout(
+            title='Monthly Returns Heatmap',
+            xaxis_title='Month',
+            yaxis_title='Year',
+            height=400
+        )
+        
+        return f"Plotly.newPlot('monthly-returns', {fig.to_json()});"
+        
+    def _create_plotly_trade_analysis(self, results: Dict[str, Any]) -> str:
+        """Create Plotly trade analysis charts"""
+        trades = results.get('trades', pd.DataFrame())
+        
+        if trades.empty:
+            return ""
+            
+        # Create subplots
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=('Trade P&L Distribution', 'Win/Loss Ratio', 
+                          'Trade Duration', 'P&L by Signal Type')
+        )
+        
+        # 1. P&L distribution
+        fig.add_trace(
+            go.Histogram(x=trades['pnl'], nbinsx=30, name='P&L Distribution'),
+            row=1, col=1
+        )
+        
+        # 2. Win/Loss pie chart
+        wins = len(trades[trades['pnl'] > 0])
+        losses = len(trades[trades['pnl'] <= 0])
+        fig.add_trace(
+            go.Pie(labels=['Wins', 'Losses'], values=[wins, losses], 
+                  marker_colors=['green', 'red']),
+            row=1, col=2
+        )
+        
+        # 3. Trade duration
+        if 'duration_hours' in trades.columns:
+            fig.add_trace(
+                go.Box(y=trades['duration_hours'], name='Duration'),
+                row=2, col=1
+            )
+            
+        # 4. P&L by signal type
+        if 'entry_signal' in trades.columns:
+            signal_pnl = trades.groupby('entry_signal')['pnl'].sum()
+            fig.add_trace(
+                go.Bar(x=signal_pnl.index, y=signal_pnl.values, name='Signal P&L'),
+                row=2, col=2
+            )
+            
+        fig.update_layout(height=600, showlegend=False)
+        
+        return f"Plotly.newPlot('trade-analysis', {fig.to_json()});"
+        
+    def _create_metrics_table(self, metrics: Dict[str, Any]) -> str:
+        """Create HTML metrics table"""
+        # Define metrics to display
+        metric_rows = [
+            ('Total Return', f"{metrics.get('total_return', 0):.2%}"),
+            ('Annualized Return', f"{metrics.get('annual_return', 0):.2%}"),
+            ('Sharpe Ratio', f"{metrics.get('sharpe_ratio', 0):.2f}"),
+            ('Sortino Ratio', f"{metrics.get('sortino_ratio', 0):.2f}"),
+            ('Max Drawdown', f"{metrics.get('max_drawdown', 0):.2%}"),
+            ('Win Rate', f"{metrics.get('win_rate', 0):.2%}"),
+            ('Profit Factor', f"{metrics.get('profit_factor', 0):.2f}"),
+            ('Average Win', f"${metrics.get('avg_win', 0):.2f}"),
+            ('Average Loss', f"${metrics.get('avg_loss', 0):.2f}"),
+            ('Total Trades', f"{metrics.get('total_trades', 0)}"),
+            ('Value at Risk (95%)', f"{metrics.get('var_95', 0):.2%}"),
+            ('Expected Shortfall (95%)', f"{metrics.get('cvar_95', 0):.2%}")
+        ]
+        
+        # Create HTML table
+        html = '<table><tr><th>Metric</th><th>Value</th></tr>'
+        for metric, value in metric_rows:
+            html += f'<tr><td>{metric}</td><td>{value}</td></tr>'
+        html += '</table>'
+        
+        return html
+        
+    def _export_json(self, results: Dict[str, Any], base_filename: str) -> str:
+        """Export results as JSON"""
+        json_path = self.output_dir / f"{base_filename}.json"
+        
+        # Prepare data for JSON serialization
+        json_data = {
+            'metadata': self.report_metadata,
+            'strategy_config': results.get('strategy_config', {}),
+            'performance_metrics': results.get('metrics', {}).get('performance_metrics', {}),
+            'executive_summary': self.create_executive_summary(
+                results.get('metrics', {}).get('performance_metrics', {})
+            ),
+            'trades_summary': {
+                'total_trades': len(results.get('trades', [])),
+                'winning_trades': len(results.get('trades', pd.DataFrame())[
+                    results.get('trades', pd.DataFrame()).get('pnl', pd.Series()) > 0
+                ]) if not results.get('trades', pd.DataFrame()).empty else 0,
+                'losing_trades': len(results.get('trades', pd.DataFrame())[
+                    results.get('trades', pd.DataFrame()).get('pnl', pd.Series()) <= 0
+                ]) if not results.get('trades', pd.DataFrame()).empty else 0
+            }
+        }
+        
+        # Convert datetime objects to strings
+        def serialize_datetime(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+            
+        # Save JSON
+        with open(json_path, 'w') as f:
+            json.dump(json_data, f, indent=2, default=serialize_datetime)
+            
+        return str(json_path)
+        
+    def _export_csv(self, results: Dict[str, Any], base_filename: str) -> Dict[str, str]:
+        """Export results as CSV files"""
+        csv_paths = {}
+        
+        # Export trades
+        trades = results.get('trades', pd.DataFrame())
+        if not trades.empty:
+            trades_path = self.output_dir / f"{base_filename}_trades.csv"
+            trades.to_csv(trades_path, index=False)
+            csv_paths['trades'] = str(trades_path)
+            
+        # Export equity curve
+        equity_curve = results.get('equity_curve', pd.DataFrame())
+        if not equity_curve.empty:
+            equity_path = self.output_dir / f"{base_filename}_equity_curve.csv"
+            equity_curve.to_csv(equity_path)
+            csv_paths['equity_curve'] = str(equity_path)
+            
+        # Export metrics
+        metrics = results.get('metrics', {}).get('performance_metrics', {})
+        if metrics:
+            metrics_df = pd.DataFrame([metrics])
+            metrics_path = self.output_dir / f"{base_filename}_metrics.csv"
+            metrics_df.to_csv(metrics_path, index=False)
+            csv_paths['metrics'] = str(metrics_path)
+            
+        return csv_paths
+        
+    def export_results(self, results: Dict[str, Any], format: str = 'pdf') -> str:
+        """
+        Export results in specified format.
+        
+        Args:
+            results: Backtest results
+            format: Export format ('pdf', 'html', 'json', 'csv')
+            
+        Returns:
+            Path to exported file(s)
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_filename = f"export_{timestamp}"
+        
+        if format == 'pdf':
+            return self._generate_pdf_report(results, base_filename)
+        elif format == 'html':
+            return self._generate_html_report(results, base_filename)
+        elif format == 'json':
+            return self._export_json(results, base_filename)
+        elif format == 'csv':
+            return self._export_csv(results, base_filename)
+        else:
+            raise ValueError(f"Unsupported export format: {format}")

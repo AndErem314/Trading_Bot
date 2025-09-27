@@ -6,7 +6,8 @@ algorithmic optimization methods including Bayesian optimization,
 genetic algorithms, and grid search.
 """
 
-from .llm_optimizer import (
+from .llm_optimizer import LLMOptimizer
+from .parameter_optimizer import ParameterOptimizer, ParameterSpace, OptimizationResult
     LLMOptimizer,
     OptimizationResult,
     IchimokuParameters,
