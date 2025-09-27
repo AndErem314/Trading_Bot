@@ -1,0 +1,159 @@
+strategies:
+  strategy01:
+    name: Conservative Ichimoku
+    description: Conservative strategy requiring multiple confirmations
+    enabled: true
+    timeframe: 1h
+    symbols:
+    - BTC/USDT
+    - ETH/USDT
+    signal_conditions:
+      buy_conditions:
+      - PriceAboveCloud
+      - TenkanAboveKijun
+      - ChikouAboveCloud
+      sell_conditions:
+      - PriceBelowCloud
+      - TenkanBelowKijun
+      - ChikouBelowPrice
+      buy_logic: AND
+      sell_logic: AND
+    ichimoku_parameters:
+      tenkan_period: 9
+      kijun_period: 26
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 2.0
+      take_profit_pct: 6.0
+      trailing_stop: true
+      trailing_stop_pct: 1.5
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 2.0
+    position_sizing:
+      method: risk_based
+      fixed_size: 1.0
+      use_kelly_criterion: false
+      max_leverage: 1.0
+      min_position_size: 0.01
+      max_position_size: 10.0
+  
+  strategy02:
+    name: Aggressive Ichimoku
+    description: More aggressive strategy with relaxed conditions
+    enabled: true
+    timeframe: 4h
+    symbols:
+    - BTC/USDT
+    signal_conditions:
+      buy_conditions:
+      - PriceAboveCloud
+      - TenkanAboveKijun
+      - ChikouAbovePrice
+      sell_conditions:
+      - PriceBelowCloud
+      - TenkanBelowKijun
+      - ChikouBelowCloud
+      buy_logic: AND
+      sell_logic: AND
+    ichimoku_parameters:
+      tenkan_period: 7
+      kijun_period: 22
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 3.0
+      take_profit_pct: 9.0
+      trailing_stop: false
+      trailing_stop_pct: 1.5
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 3.0
+    position_sizing:
+      method: fixed
+      fixed_size: 2.0
+      use_kelly_criterion: false
+      max_leverage: 1.0
+      min_position_size: 0.01
+      max_position_size: 10.0
+  
+  strategy03:
+    name: Balanced Ichimoku
+    description: Balanced approach with moderate risk
+    enabled: true
+    timeframe: 2h
+    symbols:
+    - BTC/USDT
+    - ETH/USDT
+    - SOL/USDT
+    signal_conditions:
+      buy_conditions:
+      - PriceAboveCloud
+      - TenkanAboveKijun
+      - ChikouAbovePrice
+      - ChikouCrossAboveSenkouB
+      sell_conditions:
+      - PriceBelowCloud
+      - TenkanBelowKijun
+      - ChikouBelowPrice
+      - ChikouCrossBelowSenkouB
+      buy_logic: AND
+      sell_logic: AND
+    ichimoku_parameters:
+      tenkan_period: 9
+      kijun_period: 26
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 2.5
+      take_profit_pct: 7.5
+      trailing_stop: true
+      trailing_stop_pct: 2.0
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 2.5
+    position_sizing:
+      method: volatility_based
+      fixed_size: 1.0
+      use_kelly_criterion: false
+      max_leverage: 1.0
+      min_position_size: 0.01
+      max_position_size: 5.0
+  
+  strategy04:
+    name: Scalping Ichimoku
+    description: Quick scalping strategy for smaller timeframes
+    enabled: false
+    timeframe: 15m
+    symbols:
+    - BTC/USDT
+    signal_conditions:
+      buy_conditions:
+      - PriceAboveCloud
+      - TenkanAboveKijun
+      sell_conditions:
+      - PriceBelowCloud
+      - TenkanBelowKijun
+      buy_logic: AND
+      sell_logic: AND
+    ichimoku_parameters:
+      tenkan_period: 5
+      kijun_period: 15
+      senkou_b_period: 30
+      chikou_offset: 15
+      senkou_offset: 15
+    risk_management:
+      stop_loss_pct: 1.0
+      take_profit_pct: 2.0
+      trailing_stop: true
+      trailing_stop_pct: 0.5
+      max_position_size_pct: 50.0
+      risk_per_trade_pct: 1.0
+    position_sizing:
+      method: fixed
+      fixed_size: 0.5
+      use_kelly_criterion: false
+      max_leverage: 1.0
+      min_position_size: 0.01
+      max_position_size: 2.0

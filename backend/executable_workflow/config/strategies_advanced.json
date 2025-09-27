@@ -1,0 +1,140 @@
+{
+  "strategies": {
+    "strategy_momentum": {
+      "name": "Momentum Ichimoku",
+      "description": "Momentum-based strategy using Ichimoku cloud strength",
+      "enabled": true,
+      "timeframe": "1h",
+      "symbols": ["BTC/USDT", "ETH/USDT"],
+      "signal_conditions": {
+        "buy_conditions": [
+          "PriceAboveCloud",
+          "TenkanAboveKijun",
+          "ChikouAbovePrice",
+          "ChikouAboveCloud"
+        ],
+        "sell_conditions": [
+          "PriceBelowCloud",
+          "TenkanBelowKijun",
+          "ChikouBelowPrice",
+          "ChikouBelowCloud"
+        ],
+        "buy_logic": "AND",
+        "sell_logic": "AND"
+      },
+      "ichimoku_parameters": {
+        "tenkan_period": 9,
+        "kijun_period": 26,
+        "senkou_b_period": 52,
+        "chikou_offset": 26,
+        "senkou_offset": 26
+      },
+      "risk_management": {
+        "stop_loss_pct": 2.5,
+        "take_profit_pct": 8.0,
+        "trailing_stop": true,
+        "trailing_stop_pct": 2.0,
+        "max_position_size_pct": 100.0,
+        "risk_per_trade_pct": 2.5
+      },
+      "position_sizing": {
+        "method": "risk_based",
+        "fixed_size": 1.0,
+        "use_kelly_criterion": true,
+        "max_leverage": 1.0,
+        "min_position_size": 0.01,
+        "max_position_size": 5.0
+      }
+    },
+    
+    "strategy_breakout": {
+      "name": "Cloud Breakout",
+      "description": "Focuses on cloud breakouts with Chikou confirmation",
+      "enabled": true,
+      "timeframe": "4h",
+      "symbols": ["BTC/USDT"],
+      "signal_conditions": {
+        "buy_conditions": [
+          "PriceAboveCloud",
+          "ChikouCrossAboveSenkouB",
+          "TenkanAboveKijun"
+        ],
+        "sell_conditions": [
+          "PriceBelowCloud",
+          "ChikouCrossBelowSenkouB",
+          "TenkanBelowKijun"
+        ],
+        "buy_logic": "AND",
+        "sell_logic": "AND"
+      },
+      "ichimoku_parameters": {
+        "tenkan_period": 9,
+        "kijun_period": 26,
+        "senkou_b_period": 52,
+        "chikou_offset": 26,
+        "senkou_offset": 26
+      },
+      "risk_management": {
+        "stop_loss_pct": 3.5,
+        "take_profit_pct": 12.0,
+        "trailing_stop": true,
+        "trailing_stop_pct": 3.0,
+        "max_position_size_pct": 100.0,
+        "risk_per_trade_pct": 3.0
+      },
+      "position_sizing": {
+        "method": "volatility_based",
+        "fixed_size": 1.0,
+        "use_kelly_criterion": false,
+        "max_leverage": 1.0,
+        "min_position_size": 0.1,
+        "max_position_size": 3.0
+      }
+    },
+    
+    "strategy_swing": {
+      "name": "Swing Trading Ichimoku",
+      "description": "Longer-term swing trading with daily timeframe",
+      "enabled": false,
+      "timeframe": "1d",
+      "symbols": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "AVAX/USDT"],
+      "signal_conditions": {
+        "buy_conditions": [
+          "PriceAboveCloud",
+          "TenkanAboveKijun",
+          "ChikouAboveCloud"
+        ],
+        "sell_conditions": [
+          "PriceBelowCloud",
+          "TenkanBelowKijun",
+          "ChikouBelowCloud"
+        ],
+        "buy_logic": "AND",
+        "sell_logic": "AND"
+      },
+      "ichimoku_parameters": {
+        "tenkan_period": 9,
+        "kijun_period": 26,
+        "senkou_b_period": 52,
+        "chikou_offset": 26,
+        "senkou_offset": 26
+      },
+      "risk_management": {
+        "stop_loss_pct": 5.0,
+        "take_profit_pct": 15.0,
+        "trailing_stop": false,
+        "trailing_stop_pct": 4.0,
+        "max_position_size_pct": 100.0,
+        "risk_per_trade_pct": 5.0
+      },
+      "position_sizing": {
+        "method": "fixed",
+        "fixed_size": 1.0,
+        "use_kelly_criterion": false,
+        "max_leverage": 1.0,
+        "min_position_size": 0.1,
+        "max_position_size": 10.0
+      }
+    }
+  }
+}
