@@ -21,7 +21,9 @@ from .ichimoku_backtester import (
     MarketEvent,
     SignalEvent,
     OrderEvent,
-    FillEvent
+    FillEvent,
+    TimeframeConfig,
+    MultiTimeframeSignal
 )
 
 __all__ = [
@@ -37,5 +39,7 @@ __all__ = [
     'MarketEvent',
     'SignalEvent',
     'OrderEvent',
-    'FillEvent'
+    'FillEvent',
+    'TimeframeConfig',
+    'MultiTimeframeSignal'
 ]

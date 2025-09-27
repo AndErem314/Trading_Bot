@@ -22,6 +22,7 @@ from enum import Enum
 import logging
 from queue import PriorityQueue
 import copy
+from collections import defaultdict
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -171,6 +172,30 @@ class FillEvent(BacktestEvent):
     fill: Fill
 
 
+@dataclass
+class TimeframeConfig:
+    """Configuration for a specific timeframe in MTF analysis."""
+    timeframe: str
+    weight: float = 1.0  # Signal weighting
+    priority: int = 1    # Higher priority = more important
+    confirmation_required: bool = False
+    min_bars_for_signal: int = 100
+
+
+@dataclass
+class MultiTimeframeSignal:
+    """Aggregated signal from multiple timeframes."""
+    symbol: str
+    timestamp: datetime
+    timeframe_signals: Dict[str, SignalEvent]
+    combined_signal: float  # -1 to 1
+    combined_strength: float
+    signal_type: str  # 'entry' or 'exit'
+    conflicts: List[str]  # List of conflicting timeframes
+    resolution_method: str
+    final_decision: str  # 'buy', 'sell', 'hold'
+
+
 class IchimokuBacktester:
     """
     Comprehensive backtesting engine for Ichimoku strategies.
@@ -178,9 +203,15 @@ class IchimokuBacktester:
     This class implements an event-driven architecture to accurately simulate
     trading with realistic market conditions including slippage, commissions,
     and proper order execution timing.
+    
+    Enhanced with multi-timeframe analysis capabilities including:
+    - Data synchronization across timeframes
+    - Signal conflict resolution
+    - Timeframe priority system
+    - Higher timeframe confirmation
     """
     
-    def __init__(self, 
+    def __init__(self,
                  initial_capital: float = 10000.0,
                  commission_rate: float = 0.001,  # 0.1%
                  slippage_rate: float = 0.0005,   # 0.05%
@@ -230,6 +261,275 @@ class IchimokuBacktester:
         # Strategy reference
         self.strategy = None
         self.strategy_config = None
+        
+        # Multi-timeframe support
+        self.timeframe_configs: Dict[str, TimeframeConfig] = {}
+        self.mtf_signals: Dict[datetime, Dict[str, SignalEvent]] = defaultdict(dict)
+        self.signal_resolution_method = 'weighted_average'  # or 'priority', 'majority_vote', 'all_agree'
+        self.require_htf_confirmation = False
+        self.timeframe_alignment_tolerance = timedelta(minutes=5)
+    
+    def configure_timeframes(self, timeframe_configs: List[TimeframeConfig]):
+        """Configure timeframes for multi-timeframe analysis."""
+        self.timeframe_configs = {tf.timeframe: tf for tf in timeframe_configs}
+        logger.info(f"Configured {len(timeframe_configs)} timeframes for MTF analysis")
+    
+    def synchronize_multi_timeframe_data(self, data_dict: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        """
+        Synchronize data across different timeframes.
+        
+        Args:
+            data_dict: Dictionary mapping timeframe to DataFrame
+            
+        Returns:
+            Synchronized data with aligned timestamps
+        """
+        logger.info("Synchronizing multi-timeframe data...")
+        
+        if not data_dict:
+            return data_dict
+        
+        # Find the highest resolution timeframe (smallest interval)
+        timeframe_minutes = {
+            '15m': 15, '30m': 30, '1h': 60, '2h': 120, 
+            '4h': 240, '6h': 360, '8h': 480, '12h': 720, '1d': 1440
+        }
+        
+        sorted_timeframes = sorted(
+            data_dict.keys(), 
+            key=lambda x: timeframe_minutes.get(x, 60)
+        )
+        
+        base_timeframe = sorted_timeframes[0]
+        base_data = data_dict[base_timeframe]
+        
+        # Align all timeframes to base timeframe
+        aligned_data = {base_timeframe: base_data}
+        
+        for timeframe in sorted_timeframes[1:]:
+            df = data_dict[timeframe].copy()
+            
+            # Ensure index is datetime
+            if not isinstance(df.index, pd.DatetimeIndex):
+                df.index = pd.to_datetime(df.index)
+            
+            # Find common time range
+            start_time = max(base_data.index[0], df.index[0])
+            end_time = min(base_data.index[-1], df.index[-1])
+            
+            # Filter to common range
+            df = df[start_time:end_time]
+            
+            # Verify bar alignment
+            if self._verify_timeframe_alignment(base_data, df, timeframe):
+                aligned_data[timeframe] = df
+                logger.info(f"Synchronized {timeframe} data: {len(df)} bars")
+            else:
+                logger.warning(f"Could not properly align {timeframe} data")
+        
+        return aligned_data
+    
+    def _verify_timeframe_alignment(self, base_df: pd.DataFrame, tf_df: pd.DataFrame, 
+                                   timeframe: str) -> bool:
+        """
+        Verify that higher timeframe bars properly align with base timeframe.
+        """
+        timeframe_multipliers = {
+            '15m': 1, '30m': 2, '1h': 4, '2h': 8,
+            '4h': 16, '6h': 24, '8h': 32, '12h': 48, '1d': 96
+        }
+        
+        # Assuming base is 15m
+        multiplier = timeframe_multipliers.get(timeframe, 4)
+        
+        # Check if higher timeframe timestamps align with base timeframe
+        for tf_time in tf_df.index[:10]:  # Check first 10 bars
+            # Find closest base timestamp
+            time_diff = abs(base_df.index - tf_time)
+            min_diff = time_diff.min()
+            
+            if min_diff > self.timeframe_alignment_tolerance:
+                return False
+        
+        return True
+    
+    def resolve_signal_conflicts(self, signals_by_timeframe: Dict[str, SignalEvent], 
+                               timestamp: datetime) -> MultiTimeframeSignal:
+        """
+        Resolve conflicts between signals from different timeframes.
+        
+        Args:
+            signals_by_timeframe: Dictionary mapping timeframe to SignalEvent
+            timestamp: Current timestamp
+            
+        Returns:
+            MultiTimeframeSignal with resolved signal
+        """
+        if not signals_by_timeframe:
+            return None
+        
+        symbol = next(iter(signals_by_timeframe.values())).symbol
+        
+        # Detect conflicts
+        conflicts = self._detect_signal_conflicts(signals_by_timeframe)
+        
+        # Resolve based on configured method
+        if self.signal_resolution_method == 'weighted_average':
+            combined_signal, strength = self._resolve_by_weighted_average(signals_by_timeframe)
+        elif self.signal_resolution_method == 'priority':
+            combined_signal, strength = self._resolve_by_priority(signals_by_timeframe)
+        elif self.signal_resolution_method == 'majority_vote':
+            combined_signal, strength = self._resolve_by_majority_vote(signals_by_timeframe)
+        elif self.signal_resolution_method == 'all_agree':
+            combined_signal, strength = self._resolve_by_consensus(signals_by_timeframe)
+        else:
+            combined_signal, strength = self._resolve_by_weighted_average(signals_by_timeframe)
+        
+        # Check HTF confirmation if required
+        if self.require_htf_confirmation:
+            if not self._has_htf_confirmation(signals_by_timeframe, combined_signal):
+                combined_signal = 0  # No trade
+                final_decision = 'hold'
+            else:
+                final_decision = 'buy' if combined_signal > 0 else 'sell' if combined_signal < 0 else 'hold'
+        else:
+            final_decision = 'buy' if combined_signal > 0 else 'sell' if combined_signal < 0 else 'hold'
+        
+        return MultiTimeframeSignal(
+            symbol=symbol,
+            timestamp=timestamp,
+            timeframe_signals=signals_by_timeframe,
+            combined_signal=combined_signal,
+            combined_strength=strength,
+            signal_type='entry' if abs(combined_signal) > 0 else 'exit',
+            conflicts=conflicts,
+            resolution_method=self.signal_resolution_method,
+            final_decision=final_decision
+        )
+    
+    def _detect_signal_conflicts(self, signals_by_timeframe: Dict[str, SignalEvent]) -> List[str]:
+        """Detect conflicting signals between timeframes."""
+        conflicts = []
+        timeframes = list(signals_by_timeframe.keys())
+        
+        for i in range(len(timeframes)):
+            for j in range(i + 1, len(timeframes)):
+                tf1, tf2 = timeframes[i], timeframes[j]
+                signal1 = signals_by_timeframe[tf1]
+                signal2 = signals_by_timeframe[tf2]
+                
+                # Check if signals are in opposite directions
+                if (signal1.signal_data.get('signal', 0) * 
+                    signal2.signal_data.get('signal', 0) < 0):
+                    conflicts.append(f"{tf1} vs {tf2}")
+        
+        return conflicts
+    
+    def _resolve_by_weighted_average(self, signals_by_timeframe: Dict[str, SignalEvent]) -> Tuple[float, float]:
+        """Resolve signals using weighted average based on timeframe configuration."""
+        weighted_sum = 0
+        weight_sum = 0
+        
+        for timeframe, signal in signals_by_timeframe.items():
+            config = self.timeframe_configs.get(timeframe)
+            weight = config.weight if config else 1.0
+            signal_value = signal.signal_data.get('signal', 0)
+            
+            weighted_sum += signal_value * weight * signal.signal_strength
+            weight_sum += weight
+        
+        if weight_sum > 0:
+            combined_signal = weighted_sum / weight_sum
+            strength = abs(combined_signal)
+        else:
+            combined_signal = 0
+            strength = 0
+        
+        return combined_signal, strength
+    
+    def _resolve_by_priority(self, signals_by_timeframe: Dict[str, SignalEvent]) -> Tuple[float, float]:
+        """Resolve signals by giving precedence to higher priority timeframes."""
+        # Sort by priority (higher priority first)
+        sorted_signals = sorted(
+            signals_by_timeframe.items(),
+            key=lambda x: self.timeframe_configs.get(x[0], TimeframeConfig(x[0])).priority,
+            reverse=True
+        )
+        
+        # Return the highest priority signal
+        if sorted_signals:
+            _, signal = sorted_signals[0]
+            return signal.signal_data.get('signal', 0), signal.signal_strength
+        
+        return 0, 0
+    
+    def _resolve_by_majority_vote(self, signals_by_timeframe: Dict[str, SignalEvent]) -> Tuple[float, float]:
+        """Resolve signals by majority vote."""
+        buy_votes = 0
+        sell_votes = 0
+        neutral_votes = 0
+        
+        for signal in signals_by_timeframe.values():
+            signal_value = signal.signal_data.get('signal', 0)
+            if signal_value > 0:
+                buy_votes += 1
+            elif signal_value < 0:
+                sell_votes += 1
+            else:
+                neutral_votes += 1
+        
+        total_votes = len(signals_by_timeframe)
+        
+        if buy_votes > total_votes / 2:
+            return 1.0, buy_votes / total_votes
+        elif sell_votes > total_votes / 2:
+            return -1.0, sell_votes / total_votes
+        else:
+            return 0, 0
+    
+    def _resolve_by_consensus(self, signals_by_timeframe: Dict[str, SignalEvent]) -> Tuple[float, float]:
+        """Resolve signals by requiring all timeframes to agree."""
+        if not signals_by_timeframe:
+            return 0, 0
+        
+        first_signal = next(iter(signals_by_timeframe.values())).signal_data.get('signal', 0)
+        
+        # Check if all signals agree
+        for signal in signals_by_timeframe.values():
+            current_signal = signal.signal_data.get('signal', 0)
+            if current_signal * first_signal <= 0:  # Different direction or neutral
+                return 0, 0
+        
+        # All agree
+        return first_signal, 1.0
+    
+    def _has_htf_confirmation(self, signals_by_timeframe: Dict[str, SignalEvent], 
+                            proposed_signal: float) -> bool:
+        """Check if higher timeframe confirms the signal."""
+        # Define timeframe hierarchy
+        timeframe_hierarchy = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d']
+        
+        # Find highest timeframe in signals
+        highest_tf = None
+        highest_idx = -1
+        
+        for tf in signals_by_timeframe.keys():
+            if tf in timeframe_hierarchy:
+                idx = timeframe_hierarchy.index(tf)
+                if idx > highest_idx:
+                    highest_idx = idx
+                    highest_tf = tf
+        
+        if highest_tf:
+            htf_signal = signals_by_timeframe[highest_tf].signal_data.get('signal', 0)
+            # Check if HTF agrees with proposed signal
+            return htf_signal * proposed_signal > 0
+        
+        return True  # No HTF available, allow signal
+    
+    def get_combined_signal_weighting(self) -> Dict[str, float]:
+        """Get current signal weighting configuration for each timeframe."""
+        return {tf: config.weight for tf, config in self.timeframe_configs.items()}
     
     def run_backtest(self, strategy_config: Any, data: Union[pd.DataFrame, Dict[str, pd.DataFrame]], 
                     timeframes: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -442,7 +742,7 @@ class IchimokuBacktester:
                 self._handle_fill_event(event)
     
     def _handle_market_event(self, event: MarketEvent):
-        """Handle market data update."""
+        """Handle market data update with multi-timeframe support."""
         # Update current bar data
         if event.symbol not in self.current_bars:
             self.current_bars[event.symbol] = {}
@@ -459,7 +759,15 @@ class IchimokuBacktester:
         
         # Generate signals if we have complete data
         if self._has_complete_data(event.symbol, event.timeframe):
-            self._generate_signals(event)
+            signal_event = self._generate_signals(event)
+            
+            # Store signal for MTF analysis
+            if signal_event:
+                self.mtf_signals[event.timestamp][event.timeframe] = signal_event
+                
+                # Check if we should process MTF signals
+                if self._should_process_mtf_signals(event.timestamp, event.symbol):
+                    self._process_mtf_signals(event.timestamp, event.symbol)
         
         # Update equity curve
         self._update_equity_curve(event.timestamp)
@@ -667,7 +975,7 @@ class IchimokuBacktester:
             # Default to fixed size
             return sizing_config.fixed_size
     
-    def _generate_signals(self, market_event: MarketEvent):
+    def _generate_signals(self, market_event: MarketEvent) -> Optional[SignalEvent]:
         """Generate trading signals from strategy."""
         # Get current data for the symbol
         symbol = market_event.symbol
@@ -678,7 +986,7 @@ class IchimokuBacktester:
         current_idx = market_event.bar_number
         
         if current_idx < 100:  # Need minimum history
-            return
+            return None
         
         # Get historical data up to current point
         historical_data = df.iloc[:current_idx + 1].copy()
@@ -704,7 +1012,106 @@ class IchimokuBacktester:
                     'reason': 'strategy_signal'
                 }
             )
-            self.event_queue.put(signal_event)
+            
+            # For single timeframe mode, add to event queue directly
+            if not self.timeframe_configs:
+                self.event_queue.put(signal_event)
+            
+            return signal_event
+        
+        return None
+    
+    def _should_process_mtf_signals(self, timestamp: datetime, symbol: str) -> bool:
+        """Check if we have enough signals to process MTF analysis."""
+        if not self.timeframe_configs:
+            return False
+        
+        # Check if we have signals for all configured timeframes
+        current_signals = self.mtf_signals.get(timestamp, {})
+        required_timeframes = set(self.timeframe_configs.keys())
+        available_timeframes = set(current_signals.keys())
+        
+        # For now, require at least 50% of configured timeframes
+        return len(available_timeframes) >= len(required_timeframes) * 0.5
+    
+    def _process_mtf_signals(self, timestamp: datetime, symbol: str):
+        """Process multi-timeframe signals and generate combined signal."""
+        current_signals = self.mtf_signals.get(timestamp, {})
+        
+        if not current_signals:
+            return
+        
+        # Filter signals for the current symbol
+        symbol_signals = {
+            tf: signal for tf, signal in current_signals.items()
+            if signal.symbol == symbol
+        }
+        
+        if not symbol_signals:
+            return
+        
+        # Resolve conflicts and get combined signal
+        mtf_signal = self.resolve_signal_conflicts(symbol_signals, timestamp)
+        
+        if mtf_signal and mtf_signal.final_decision != 'hold':
+            # Create a new signal event based on MTF analysis
+            combined_event = SignalEvent(
+                timestamp=timestamp,
+                priority=0,  # Higher priority than individual signals
+                symbol=symbol,
+                signal_type=mtf_signal.signal_type,
+                signal_strength=mtf_signal.combined_strength,
+                entry_price=next(iter(symbol_signals.values())).entry_price,
+                stop_loss=self._calculate_mtf_stop_loss(symbol_signals),
+                take_profit=self._calculate_mtf_take_profit(symbol_signals),
+                signal_data={
+                    'symbol': symbol,
+                    'signal': mtf_signal.combined_signal,
+                    'reason': f'mtf_{mtf_signal.resolution_method}',
+                    'conflicts': mtf_signal.conflicts,
+                    'timeframes': list(symbol_signals.keys())
+                }
+            )
+            
+            self.event_queue.put(combined_event)
+            
+            # Log MTF decision
+            logger.info(
+                f"MTF Signal: {symbol} {mtf_signal.final_decision} "
+                f"(strength: {mtf_signal.combined_strength:.2f}, "
+                f"conflicts: {len(mtf_signal.conflicts)})"
+            )
+    
+    def _calculate_mtf_stop_loss(self, signals: Dict[str, SignalEvent]) -> float:
+        """Calculate stop loss from multiple timeframe signals."""
+        # Use the most conservative (furthest) stop loss
+        stop_losses = [s.stop_loss for s in signals.values() if s.stop_loss]
+        if stop_losses:
+            # For long positions, use the lowest stop
+            # For short positions, use the highest stop
+            first_signal = next(iter(signals.values()))
+            if first_signal.signal_data.get('signal', 0) > 0:
+                return min(stop_losses)
+            else:
+                return max(stop_losses)
+        return 0
+    
+    def _calculate_mtf_take_profit(self, signals: Dict[str, SignalEvent]) -> float:
+        """Calculate take profit from multiple timeframe signals."""
+        # Use weighted average of take profits
+        weighted_sum = 0
+        weight_sum = 0
+        
+        for tf, signal in signals.items():
+            config = self.timeframe_configs.get(tf)
+            weight = config.weight if config else 1.0
+            if signal.take_profit:
+                weighted_sum += signal.take_profit * weight
+                weight_sum += weight
+        
+        if weight_sum > 0:
+            return weighted_sum / weight_sum
+        return 0
     
     def _check_pending_orders(self, market_event: MarketEvent):
         """Check if any pending orders should be executed."""
