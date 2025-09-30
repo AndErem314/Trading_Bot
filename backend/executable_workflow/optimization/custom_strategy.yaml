@@ -1,0 +1,37 @@
+strategies:
+  custom_strategy:
+    name: Custom Test Strategy
+    description: A custom strategy for testing
+    enabled: true
+    timeframe: 30m
+    symbols:
+    - BTC/USDT
+    signal_conditions:
+      buy_conditions:
+      - PriceAboveCloud
+      - ChikouAbovePrice
+      sell_conditions:
+      - PriceBelowCloud
+      - ChikouBelowPrice
+      buy_logic: AND
+      sell_logic: AND
+    ichimoku_parameters:
+      tenkan_period: 8
+      kijun_period: 24
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 1.5
+      take_profit_pct: 4.5
+      trailing_stop: false
+      trailing_stop_pct: 1.5
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 2.0
+    position_sizing:
+      method: fixed
+      fixed_size: 0.5
+      use_kelly_criterion: false
+      max_leverage: 1.0
+      min_position_size: 0.01
+      max_position_size: 10.0

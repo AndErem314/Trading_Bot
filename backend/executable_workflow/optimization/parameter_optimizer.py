@@ -25,10 +25,15 @@ from sklearn.model_selection import TimeSeriesSplit
 import warnings
 warnings.filterwarnings('ignore')
 
-from backend.data_fetching.data_fetcher import DataFetcher
-from backend.executable_workflow.backtesting import IchimokuBacktester
-from backend.executable_workflow.analytics import PerformanceAnalyzer
-from backend.config import Config
+# Import from parent modules
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from backtesting import IchimokuBacktester
+from analytics import PerformanceAnalyzer
+from data_fetching import OHLCVDataFetcher
+# from config import Config  # Comment out if not needed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -115,7 +120,8 @@ class ParameterOptimizer:
         self.significance_level = significance_level
         self.n_jobs = n_jobs if n_jobs > 0 else None
         
-        self.data_fetcher = DataFetcher()
+        # Initialize data fetcher with default settings
+        self.data_fetcher = None  # Will be initialized when needed
         self.analyzer = PerformanceAnalyzer()
         
         # Initialize results database
@@ -173,7 +179,9 @@ class ParameterOptimizer:
             parameter_space = ParameterSpace()
             
         # Fetch data
-        data = self.data_fetcher.fetch_data(symbol, start_date, end_date)
+        if not self.data_fetcher:
+            self.data_fetcher = OHLCVDataFetcher(exchange='binance')
+        data = self.data_fetcher.fetch_data(symbol, '1h', start_date, end_date)
         logger.info(f"Data fetched: {len(data)} candles from {start_date} to {end_date}")
         
         # Generate all parameter combinations
