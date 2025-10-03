@@ -11,6 +11,12 @@ This module provides comprehensive parameter optimization with:
 
 import numpy as np
 import pandas as pd
+
+# Fix numpy compatibility issue
+import numpy
+if not hasattr(numpy, 'NaN'):
+    numpy.NaN = numpy.nan
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional, Any, Union
 from datetime import datetime, timedelta
@@ -29,10 +35,17 @@ warnings.filterwarnings('ignore')
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backtesting import IchimokuBacktester
-from analytics import PerformanceAnalyzer
-from data_fetching import OHLCVDataFetcher
+try:
+    from backend.executable_workflow.backtesting import IchimokuBacktester
+    from backend.executable_workflow.analytics import PerformanceAnalyzer
+    from backend.executable_workflow.data_fetching import OHLCVDataFetcher
+except ImportError:
+    # Try relative imports if absolute imports fail
+    from backtesting import IchimokuBacktester
+    from analytics import PerformanceAnalyzer
+    from data_fetching import OHLCVDataFetcher
 # from config import Config  # Comment out if not needed
 
 # Configure logging
@@ -180,8 +193,23 @@ class ParameterOptimizer:
             
         # Fetch data
         if not self.data_fetcher:
-            self.data_fetcher = OHLCVDataFetcher(exchange='binance')
-        data = self.data_fetcher.fetch_data(symbol, '1h', start_date, end_date)
+            self.data_fetcher = OHLCVDataFetcher(exchange_id='binance')
+        
+        # Convert date strings to datetime objects
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d') if isinstance(start_date, str) else start_date
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d') if isinstance(end_date, str) else end_date
+        
+        # Calculate limit based on timeframe and date range
+        days_diff = (end_dt - start_dt).days
+        limit = min(days_diff * 24, 1000)  # 24 candles per day for 1h timeframe, max 1000
+        
+        data = self.data_fetcher.fetch_data(
+            symbol=symbol, 
+            timeframe='1h', 
+            limit=limit,
+            start_time=start_dt,
+            end_time=end_dt
+        )
         logger.info(f"Data fetched: {len(data)} candles from {start_date} to {end_date}")
         
         # Generate all parameter combinations
@@ -236,50 +264,101 @@ class ParameterOptimizer:
     def _run_single_backtest(self, data: pd.DataFrame, params: Dict[str, Any]) -> OptimizationResult:
         """Run a single backtest with given parameters"""
         try:
-            # Create backtester with parameters
-            backtester = IchimokuBacktester(
-                initial_capital=10000,
-                position_size=params['risk_params']['position_size']
-            )
+            # Import required modules
+            try:
+                from backend.executable_workflow.data_fetching import IchimokuCalculator, IchimokuSignalDetector
+            except ImportError:
+                from data_fetching import IchimokuCalculator, IchimokuSignalDetector
             
-            # Run backtest
-            trades, equity_curve = backtester.backtest(
+            # Calculate Ichimoku indicators with the given parameters
+            ichimoku_calc = IchimokuCalculator()
+            
+            # Calculate indicators with custom parameters
+            ichimoku_data = ichimoku_calc.calculate_ichimoku(
                 data,
-                ichimoku_params=params['ichimoku_params'],
-                signal_config=params['signal_config'],
-                risk_params=params['risk_params']
+                tenkan_period=params['ichimoku_params']['tenkan_period'],
+                kijun_period=params['ichimoku_params']['kijun_period'],
+                senkou_b_period=params['ichimoku_params']['senkou_b_period']
             )
             
-            # Calculate metrics if we have enough trades
-            if len(trades) < self.min_sample_trades:
+            # Detect signals
+            signal_detector = IchimokuSignalDetector()
+            signals = signal_detector.detect_all_signals(ichimoku_data)
+            
+            # Run simplified backtest (similar to main_workflow_controller)
+            results = self._run_simple_backtest(
+                data=ichimoku_data,
+                signals=signals,
+                params=params
+            )
+            
+            # Extract trades and equity curve
+            trades = pd.DataFrame(results.get('trades', []))
+            equity_curve = pd.DataFrame(results.get('equity_curve', []))
+            
+            # Calculate basic metrics if we have trades
+            if len(trades) == 0:
                 return OptimizationResult(
                     parameters=params,
                     in_sample_metrics={},
-                    sharpe_ratio=-999,  # Penalize insufficient trades
+                    sharpe_ratio=-999,  # Penalize no trades
                     total_return=0,
                     max_drawdown=1,
                     win_rate=0,
                     profit_factor=0
                 )
-                
-            # Calculate performance metrics
-            metrics = self.analyzer.calculate_all_metrics(trades, equity_curve)
+            
+            # Calculate metrics
+            total_return = ((results['final_balance'] - results['initial_capital']) / 
+                          results['initial_capital']) * 100
+            
+            # Win rate
+            winning_trades = trades[trades['net_profit'] > 0]
+            win_rate = len(winning_trades) / len(trades) if len(trades) > 0 else 0
+            
+            # Profit factor
+            gross_profits = trades[trades['net_profit'] > 0]['net_profit'].sum()
+            gross_losses = abs(trades[trades['net_profit'] < 0]['net_profit'].sum())
+            profit_factor = gross_profits / gross_losses if gross_losses > 0 else 0
+            
+            # Calculate drawdown
+            if len(equity_curve) > 0:
+                equity_values = pd.Series([e['total_value'] for e in equity_curve])
+                running_max = equity_values.expanding().max()
+                drawdown = (equity_values - running_max) / running_max
+                max_drawdown = abs(drawdown.min())
+            else:
+                max_drawdown = 0
+            
+            # Simple Sharpe ratio calculation
+            if len(equity_curve) > 1:
+                returns = equity_values.pct_change().dropna()
+                if len(returns) > 0 and returns.std() > 0:
+                    sharpe_ratio = (returns.mean() / returns.std()) * np.sqrt(252 * 24)  # Annualized for hourly data
+                else:
+                    sharpe_ratio = 0
+            else:
+                sharpe_ratio = 0
+            
+            # Check minimum trades requirement
+            if len(trades) < self.min_sample_trades:
+                sharpe_ratio = -999  # Penalize insufficient trades
             
             return OptimizationResult(
                 parameters=params,
                 in_sample_metrics={
-                    'sharpe_ratio': metrics.sharpe_ratio,
-                    'total_return': metrics.total_return,
-                    'max_drawdown': metrics.max_drawdown,
-                    'win_rate': metrics.win_rate,
-                    'profit_factor': metrics.profit_factor,
-                    'total_trades': metrics.total_trades
+                    'sharpe_ratio': sharpe_ratio,
+                    'total_return': total_return,
+                    'max_drawdown': max_drawdown,
+                    'win_rate': win_rate,
+                    'profit_factor': profit_factor,
+                    'total_trades': len(trades)
                 },
-                sharpe_ratio=metrics.sharpe_ratio,
-                total_return=metrics.total_return,
-                max_drawdown=metrics.max_drawdown,
-                win_rate=metrics.win_rate,
-                profit_factor=metrics.profit_factor
+                sharpe_ratio=sharpe_ratio,
+                total_return=total_return,
+                max_drawdown=max_drawdown,
+                win_rate=win_rate,
+                profit_factor=profit_factor
             )
             
         except Exception as e:
@@ -329,6 +408,132 @@ class ParameterOptimizer:
                 logger.info(f"Completed {i + 1}/{len(param_combinations)} backtests")
                 
         return results
+    
+    def _run_simple_backtest(self, data: pd.DataFrame, signals: pd.DataFrame, 
+                            params: Dict[str, Any]) -> Dict[str, Any]:
+        """Run a simplified backtest without complex strategy dependencies."""
+        # Initialize tracking variables
+        initial_capital = 1000
+        current_balance = initial_capital
+        position = None
+        trades = []
+        equity_curve = []
+        
+        # Extract risk parameters
+        risk_params = params['risk_params']
+        stop_loss_pct = risk_params['stop_loss_percent']
+        take_profit_pct = risk_params['take_profit_percent']
+        position_size_pct = risk_params.get('position_size', 1.0)
+        
+        # Map signal conditions to signal columns
+        signal_mapping = {
+            'cloud_breakout': 'cloud_breakout_signal',
+            'tk_cross': 'tk_cross_signal',
+            'price_momentum': 'price_momentum_signal',
+            'chikou_confirmation': 'chikou_confirmation_signal',
+            'PriceAboveCloud': 'price_above_cloud_signal',
+            'PriceBelowCloud': 'price_below_cloud_signal',
+            'TenkanAboveKijun': 'tenkan_above_kijun_signal',
+            'TenkanBelowKijun': 'tenkan_below_kijun_signal',
+            'ChikouAbovePrice': 'chikou_above_price_signal',
+            'ChikouBelowPrice': 'chikou_below_price_signal'
+        }
+        
+        # Get buy signals based on entry conditions (AND logic)
+        buy_signals = pd.Series(True, index=signals.index)
+        for condition in params['signal_config']['entry_signals']:
+            signal_col = signal_mapping.get(condition)
+            if signal_col and signal_col in signals.columns:
+                buy_signals = buy_signals & signals[signal_col]
+            elif condition in signal_mapping.values() and condition in signals.columns:
+                buy_signals = buy_signals & signals[condition]
+        
+        # Simple exit on opposite signals or stop/take profit
+        for i in range(len(data)):
+            current_time = data.index[i]
+            current_price = data['close'].iloc[i]
+            
+            # Track equity
+            equity_value = current_balance
+            if position:
+                unrealized_pnl = (current_price - position['entry_price']) * position['size']
+                equity_value += position['size'] * current_price
+            
+            equity_curve.append({
+                'timestamp': current_time,
+                'total_value': equity_value,
+                'cash': current_balance
+            })
+            
+            # Entry logic
+            if buy_signals.iloc[i] and position is None:
+                # Calculate position size
+                position_value = current_balance * position_size_pct * 0.999  # Leave room for commission
+                position_size = position_value / current_price
+                commission = position_value * 0.001
+                
+                current_balance -= (position_value + commission)
+                
+                position = {
+                    'entry_time': current_time,
+                    'entry_price': current_price,
+                    'size': position_size,
+                    'entry_commission': commission
+                }
+            
+            # Exit logic
+            elif position is not None:
+                pnl_pct = ((current_price - position['entry_price']) / position['entry_price'])
+                exit_trade = False
+                exit_reason = ''
+                
+                # Check stop loss
+                if pnl_pct <= -stop_loss_pct:
+                    exit_trade = True
+                    exit_reason = 'stop_loss'
+                
+                # Check take profit
+                elif pnl_pct >= take_profit_pct:
+                    exit_trade = True
+                    exit_reason = 'take_profit'
+                
+                # Check for cloud exit (price below cloud)
+                elif i < len(data) - 1:  # Not the last bar
+                    price_below_cloud = (current_price < data['senkou_span_a'].iloc[i] and 
+                                       current_price < data['senkou_span_b'].iloc[i])
+                    if price_below_cloud:
+                        exit_trade = True
+                        exit_reason = 'signal'
+                
+                if exit_trade or i == len(data) - 1:  # Exit or end of data
+                    exit_price = current_price
+                    gross_pnl = (exit_price - position['entry_price']) * position['size']
+                    exit_commission = position['size'] * exit_price * 0.001
+                    net_pnl = gross_pnl - exit_commission
+                    
+                    current_balance += position['size'] * exit_price - exit_commission
+                    
+                    trades.append({
+                        'entry_time': position['entry_time'],
+                        'entry_price': position['entry_price'],
+                        'exit_time': current_time,
+                        'exit_price': exit_price,
+                        'size': position['size'],
+                        'gross_profit': gross_pnl,
+                        'commission': position['entry_commission'] + exit_commission,
+                        'net_profit': net_pnl,
+                        'profit_pct': pnl_pct,
+                        'exit_reason': exit_reason if exit_reason else 'end_of_data'
+                    })
+                    
+                    position = None
+        
+        return {
+            'trades': trades,
+            'equity_curve': equity_curve,
+            'final_balance': current_balance,
+            'initial_capital': initial_capital
+        }
         
     def walk_forward_optimization(self,
                                 symbol: str,
@@ -523,13 +728,15 @@ class ParameterOptimizer:
         statistical_tests = {}
         
         # 1. T-test for returns being significantly positive
-        backtester = IchimokuBacktester()
-        trades, equity_curve = backtester.backtest(
-            test_data,
-            ichimoku_params=parameters['ichimoku_params'],
-            signal_config=parameters['signal_config'],
-            risk_params=parameters['risk_params']
-        )
+        # Re-run backtest to get detailed results for statistical tests
+        backtester_result = self._run_single_backtest(test_data, parameters)
+        
+        # Get returns from the backtest results  
+        if hasattr(backtester_result, 'in_sample_metrics') and 'returns' in backtester_result.in_sample_metrics:
+            returns = pd.Series(backtester_result.in_sample_metrics.get('returns', []))
+        else:
+            # If returns not available, skip statistical tests
+            returns = pd.Series([])
         
         returns = equity_curve['returns'].dropna()
         

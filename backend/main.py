@@ -6,7 +6,7 @@ import sys
 import argparse
 from datetime import datetime
 
-from sql_workflow.data_collection.data_fetcher import DataCollector
+from backend.streamline_workflow.data_fetching.data_fetcher import DataCollector
 from core.indicators import (
     SimpleMovingAverageCalculator,
     BollingerBandsCalculator,

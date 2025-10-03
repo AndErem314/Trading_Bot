@@ -29,7 +29,6 @@ DATABASE FEATURES:
 import sys
 import os
 import argparse
-from datetime import datetime
 
 # Add the backend directory to Python path
 backend_path = os.path.join(os.path.dirname(__file__), 'backend')
@@ -38,7 +37,7 @@ sys.path.insert(0, backend_path)
 def show_status():
     """Show database status and summary."""
     try:
-        from backend.sql_workflow.data_collection.data_manager import DataManager
+        from backend.streamline_workflow.data_fetching.data_manager import DataManager
         import pandas as pd
         
         print("\n=== TRADING DATABASE STATUS ===")

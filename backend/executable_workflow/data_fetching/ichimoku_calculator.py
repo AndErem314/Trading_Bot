@@ -1,4 +1,3 @@
-"""
 Ichimoku Cloud Calculator
 
 This module provides a comprehensive calculator for the Ichimoku Cloud (Ichimoku Kinko Hyo) indicator,
@@ -25,10 +24,10 @@ logger = logging.getLogger(__name__)
 class IchimokuCalculator:
     """
     A comprehensive calculator for Ichimoku Cloud indicators.
-    
+
     This class provides methods to calculate all Ichimoku components with
     configurable periods and proper time shifting for leading/lagging spans.
-    
+
     The Ichimoku Cloud is unique in that it projects support/resistance levels
     into the future and provides multiple confirmation signals for trend analysis.
     """
@@ -52,10 +51,10 @@ class IchimokuCalculator:
                           senkou_offset: int = 26) -> pd.DataFrame:
         """
         Calculate all Ichimoku Cloud components.
-        
+
         This method uses the Donchian channel approach (high/low midpoints)
         which is the traditional Ichimoku calculation method.
-        
+
         Args:
             df: DataFrame with OHLCV data (must have 'high', 'low', 'close' columns)
             tenkan_period: Period for Tenkan-sen (Conversion Line), default 9
@@ -63,7 +62,7 @@ class IchimokuCalculator:
             senkou_b_period: Period for Senkou Span B, default 52
             chikou_offset: Offset for Chikou Span (backward), default 26
             senkou_offset: Forward offset for Senkou spans, default 26
-            
+
         Returns:
             DataFrame with original data plus Ichimoku components:
             - tenkan_sen: Conversion Line
@@ -74,7 +73,9 @@ class IchimokuCalculator:
             - cloud_top: Maximum of Senkou A and B
             - cloud_bottom: Minimum of Senkou A and B
             - cloud_thickness: Absolute difference between Senkou spans
-            
+            - SpanAaboveSpanB: Boolean indicating if Senkou Span A > Senkou Span B
+            - SpanAbelowSpanB: Boolean indicating if Senkou Span A < Senkou Span B
+
         Raises:
             ValueError: If required columns are missing or parameters are invalid
         """
@@ -125,12 +126,16 @@ class IchimokuCalculator:
         # Calculate cloud thickness (absolute difference)
         result_df['cloud_thickness'] = abs(result_df['senkou_span_a'] - result_df['senkou_span_b'])
         
-        # Add cloud color for visualization
+        # Add cloud color for visualization (optional)
         result_df['cloud_color'] = np.where(
             result_df['senkou_span_a'] >= result_df['senkou_span_b'],
             'green',  # Bullish cloud
             'red'     # Bearish cloud
         )
+        
+        # Add SpanAaboveSpanB and SpanAbelowSpanB variables for strategy
+        result_df['SpanAaboveSpanB'] = result_df['senkou_span_a'] > result_df['senkou_span_b']
+        result_df['SpanAbelowSpanB'] = result_df['senkou_span_a'] < result_df['senkou_span_b']
         
         logger.info(f"Calculated Ichimoku indicators for {len(result_df)} data points")
         
@@ -139,13 +144,13 @@ class IchimokuCalculator:
     def get_cloud_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Analyze Ichimoku Cloud to generate trading signals.
-        
+
         This method evaluates multiple Ichimoku conditions to determine
         the overall market sentiment and potential trading opportunities.
-        
+
         Args:
             df: DataFrame with Ichimoku indicators (from calculate_ichimoku)
-            
+
         Returns:
             DataFrame with additional signal columns:
             - price_vs_cloud: Position relative to cloud ('above', 'inside', 'below')
@@ -268,7 +273,7 @@ class IchimokuCalculator:
     def _calculate_composite_signal(self, df: pd.DataFrame) -> pd.Series:
         """
         Calculate composite Ichimoku signal based on multiple factors.
-        
+
         Signal strength ranges from -1 (strong bearish) to 1 (strong bullish).
         """
         signal = pd.Series(0.0, index=df.index)
@@ -287,11 +292,11 @@ class IchimokuCalculator:
             else:  # inside
                 weight_sum += 0.3  # No score but count the weight
             
-            # Cloud color (weight: 0.2)
-            if df['cloud_color'].iloc[i] == 'green':
+            # SpanAaboveSpanB condition (weight: 0.2)
+            if df['SpanAaboveSpanB'].iloc[i]:
                 score += 0.2
                 weight_sum += 0.2
-            else:  # red
+            else:  # SpanAbelowSpanB
                 score -= 0.2
                 weight_sum += 0.2
             
@@ -342,9 +347,11 @@ class IchimokuCalculator:
             pos = df['price_vs_cloud'].iloc[i]
             desc_parts.append(f"Price {pos} cloud")
             
-            # Cloud color
-            color = df['cloud_color'].iloc[i]
-            desc_parts.append(f"{color} cloud")
+            # Span A vs Span B
+            if df['SpanAaboveSpanB'].iloc[i]:
+                desc_parts.append("Span A > Span B")
+            else:
+                desc_parts.append("Span A < Span B")
             
             # TK relationship
             if df['tenkan_sen'].iloc[i] > df['kijun_sen'].iloc[i]:
@@ -370,10 +377,10 @@ class IchimokuCalculator:
     def get_current_analysis(self, df: pd.DataFrame) -> Dict[str, Union[float, str]]:
         """
         Get comprehensive analysis of the current Ichimoku state.
-        
+
         Args:
             df: DataFrame with Ichimoku indicators and signals
-            
+
         Returns:
             Dictionary with current analysis including:
             - All indicator values
@@ -400,6 +407,10 @@ class IchimokuCalculator:
             'cloud_bottom': float(latest['cloud_bottom']) if pd.notna(latest['cloud_bottom']) else None,
             'cloud_thickness': float(latest['cloud_thickness']) if pd.notna(latest['cloud_thickness']) else None,
             'cloud_color': latest['cloud_color'] if 'cloud_color' in latest else None,
+            
+            # Span A vs Span B conditions
+            'SpanAaboveSpanB': bool(latest.get('SpanAaboveSpanB', False)),
+            'SpanAbelowSpanB': bool(latest.get('SpanAbelowSpanB', False)),
             
             # Signals
             'price_vs_cloud': latest.get('price_vs_cloud', 'unknown'),
@@ -475,7 +486,7 @@ if __name__ == "__main__":
     
     # Display last 5 rows
     print("\nLast 5 data points with Ichimoku indicators:")
-    display_columns = ['close', 'tenkan_sen', 'kijun_sen', 'cloud_color', 
+    display_columns = ['close', 'tenkan_sen', 'kijun_sen', 'SpanAaboveSpanB', 'SpanAbelowSpanB',
                       'price_vs_cloud', 'signal_strength']
     print(signal_data[display_columns].tail())
     

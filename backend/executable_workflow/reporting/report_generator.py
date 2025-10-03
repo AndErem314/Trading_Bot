@@ -21,7 +21,12 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 from jinja2 import Template
-import pdfkit
+try:
+    import pdfkit
+    PDFKIT_AVAILABLE = True
+except ImportError:
+    PDFKIT_AVAILABLE = False
+    print("Warning: pdfkit not installed. PDF generation will be disabled.")
 from io import BytesIO
 import base64
 import warnings

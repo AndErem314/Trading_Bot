@@ -3,15 +3,13 @@
 Trading Bot Web Interface
 A Flask-based frontend for the trading bot with interactive features.
 """
-from flask import Flask, render_template, jsonify, request, redirect, url_for
+from flask import Flask, render_template, jsonify, request
 import sqlite3
 import pandas as pd
-import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
-from datetime import datetime, timedelta
-import subprocess
+from datetime import datetime
 import threading
 import os
 import sys
@@ -20,15 +18,13 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 from backend.sql_workflow.strategies import RSIMomentumDivergenceSwingStrategy
-from backend.sql_workflow.data_collection.data_manager import DataManager
-from backend.sql_workflow.data_collection.data_fetcher import DataFetcher
 from backend.core.indicators import (
     SimpleMovingAverageCalculator, BollingerBandsCalculator,
     IchimokuCloudCalculator, MACDCalculator, ParabolicSARCalculator,
     FibonacciRetracementCalculator, GaussianChannelCalculator,
     calculate_rsi_for_symbol_timeframe
 )
-from backend.executable_workflow.orchestration.improved_market_regime_detector import ImprovedMarketRegimeDetector
+# Removed dependency on executable_workflow to align with streamlined workflow
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -151,7 +147,7 @@ def update_data():
                         task_status['message'] = f'Updating {symbol} ({timeframe})...'
                         
                         # Use the data collection module directly
-                        from backend.sql_workflow.data_collection.data_fetcher import DataCollector
+                        from backend.streamline_workflow.data_fetching.data_fetcher import DataCollector
                         
                         try:
                             collector = DataCollector(db_path=db_path)

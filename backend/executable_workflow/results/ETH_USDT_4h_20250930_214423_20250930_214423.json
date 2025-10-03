@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "generated_at": "2025-09-30T21:44:23.469502",
+    "generator_version": "1.0.0",
+    "company": "Trading Bot Analytics"
+  },
+  "strategy_config": {
+    "name": "IchimokuCloud_Default",
+    "symbol": "ETH/USDT",
+    "timeframe": "4h"
+  },
+  "performance_metrics": {
+    "returns": {
+      "total_return": 0.0,
+      "annualized_return": 0,
+      "cumulative_return": 0.0
+    },
+    "risk": {
+      "volatility": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe_ratio": 0,
+      "sortino_ratio": Infinity
+    },
+    "trades": {
+      "total_trades": 0,
+      "win_rate": 0,
+      "profit_factor": 0,
+      "avg_win": 0,
+      "avg_loss": 0
+    }
+  },
+  "executive_summary": {
+    "overview": {
+      "total_return": "0.00%",
+      "sharpe_ratio": "0.00",
+      "max_drawdown": "0.00%",
+      "win_rate": "0.00%",
+      "profit_factor": "0.00",
+      "total_trades": 0
+    },
+    "performance_rating": {
+      "rating": "Poor",
+      "score": 1,
+      "details": {
+        "sharpe_rating": "Poor",
+        "return_rating": "Poor",
+        "consistency_rating": "Poor"
+      }
+    },
+    "risk_assessment": {
+      "risk_level": "Low",
+      "risk_score": 1,
+      "max_drawdown": "0.00%",
+      "value_at_risk_95": "0.00%",
+      "risk_metrics": {
+        "drawdown_severity": "Mild",
+        "loss_consistency": "Low Variance",
+        "tail_risk": "Low"
+      }
+    },
+    "key_insights": [
+      "Low Sharpe ratio indicates poor risk-adjusted performance",
+      "Low win rate of 0.0% indicates need for entry signal refinement",
+      "Profit factor near 1.0 suggests marginal profitability",
+      "Low drawdown indicates good capital preservation",
+      "Low trading frequency may limit profit potential"
+    ],
+    "recommendations": [
+      "Consider optimizing entry signals for better performance",
+      "Review and adjust Ichimoku parameters using walk-forward analysis",
+      "Add confirmation signals to improve entry accuracy",
+      "Consider trend strength filters to avoid false signals",
+      "Optimize take-profit levels to improve risk/reward ratio",
+      "Consider trailing stops to capture larger trends",
+      "Validate strategy on out-of-sample data before live trading",
+      "Monitor strategy performance and adjust for changing market conditions"
+    ]
+  },
+  "trades_summary": {
+    "total_trades": 0,
+    "winning_trades": 0,
+    "losing_trades": 0
+  }
+}

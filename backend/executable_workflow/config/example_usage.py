@@ -44,7 +44,7 @@ def main():
     # Example 2: Load configurations from JSON
     print("\n2. Loading configurations from JSON file...")
     try:
-        json_strategies = config_manager.load_config("strategies_advanced.json")
+        json_strategies = config_manager.load_config("strategies.json")
         print(f"✅ Loaded {len(json_strategies)} strategies from JSON")
         
         for strategy_id, config in json_strategies.items():
@@ -134,7 +134,7 @@ def main():
     print("\n7. Merging configuration files...")
     all_configs = config_manager.merge_configs(
         "strategies.yaml",
-        "strategies_advanced.json",
+        "strategies.json",
         "custom_strategy.yaml"
     )
     print(f"✅ Total strategies after merge: {len(all_configs)}")

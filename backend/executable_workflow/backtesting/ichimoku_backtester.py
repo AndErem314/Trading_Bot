@@ -126,7 +126,7 @@ class TradeRecord:
 class BacktestEvent:
     """Base class for backtest events."""
     timestamp: datetime
-    priority: int = 0  # Lower number = higher priority
+    priority: int  # Lower number = higher priority
     
     def __lt__(self, other):
         """For priority queue ordering."""
