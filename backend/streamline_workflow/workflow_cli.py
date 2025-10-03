@@ -21,6 +21,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from data_fetching.collect_historical_data import collect_all_historical_data_for_all_pairs
 from strategy.compute_ichimoku_to_sql import compute_for_symbol
+from streamline_workflow.backtesting.ichimoku_backtester import IchimokuBacktester, StrategyBacktestRunner
+from pathlib import Path
+import json
 
 # ANSI color codes for terminal output
 class Colors:
@@ -57,6 +60,7 @@ class WorkflowCLI:
         print(f"\n{Colors.BOLD}=== MAIN MENU ==={Colors.ENDC}")
         print(f"{Colors.GREEN}1.{Colors.ENDC} Collect historical data")
         print(f"{Colors.GREEN}2.{Colors.ENDC} Compute Ichimoku")
+        print(f"{Colors.GREEN}3.{Colors.ENDC} Backtest Ichimoku Strategy")
         print(f"{Colors.GREEN}0.{Colors.ENDC} Exit")
         print("-"*30)
     
@@ -136,6 +140,98 @@ class WorkflowCLI:
                 except Exception as e:
                     print(f"{Colors.FAIL}Error computing for {sym}: {e}{Colors.ENDC}")
 
+    def run_backtest_menu(self):
+        """Interactive backtest runner with automatic reporting."""
+        # Load available strategies from known locations (config/ or strategy/config/)
+        candidates = [
+            Path(__file__).resolve().parent / 'config' / 'strategies.json',
+            Path(__file__).resolve().parent / 'config' / 'strategies.yaml',
+            Path(__file__).resolve().parent / 'strategy' / 'config' / 'strategies.json',
+            Path(__file__).resolve().parent / 'strategy' / 'config' / 'strategies.yaml'
+        ]
+        strategies = {}
+        strategies_file = None
+        for p in candidates:
+            if p.exists():
+                try:
+                    with open(p, 'r') as f:
+                        if p.suffix == '.json':
+                            data = json.load(f)
+                        else:
+                            import yaml
+                            data = yaml.safe_load(f)
+                        strategies = data.get('strategies', {})
+                        strategies_file = p
+                        if strategies:
+                            break
+                except Exception:
+                    continue
+        strategy_keys = list(strategies.keys())
+        if not strategy_keys:
+            print(f"{Colors.FAIL}No strategies found. Expected at:{Colors.ENDC}")
+            for p in candidates:
+                print(f"  - {p}")
+            return
+
+        print(f"\n{Colors.BOLD}=== Backtest Ichimoku Strategy ==={Colors.ENDC}")
+        # Select strategy
+        print("Available strategies:")
+        for idx, key in enumerate(strategy_keys, start=1):
+            name = strategies[key].get('name', key)
+            print(f"  {idx}. {key} - {name}")
+        s_choice = self.get_user_input("Select strategy number", default=1, input_type=int)
+        if s_choice < 1 or s_choice > len(strategy_keys):
+            print(f"{Colors.WARNING}Invalid selection{Colors.ENDC}")
+            return
+        strategy_key = strategy_keys[s_choice - 1]
+
+        # Select symbol
+        print("\nSelect symbol:")
+        print(f"{Colors.GREEN}1.{Colors.ENDC} BTC/USDT")
+        print(f"{Colors.GREEN}2.{Colors.ENDC} ETH/USDT")
+        print(f"{Colors.GREEN}3.{Colors.ENDC} SOL/USDT")
+        sym_choice = self.get_user_choice("Option", ['1','2','3'])
+        symbol_map = {'1': 'BTC', '2': 'ETH', '3': 'SOL'}
+        symbol_short = symbol_map[sym_choice]
+
+        # Select timeframe
+        print("\nSelect timeframe:")
+        print(f"{Colors.GREEN}1.{Colors.ENDC} 1h")
+        print(f"{Colors.GREEN}2.{Colors.ENDC} 4h")
+        print(f"{Colors.GREEN}3.{Colors.ENDC} 1d")
+        tf_choice = self.get_user_choice("Option", ['1','2','3'])
+        timeframe = {'1':'1h','2':'4h','3':'1d'}[tf_choice]
+
+        # Optional start date
+        start_date = self.get_user_input("Start date (YYYY-MM-DD) or empty for all", default="", input_type=str)
+        start_date = start_date.strip().strip('()') if start_date else None
+
+        # Run backtest
+        print(f"\n{Colors.BLUE}Running backtest for {symbol_short}/USDT {timeframe} using {strategy_key}{Colors.ENDC}")
+        backtester = IchimokuBacktester()
+        runner = StrategyBacktestRunner(backtester)
+        reports_dir = str(Path(__file__).resolve().parent / 'reports')
+        try:
+            outcome = runner.run_from_json(
+                strategy_key=strategy_key,
+                symbol_short=symbol_short,
+                timeframe=timeframe,
+                start=start_date,
+                end=None,
+                initial_capital=10000.0,
+                report_formats='all',
+                output_dir=reports_dir
+            )
+            print(f"{Colors.GREEN}Backtest completed. Reports:{Colors.ENDC}")
+            for k, v in outcome['reports'].items():
+                if isinstance(v, list):
+                    for p in v:
+                        print(f"  {k}: {p}")
+                else:
+                    print(f"  {k}: {v}")
+        except Exception as e:
+            print(f"{Colors.FAIL}Backtest failed: {e}{Colors.ENDC}")
+
     def run(self):
         """Run the main CLI loop."""
         self.print_header()
@@ -143,7 +239,7 @@ class WorkflowCLI:
         while True:
             self.print_menu()
             
-            choice = self.get_user_choice("Select option: ", ['0', '1', '2'])
+            choice = self.get_user_choice("Select option: ", ['0', '1', '2', '3'])
             
             if choice == '0':
                 print(f"\n{Colors.GREEN}Thank you for using Ichimoku Cloud Trading System!{Colors.ENDC}")
@@ -154,6 +250,8 @@ class WorkflowCLI:
                 collect_all_historical_data_for_all_pairs()
             elif choice == '2':
                 self.run_compute_ichimoku()
+            elif choice == '3':
+                self.run_backtest_menu()
             
             # Pause before returning to menu
             if choice != '0':

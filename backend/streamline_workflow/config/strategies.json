@@ -95,9 +95,9 @@
         "method": "fixed",
         "fixed_size": 1000
       }
-    },
-    "strategy_04_tk_sell": {
-      "name": "Cloud-TK-SpanA-ChikouCloud Base TK Exit",
+    }
+  }
+}
       "description": "Price above cloud + TK cross + SpanA>SpanB + Chikou>Cloud, exit on TK cross down",
       "enabled": true,
       "timeframes": ["1h", "4h"],

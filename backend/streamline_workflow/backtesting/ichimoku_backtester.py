@@ -13,6 +13,7 @@ from datetime import datetime
 from enum import Enum
 import logging
 import json
+import yaml
 from pathlib import Path
 
 # Local imports for streamlined workflow
@@ -670,20 +671,30 @@ class StrategyBacktestRunner:
         if json_path:
             candidates.append(Path(json_path))
         # Preferred path as per user instruction
-        candidates.append(Path(__file__).resolve().parents[1] / 'config' / 'strategies.json')
-        # Fallback to strategy/config
-        candidates.append(Path(__file__).resolve().parents[1] / 'strategy' / 'config' / 'strategies.json')
+        base = Path(__file__).resolve().parents[1]
+        candidates.extend([
+            base / 'config' / 'strategies.json',
+            base / 'config' / 'strategies.yaml',
+            base / 'strategy' / 'config' / 'strategies.json',
+            base / 'strategy' / 'config' / 'strategies.yaml',
+        ])
 
         data: Dict[str, Any] = {}
         file_found = None
         for p in candidates:
             if p.exists():
-                with open(p, 'r') as f:
-                    data = json.load(f)
-                file_found = p
-                break
+                try:
+                    with open(p, 'r') as f:
+                        if p.suffix == '.json':
+                            data = json.load(f)
+                        else:
+                            data = yaml.safe_load(f)
+                    file_found = p
+                    break
+                except Exception:
+                    continue
         if not data:
-            raise FileNotFoundError("strategies.json not found in expected locations")
+            raise FileNotFoundError("No valid strategies file found in expected locations (json or yaml)")
 
         strategies = data.get('strategies', {})
         if strategy_key not in strategies:
