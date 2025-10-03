@@ -20,6 +20,7 @@ from typing import List, Any
 sys.path.append(str(Path(__file__).parent.parent))
 
 from data_fetching.collect_historical_data import collect_all_historical_data_for_all_pairs
+from strategy.compute_ichimoku_to_sql import compute_for_symbol
 
 # ANSI color codes for terminal output
 class Colors:
@@ -36,7 +37,7 @@ class Colors:
 
 class WorkflowCLI:
     """
-    Command-line interface for the streamlined workflow (data collection).
+    Command-line interface for the streamlined workflow (data collection and indicator computation).
     """
     
     def __init__(self):
@@ -55,6 +56,7 @@ class WorkflowCLI:
         """Display the main menu."""
         print(f"\n{Colors.BOLD}=== MAIN MENU ==={Colors.ENDC}")
         print(f"{Colors.GREEN}1.{Colors.ENDC} Collect historical data")
+        print(f"{Colors.GREEN}2.{Colors.ENDC} Compute Ichimoku")
         print(f"{Colors.GREEN}0.{Colors.ENDC} Exit")
         print("-"*30)
     
@@ -98,6 +100,42 @@ class WorkflowCLI:
             print(".", end='', flush=True)
         print()
     
+    def run_compute_ichimoku(self):
+        """Submenu to compute Ichimoku and save to SQL for selected symbols."""
+        while True:
+            print(f"\n{Colors.BOLD}=== Compute Ichimoku ==={Colors.ENDC}")
+            print(f"{Colors.GREEN}1.{Colors.ENDC} BTC/USDT")
+            print(f"{Colors.GREEN}2.{Colors.ENDC} ETH/USDT")
+            print(f"{Colors.GREEN}3.{Colors.ENDC} SOL/USDT")
+            print(f"{Colors.GREEN}4.{Colors.ENDC} All (BTC, ETH, SOL)")
+            print(f"{Colors.GREEN}0.{Colors.ENDC} Back")
+
+            sub_choice = self.get_user_choice("Select option: ", ['0', '1', '2', '3', '4'])
+            if sub_choice == '0':
+                break
+
+            # Map sub-choice to symbols
+            if sub_choice == '1':
+                symbols = ['BTC']
+            elif sub_choice == '2':
+                symbols = ['ETH']
+            elif sub_choice == '3':
+                symbols = ['SOL']
+            else:
+                symbols = ['BTC', 'ETH', 'SOL']
+
+            # Execute calculations
+            for sym in symbols:
+                try:
+                    self.display_progress(f"Computing Ichimoku for {sym}/USDT")
+                    stats = compute_for_symbol(sym)
+                    print(f"{Colors.GREEN}✓ Completed {sym}/USDT{Colors.ENDC}")
+                    # Print brief stats
+                    for tf, tf_stats in stats.items():
+                        print(f"  {tf}: inserted={tf_stats.get('inserted', 0)}, errors={tf_stats.get('errors', 0)}")
+                except Exception as e:
+                    print(f"{Colors.FAIL}Error computing for {sym}: {e}{Colors.ENDC}")
+
     def run(self):
         """Run the main CLI loop."""
         self.print_header()
@@ -105,7 +143,7 @@ class WorkflowCLI:
         while True:
             self.print_menu()
             
-            choice = self.get_user_choice("Select option: ", ['0', '1'])
+            choice = self.get_user_choice("Select option: ", ['0', '1', '2'])
             
             if choice == '0':
                 print(f"\n{Colors.GREEN}Thank you for using Ichimoku Cloud Trading System!{Colors.ENDC}")
@@ -114,6 +152,8 @@ class WorkflowCLI:
             elif choice == '1':
                 self.display_progress("Collecting historical data")
                 collect_all_historical_data_for_all_pairs()
+            elif choice == '2':
+                self.run_compute_ichimoku()
             
             # Pause before returning to menu
             if choice != '0':
