@@ -15,12 +15,9 @@ from typing import List, Dict
 import pandas as pd
 import numpy as np
 
-# Ensure backend root on path
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(PROJECT_ROOT))
-
-from backend.streamline_workflow.data_fetching.data_manager import DataManager
-from backend.streamline_workflow.strategy.ichimoku_strategy import (
+# Rely on caller to set sys.path. The CLI adds backend/ to sys.path.
+from streamline_workflow.data_fetching.data_manager import DataManager
+from strategy.ichimoku_strategy import (
     UnifiedIchimokuAnalyzer,
     IchimokuStrategyConfig,
 )
