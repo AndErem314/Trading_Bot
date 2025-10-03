@@ -7,6 +7,6 @@ This module provides comprehensive report generation capabilities including:
 - JSON/CSV data exports
 """
 
-from .report_generator import ReportGenerator
+from backend.streamline_workflow.reporting.report_generator import ReportGenerator
 
 __all__ = ['ReportGenerator']
