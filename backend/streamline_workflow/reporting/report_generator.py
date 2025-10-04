@@ -478,19 +478,28 @@ Key Insights:
                 ax3.set_ylabel('Win Rate')
                 ax3.grid(True, alpha=0.3)
                 
-            # 4. Entry signal distribution
+            # 4. Entry signal distribution (bar chart)
             ax4 = fig.add_subplot(gs[2, 0])
             if 'entry_signal' in trades.columns:
                 signal_counts = trades['entry_signal'].value_counts()
-                ax4.pie(signal_counts.values, labels=signal_counts.index, autopct='%1.1f%%')
+                ax4.bar(signal_counts.index, signal_counts.values, alpha=0.7, color='blue')
                 ax4.set_title('Entry Signal Distribution')
+                ax4.set_xlabel('Signal Type')
+                ax4.set_ylabel('Count')
+                ax4.tick_params(axis='x', rotation=45)
+                ax4.grid(True, alpha=0.3)
                 
-            # 5. Exit reason distribution
+            # 5. Exit reason distribution (bar chart)
             ax5 = fig.add_subplot(gs[2, 1])
             if 'exit_reason' in trades.columns:
                 exit_counts = trades['exit_reason'].value_counts()
-                ax5.pie(exit_counts.values, labels=exit_counts.index, autopct='%1.1f%%')
+                colors = ['red' if 'stop_loss' in reason else 'green' for reason in exit_counts.index]
+                ax5.bar(exit_counts.index, exit_counts.values, alpha=0.7, color=colors)
                 ax5.set_title('Exit Reason Distribution')
+                ax5.set_xlabel('Exit Reason')
+                ax5.set_ylabel('Count')
+                ax5.tick_params(axis='x', rotation=45)
+                ax5.grid(True, alpha=0.3)
                 
         plt.tight_layout()
         pdf.savefig(fig, bbox_inches='tight')
@@ -1130,7 +1139,7 @@ for improving strategy performance:
         # Create subplots
         fig = make_subplots(
             rows=2, cols=2,
-            subplot_titles=('Trade P&L Distribution', 'Win/Loss Ratio', 
+            subplot_titles=('Trade P&L Distribution', 'Win/Loss Bar Chart', 
                           'Trade Duration', 'P&L by Signal Type')
         )
         
@@ -1140,12 +1149,12 @@ for improving strategy performance:
             row=1, col=1
         )
         
-        # 2. Win/Loss pie chart
+        # 2. Win/Loss bar chart
         wins = len(trades[trades['pnl'] > 0])
         losses = len(trades[trades['pnl'] <= 0])
         fig.add_trace(
-            go.Pie(labels=['Wins', 'Losses'], values=[wins, losses], 
-                  marker_colors=['green', 'red']),
+            go.Bar(x=['Wins', 'Losses'], y=[wins, losses], 
+                  marker_color=['green', 'red'], name='Win/Loss'),
             row=1, col=2
         )
         

@@ -510,6 +510,13 @@ class IchimokuBacktester:
         # Create equity curve DataFrame
         equity_df = pd.DataFrame(self.equity_curve)
         if not equity_df.empty:
+            # Set timestamp as index for time-series operations
+            equity_df['timestamp'] = pd.to_datetime(equity_df['timestamp'])
+            equity_df.set_index('timestamp', inplace=True)
+            
+            # Add 'equity' column for compatibility with ReportGenerator
+            equity_df['equity'] = equity_df['total_value']
+            
             equity_df['returns'] = equity_df['total_value'].pct_change()
             equity_df['cumulative_returns'] = (1 + equity_df['returns']).cumprod() - 1
 
@@ -744,8 +751,11 @@ class StrategyBacktestRunner:
 
         # Prepare structures for reporting
         trades_df = pd.DataFrame([t.__dict__ for t in result.trades]) if result.trades else pd.DataFrame()
+        # Rename net_pnl to pnl for compatibility with ReportGenerator
+        if not trades_df.empty and 'net_pnl' in trades_df.columns:
+            trades_df['pnl'] = trades_df['net_pnl']
         equity_df = result.equity_curve.copy() if isinstance(result.equity_curve, pd.DataFrame) else pd.DataFrame(result.equity_curve)
-
+        
         report_payload = {
             'data': data,
             'trades': trades_df,
