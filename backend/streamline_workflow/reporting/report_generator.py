@@ -310,9 +310,6 @@ class ReportGenerator:
             # Page 5: Trade Details
             self._create_trade_details_page(pdf, results)
             
-            # Page 6: Optimization Recommendations
-            self._create_recommendations_page(pdf, results)
-            
             # Save PDF metadata
             d = pdf.infodict()
             d['Title'] = f'Backtest Report - {results.get("strategy_config", {}).get("name", "Strategy")}'
@@ -334,10 +331,14 @@ class ReportGenerator:
         
         # Strategy info
         strategy_name = results.get('strategy_config', {}).get('name', 'Ichimoku Strategy')
+        trading_pair = results.get('strategy_config', {}).get('symbol', 'N/A')
+        timeframe = results.get('strategy_config', {}).get('timeframe', 'N/A')
         
         # Create text content
         text_content = f"""
 Strategy: {strategy_name}
+Trading Pair: {trading_pair}
+Timeframe: {timeframe}
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 EXECUTIVE SUMMARY
@@ -806,8 +807,7 @@ for improving strategy performance:
             generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             executive_summary=executive_summary,
             charts=charts,
-            strategy_config=results.get('strategy_config', {}),
-            recommendations=self.generate_optimization_recommendations(metrics, results)
+            strategy_config=results.get('strategy_config', {})
         )
         
         # Save HTML file
@@ -919,6 +919,7 @@ for improving strategy performance:
     <div class="container">
         <div class="header">
             <h1>{{ title }}</h1>
+            <p><strong>Trading Pair:</strong> {{ strategy_config.symbol }} | <strong>Timeframe:</strong> {{ strategy_config.timeframe }}</p>
             <p>Generated: {{ generated_at }}</p>
         </div>
         
@@ -973,38 +974,6 @@ for improving strategy performance:
         <div class="section">
             <h2>Performance Metrics</h2>
             {{ charts.performance_metrics | safe }}
-        </div>
-        
-        <div class="section">
-            <h2>Optimization Recommendations</h2>
-            
-            <h3>Parameter Optimization</h3>
-            <ul class="recommendation-list">
-                {% for rec in recommendations.parameter_optimization %}
-                <li>{{ rec }}</li>
-                {% endfor %}
-            </ul>
-            
-            <h3>Signal Improvements</h3>
-            <ul class="recommendation-list">
-                {% for rec in recommendations.signal_improvements %}
-                <li>{{ rec }}</li>
-                {% endfor %}
-            </ul>
-            
-            <h3>Risk Management</h3>
-            <ul class="recommendation-list">
-                {% for rec in recommendations.risk_management %}
-                <li>{{ rec }}</li>
-                {% endfor %}
-            </ul>
-            
-            <h3>Next Steps</h3>
-            <ul class="recommendation-list">
-                {% for rec in recommendations.next_steps %}
-                <li>{{ rec }}</li>
-                {% endfor %}
-            </ul>
         </div>
     </div>
     
@@ -1238,15 +1207,65 @@ for improving strategy performance:
             
         return str(json_path)
         
+    def _prepare_streamlined_trades(self, trades: pd.DataFrame) -> pd.DataFrame:
+        """Prepare streamlined trades DataFrame with focused columns.
+        
+        Args:
+            trades: Full trades DataFrame
+            
+        Returns:
+            Streamlined DataFrame with essential columns only
+        """
+        streamlined = pd.DataFrame()
+        
+        # Trade ID
+        streamlined['trade_id'] = trades['trade_id']
+        
+        # Entry and exit times (formatted)
+        streamlined['entry_time'] = pd.to_datetime(trades['entry_time']).dt.strftime('%Y-%m-%d %H:%M')
+        streamlined['exit_time'] = pd.to_datetime(trades['exit_time']).dt.strftime('%Y-%m-%d %H:%M')
+        
+        # Calculate duration in days
+        entry_dt = pd.to_datetime(trades['entry_time'])
+        exit_dt = pd.to_datetime(trades['exit_time'])
+        duration_days = (exit_dt - entry_dt).dt.total_seconds() / 86400  # Convert seconds to days
+        streamlined['duration_days'] = duration_days.round(2)
+        
+        # Side (LONG or SHORT) - clean up the enum format
+        if 'side' in trades.columns:
+            streamlined['side'] = trades['side'].astype(str).str.replace('PositionSide.', '')
+        else:
+            streamlined['side'] = 'LONG'  # Default for current implementation
+        
+        # Entry and exit prices (formatted to 2 decimals)
+        streamlined['entry_price'] = trades['entry_price'].round(2)
+        streamlined['exit_price'] = trades['exit_price'].round(2)
+        
+        # P&L (formatted to 2 decimals)
+        streamlined['pnl'] = trades['pnl'].round(2)
+        
+        # Return percentage (formatted with % sign)
+        streamlined['return_pct'] = trades['return_pct'].round(2).astype(str) + '%'
+        
+        # Trade result (WIN or LOSS)
+        streamlined['trade_result'] = trades['pnl'].apply(lambda x: 'WIN' if x > 0 else 'LOSS')
+        
+        # Exit reason
+        streamlined['exit_reason'] = trades['exit_reason']
+        
+        return streamlined
+    
     def _export_csv(self, results: Dict[str, Any], base_filename: str) -> Dict[str, str]:
         """Export results as CSV files"""
         csv_paths = {}
         
-        # Export trades
+        # Export trades with streamlined format
         trades = results.get('trades', pd.DataFrame())
         if not trades.empty:
+            # Create streamlined trades DataFrame with focused columns
+            streamlined_trades = self._prepare_streamlined_trades(trades)
             trades_path = self.output_dir / f"{base_filename}_trades.csv"
-            trades.to_csv(trades_path, index=False)
+            streamlined_trades.to_csv(trades_path, index=False)
             csv_paths['trades'] = str(trades_path)
             
         # Export equity curve
