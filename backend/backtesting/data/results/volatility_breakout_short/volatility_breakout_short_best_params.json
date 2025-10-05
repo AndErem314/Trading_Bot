@@ -1,7 +1,0 @@
-{
-  "strategy_name": "volatility_breakout_short",
-  "best_parameters": {},
-  "best_score": -Infinity,
-  "optimization_time": 2060.007857,
-  "total_iterations": 0
-}

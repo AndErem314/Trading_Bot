@@ -1,7 +1,0 @@
-{
-  "strategy_name": "rsi_divergence",
-  "best_parameters": {},
-  "best_score": -Infinity,
-  "optimization_time": 344.917456,
-  "total_iterations": 0
-}

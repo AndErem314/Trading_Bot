@@ -1,7 +1,0 @@
-{
-  "strategy_name": "gaussian_channel",
-  "best_parameters": {},
-  "best_score": -Infinity,
-  "optimization_time": 11.045382,
-  "total_iterations": 0
-}

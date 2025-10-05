@@ -1,2 +1,0 @@
-returns,risk,trades
-"{'total_return': np.float64(0.0), 'annualized_return': 0, 'cumulative_return': np.float64(0.0)}","{'volatility': np.float64(0.0), 'max_drawdown': np.float64(0.0), 'sharpe_ratio': 0, 'sortino_ratio': inf}","{'total_trades': 0, 'win_rate': 0, 'profit_factor': 0, 'avg_win': 0, 'avg_loss': 0}"
