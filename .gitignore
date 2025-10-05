@@ -43,11 +43,7 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
-# Database files - too large for GitHub, stored locally only
-data/*.db
-*.db
-
-# SQLite database files
+# SQLite database files (keeping project DBs, excluding others)
 *.sqlite
 *.sqlite3
 
