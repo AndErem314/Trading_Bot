@@ -614,6 +614,57 @@ class StrategyBacktestRunner:
     def __init__(self, backtester: IchimokuBacktester):
         self.backtester = backtester
 
+    def generate_llm_optimization_report(self,
+                                         *,
+                                         result: BacktestResult,
+                                         data_df: pd.DataFrame,
+                                         trades_df: pd.DataFrame,
+                                         equity_df: pd.DataFrame,
+                                         strategy_config: Dict[str, Any],
+                                         output_dir: str,
+                                         symbol_short: str,
+                                         timeframe: str,
+                                         analysis_start: Optional[str] = None,
+                                         analysis_end: Optional[str] = None,
+                                         llm_provider: Optional[str] = None,
+                                         llm_model_override: Optional[str] = None,
+                                         prompt_variant: str = 'analyst') -> Optional[str]:
+        """Generate an LLM-only optimization PDF using existing backtest artifacts.
+
+        Returns the path to the generated PDF or None if it failed.
+        """
+        try:
+            from streamline_workflow.llm_analysis import (
+                load_llm_config, LLMClient, build_llm_payload, build_prompt,
+                parse_llm_output, build_final_text, write_llm_pdf
+            )
+            payload = build_llm_payload(
+                result_metrics=result.metrics,
+                trades_df=trades_df,
+                equity_df=equity_df,
+                strategy_config=strategy_config,
+                analysis_start=analysis_start,
+                analysis_end=analysis_end,
+                budget='standard'
+            )
+            prompt = build_prompt(payload, variant=prompt_variant)
+            cfg = load_llm_config()
+            client = LLMClient(cfg)
+            raw = client.generate(prompt, provider=llm_provider, model_override=llm_model_override)
+            json_obj, memo = parse_llm_output(raw)
+            title = 'Strategy Settings Optimization — Executive Summary' if prompt_variant == 'analyst' else 'Risk-Focused Optimization'
+            final_text = build_final_text(title, json_obj, memo)
+            pdf_path = write_llm_pdf(
+                output_dir=output_dir,
+                filename_prefix=f"{symbol_short}_{timeframe}",
+                title=title,
+                text_body=final_text
+            )
+            return pdf_path
+        except Exception as e:
+            logger.error(f"LLM optimization generation failed: {e}")
+            return None
+
     def run_strategy_backtest(self,
                               strategy_config: Dict,
                               data: pd.DataFrame,
@@ -738,8 +789,17 @@ class StrategyBacktestRunner:
                        start: Optional[str] = None, end: Optional[str] = None,
                        initial_capital: float = 10000.0,
                        report_formats: str = 'all',
-                       output_dir: str = 'results') -> Dict[str, Any]:
-        """Load strategy by key, fetch data, run backtest, and generate report."""
+                       output_dir: str = 'results',
+                       with_llm_optimization: bool = False,
+                       llm_provider: Optional[str] = None,
+                       analysis_start: Optional[str] = None,
+                       analysis_end: Optional[str] = None,
+                       llm_model_override: Optional[str] = None,
+                       prompt_variant: str = 'analyst') -> Dict[str, Any]:
+        """Load strategy by key, fetch data, run backtest, and generate report.
+
+        If with_llm_optimization=True, an LLM-only optimization PDF is generated AFTER the standard report.
+        """
         strategy_config = self.load_strategy_from_json(strategy_key)
         data = self.fetch_sql_data_with_signals(symbol_short, timeframe,
                                                 start, end,
@@ -776,10 +836,50 @@ class StrategyBacktestRunner:
         rg = ReportGenerator(output_dir=output_dir)
         reports = rg.generate_backtest_report(report_payload, format=report_formats, filename_prefix=f"{symbol_short}_{timeframe}")
 
+        # Optional LLM optimization step AFTER standard reporting
+        llm_pdf_path = None
+        if with_llm_optimization:
+            try:
+                from streamline_workflow.llm_analysis import (
+                    load_llm_config, LLMClient, build_llm_payload, build_prompt,
+                    parse_llm_output, build_final_text, write_llm_pdf
+                )
+                # Build compact payload
+                payload = build_llm_payload(
+                    result_metrics=result.metrics,
+                    trades_df=trades_df,
+                    equity_df=equity_df,
+                    strategy_config=strategy_config,
+                    analysis_start=analysis_start,
+                    analysis_end=analysis_end,
+                    budget='standard'
+                )
+                # Compose prompt
+                prompt = build_prompt(payload, variant=prompt_variant)
+                # Generate with configured provider
+                cfg = load_llm_config()
+                client = LLMClient(cfg)
+                raw = client.generate(prompt, provider=llm_provider, model_override=llm_model_override)
+                json_obj, memo = parse_llm_output(raw)
+                title = 'Strategy Settings Optimization — Executive Summary' if prompt_variant == 'analyst' else 'Risk-Focused Optimization'
+                final_text = build_final_text(title, json_obj, memo)
+                llm_pdf_path = write_llm_pdf(
+                    output_dir=output_dir,
+                    filename_prefix=f"{symbol_short}_{timeframe}",
+                    title=title,
+                    text_body=final_text
+                )
+            except Exception as e:
+                logger.error(f"LLM optimization step failed: {e}")
+
         return {
             'result': result,
             'reports': reports,
-            'strategy_config': strategy_config
+            'strategy_config': strategy_config,
+            'data_df': data,
+            'trades_df': trades_df,
+            'equity_df': equity_df,
+            'llm_pdf': llm_pdf_path
         }
 
 

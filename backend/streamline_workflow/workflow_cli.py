@@ -229,6 +229,52 @@ class WorkflowCLI:
                         print(f"  {k}: {p}")
                 else:
                     print(f"  {k}: {v}")
+            # Offer optional LLM optimization step AFTER report generation
+            do_llm = self.get_user_input("Generate LLM Optimization Report (PDF-only)? [y/N]", default="N", input_type=str)
+            if str(do_llm).strip().lower() in ['y','yes']:
+                print(f"\n{Colors.BOLD}=== LLM Optimization ==={Colors.ENDC}")
+                # Ask for analysis timeframe (optional)
+                use_same = self.get_user_input("Use the same backtest date range? [Y/n]", default="Y", input_type=str)
+                if str(use_same).strip().lower() in ['y','yes','']:
+                    analysis_start = start_date
+                    analysis_end = None
+                else:
+                    analysis_start = self.get_user_input("Analysis start date (YYYY-MM-DD) or empty", default="", input_type=str)
+                    analysis_start = analysis_start.strip() or None
+                    analysis_end = self.get_user_input("Analysis end date (YYYY-MM-DD) or empty", default="", input_type=str)
+                    analysis_end = analysis_end.strip() or None
+                # Variant
+                print("Select prompt variant:")
+                print(f"{Colors.GREEN}1.{Colors.ENDC} Analyst (settings optimization)")
+                print(f"{Colors.GREEN}2.{Colors.ENDC} Risk-focused (drawdown aware)")
+                v_choice = self.get_user_choice("Option", ['1','2'])
+                variant = 'analyst' if v_choice == '1' else 'risk'
+                # Provider override (optional)
+                provider_in = self.get_user_input("Provider override [openai|gemini|empty]", default="", input_type=str)
+                provider = provider_in.strip().lower() or None
+                # Model override (optional)
+                model_override = self.get_user_input("Model override (optional)", default="", input_type=str)
+                model_override = model_override.strip() or None
+
+                llm_pdf = runner.generate_llm_optimization_report(
+                    result=outcome['result'],
+                    data_df=outcome['data_df'],
+                    trades_df=outcome['trades_df'],
+                    equity_df=outcome['equity_df'],
+                    strategy_config=outcome['strategy_config'],
+                    output_dir=reports_dir,
+                    symbol_short=symbol_short,
+                    timeframe=timeframe,
+                    analysis_start=analysis_start,
+                    analysis_end=analysis_end,
+                    llm_provider=provider,
+                    llm_model_override=model_override,
+                    prompt_variant=variant
+                )
+                if llm_pdf:
+                    print(f"{Colors.GREEN}LLM PDF:{Colors.ENDC} {llm_pdf}")
+                else:
+                    print(f"{Colors.WARNING}LLM Optimization report was not generated.{Colors.ENDC}")
         except Exception as e:
             print(f"{Colors.FAIL}Backtest failed: {e}{Colors.ENDC}")
 
