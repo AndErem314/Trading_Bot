@@ -788,7 +788,7 @@ class StrategyBacktestRunner:
     def run_from_json(self, strategy_key: str, symbol_short: str, timeframe: str,
                        start: Optional[str] = None, end: Optional[str] = None,
                        initial_capital: float = 10000.0,
-                       report_formats: str = 'all',
+                       report_formats: str = 'pdf',
                        output_dir: str = 'results',
                        with_llm_optimization: bool = False,
                        llm_provider: Optional[str] = None,

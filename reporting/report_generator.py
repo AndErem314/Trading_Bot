@@ -3,7 +3,6 @@ Professional Reporting System for Trading Strategy Backtests
 
 This module provides comprehensive report generation in multiple formats:
 - PDF reports with charts and analysis
-- Interactive HTML reports
 - JSON/CSV data exports
 """
 
@@ -40,7 +39,7 @@ sns.set_palette("husl")
 class ReportGenerator:
     """
     Professional report generator for trading strategy backtests.
-    Supports PDF, HTML, and data export formats.
+Supports PDF and data export formats.
     """
     
     def __init__(self, output_dir: str = "frontend/reports"):
@@ -74,7 +73,7 @@ class ReportGenerator:
                 - equity_curve: Equity curve DataFrame
                 - metrics: Performance metrics
                 - strategy_config: Strategy configuration
-            format: Report format ('pdf', 'html', 'json', 'csv', 'all')
+            format: Report format ('pdf', 'json', 'csv', 'all')
             filename_prefix: Prefix for output files
             
         Returns:
@@ -90,9 +89,6 @@ class ReportGenerator:
             pdf_path = self._generate_pdf_report(results, base_filename)
             generated_reports['pdf'] = pdf_path
             
-        if format in ['html', 'all']:
-            html_path = self._generate_html_report(results, base_filename)
-            generated_reports['html'] = html_path
             
         if format in ['json', 'all']:
             json_path = self._export_json(results, base_filename)
@@ -1291,7 +1287,7 @@ for improving strategy performance:
         
         Args:
             results: Backtest results
-            format: Export format ('pdf', 'html', 'json', 'csv')
+            format: Export format ('pdf', 'json', 'csv')
             
         Returns:
             Path to exported file(s)
@@ -1301,8 +1297,6 @@ for improving strategy performance:
         
         if format == 'pdf':
             return self._generate_pdf_report(results, base_filename)
-        elif format == 'html':
-            return self._generate_html_report(results, base_filename)
         elif format == 'json':
             return self._export_json(results, base_filename)
         elif format == 'csv':

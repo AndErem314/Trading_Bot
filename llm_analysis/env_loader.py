@@ -21,17 +21,23 @@ class LLMConfig:
 
 
 def _load_env_near_project_root():
-    """Load .env from project root if python-dotenv is available."""
+    """Load .env from project root if python-dotenv is available.
+
+    Robustly attempts common locations regardless of the current working directory.
+    """
     if not _HAS_DOTENV:
         return
-    # Try current working dir, then repo root
+    here = Path(__file__).resolve()
+    # Candidates: current CWD, project root (Trading_Bot), and its parent as a fallback
     candidates = [
         Path.cwd() / '.env',
-        Path(__file__).resolve().parents[3] / '.env'  # /Users/.../Trading_Bot/.env
+        here.parents[1] / '.env',   # .../Trading_Bot/.env
+        here.parents[2] / '.env',   # .../Python/.env (fallback)
     ]
     for p in candidates:
         if p.exists():
-            load_dotenv(dotenv_path=p)
+            # Do not override already-set environment variables
+            load_dotenv(dotenv_path=p, override=False)
             break
 
 
@@ -50,7 +56,7 @@ def load_llm_config() -> LLMConfig:
     openai_api_key = os.getenv('OPENAI_API_KEY')
     openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
     gemini_api_key = os.getenv('GEMINI_API_KEY')
-    gemini_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-pro')
+    gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
     try:
         temperature = float(os.getenv('LLM_TEMPERATURE', '0.2'))
     except ValueError:

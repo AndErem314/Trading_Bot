@@ -126,7 +126,7 @@ EXCHANGE_API_SECRET=your_exchange_api_secret
 
 # LLM APIs for optimization
 OPENAI_API_KEY=your_openai_api_key
-GOOGLE_API_KEY=your_google_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ## Usage

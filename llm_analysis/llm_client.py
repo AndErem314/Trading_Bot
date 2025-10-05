@@ -17,7 +17,9 @@ class LLMClient:
             raise RuntimeError("OpenAI Python SDK is not installed. pip install openai") from e
         api_key = self.config.openai_api_key or os.getenv('OPENAI_API_KEY')
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY not set in environment/.env")
+            raise RuntimeError(
+                "OPENAI_API_KEY not found. Create a .env in the project root with OPENAI_API_KEY=... or export it in your shell."
+            )
         client = OpenAI(api_key=api_key)
         # Use chat completions for broad compatibility
         resp = client.chat.completions.create(
@@ -37,7 +39,9 @@ class LLMClient:
             raise RuntimeError("Google Generative AI SDK is not installed. pip install google-generativeai") from e
         api_key = self.config.gemini_api_key or os.getenv('GEMINI_API_KEY')
         if not api_key:
-            raise RuntimeError("GEMINI_API_KEY not set in environment/.env")
+            raise RuntimeError(
+                "GEMINI_API_KEY not found. Create a .env in the project root or export it in your shell."
+            )
         genai.configure(api_key=api_key)
         gm = genai.GenerativeModel(model)
         resp = gm.generate_content(prompt)
