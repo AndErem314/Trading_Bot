@@ -250,11 +250,10 @@ class WorkflowCLI:
                     v_choice = self.get_user_choice("Option", ['1','2'])
                     variant = 'analyst' if v_choice == '1' else 'risk'
                     # Provider override (optional)
-                    provider_in = self.get_user_input("Provider override [openai|gemini|empty]", default="", input_type=str)
+                    provider_in = self.get_user_input("Provider override (leave blank for default) [openai|gemini]", default="", input_type=str)
                     provider = provider_in.strip().lower() or None
-                    # Model override (optional)
-                    model_override = self.get_user_input("Model override (optional)", default="", input_type=str)
-                    model_override = model_override.strip() or None
+                    # Model override removed; use configured defaults
+                    model_override = None
 
                     llm_pdf = runner.generate_llm_optimization_report(
                         result=outcome['result'],
