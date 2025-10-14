@@ -1,0 +1,451 @@
+// Trading Bot Database Schema for dbdiagram.io
+// This schema represents a comprehensive trading bot system with
+// per-symbol databases, strategies, backtesting, and reporting
+
+Project TradingBot {
+  database_type: 'SQLite'
+  note: '''
+    # Trading Bot Database Schema
+    
+    This schema represents a cryptocurrency trading bot system with:
+    - Per-symbol OHLCV data storage
+    - Ichimoku technical indicators
+    - Multiple trading strategies
+    - Backtesting results and performance metrics
+    - Trade execution and reporting
+    
+    ## Database Architecture
+    - Each cryptocurrency symbol has its own database
+    - Central metadata and configuration
+    - Comprehensive backtesting and reporting tables
+  '''
+}
+
+// ========================================
+// MARKET DATA TABLES (Per-Symbol Database)
+// ========================================
+
+Table ohlcv_data {
+  id integer [pk, increment, note: 'Primary key']
+  timestamp datetime [not null, note: 'Candle timestamp']
+  open decimal(20,8) [not null, note: 'Opening price']
+  high decimal(20,8) [not null, note: 'Highest price']
+  low decimal(20,8) [not null, note: 'Lowest price']
+  close decimal(20,8) [not null, note: 'Closing price']
+  volume decimal(20,8) [not null, note: 'Trading volume']
+  timeframe varchar [not null, note: 'Timeframe: 1h, 4h, 1d']
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    (timestamp, timeframe) [unique]
+    timeframe
+    timestamp
+  }
+  
+  note: 'Raw OHLCV price data for a specific symbol'
+}
+
+Table ichimoku_data {
+  id integer [pk, increment]
+  ohlcv_id integer [not null, unique, ref: > ohlcv_data.id]
+  tenkan_sen decimal(20,8) [note: 'Conversion Line (9-period)']
+  kijun_sen decimal(20,8) [note: 'Base Line (26-period)']
+  senkou_span_a decimal(20,8) [note: 'Leading Span A']
+  senkou_span_b decimal(20,8) [note: 'Leading Span B (52-period)']
+  chikou_span decimal(20,8) [note: 'Lagging Span (26-period)']
+  cloud_color varchar [note: 'green (bullish) or red (bearish)']
+  cloud_thickness decimal(20,8) [note: 'Distance between Span A and B']
+  price_position varchar [note: 'above_cloud, in_cloud, below_cloud']
+  trend_strength varchar [note: 'strong_bullish, bullish, neutral, bearish, strong_bearish']
+  tk_cross varchar [note: 'bullish_cross, bearish_cross, no_cross']
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  updated_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    ohlcv_id
+    cloud_color
+    trend_strength
+    updated_at
+  }
+  
+  note: 'Calculated Ichimoku Cloud indicators'
+}
+
+Table symbol_metadata {
+  key varchar [pk]
+  value text
+  updated_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  note: '''
+    Symbol-specific metadata:
+    - symbol: BTC/USDT
+    - created_at: Database creation timestamp
+    - schema_version: Current schema version
+    - supported_timeframes: Comma-separated list
+  '''
+}
+
+// ========================================
+// STRATEGY CONFIGURATION TABLES
+// ========================================
+
+Table strategies {
+  id integer [pk, increment]
+  strategy_id varchar [unique, not null, note: 'e.g., strategy_01_tk_sell']
+  name varchar [not null, note: 'Human-readable strategy name']
+  description text
+  enabled boolean [default: true]
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  updated_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  note: 'Trading strategy definitions'
+}
+
+Table strategy_parameters {
+  id integer [pk, increment]
+  strategy_id integer [ref: > strategies.id]
+  parameter_group varchar [not null, note: 'ichimoku_parameters, risk_management, position_sizing']
+  parameter_name varchar [not null]
+  parameter_value text
+  parameter_type varchar [note: 'integer, decimal, boolean, string']
+  
+  indexes {
+    (strategy_id, parameter_group, parameter_name) [unique]
+  }
+  
+  note: 'Configurable strategy parameters'
+}
+
+Table strategy_conditions {
+  id integer [pk, increment]
+  strategy_id integer [ref: > strategies.id]
+  condition_type varchar [not null, note: 'buy_conditions or sell_conditions']
+  condition_name varchar [not null, note: 'e.g., PriceAboveCloud, TenkanAboveKijun']
+  condition_logic varchar [default: 'AND', note: 'AND or OR']
+  order_index integer [note: 'Order of condition evaluation']
+  
+  indexes {
+    (strategy_id, condition_type)
+  }
+  
+  note: 'Buy and sell conditions for strategies'
+}
+
+Table strategy_symbols {
+  id integer [pk, increment]
+  strategy_id integer [ref: > strategies.id]
+  symbol varchar [not null, note: 'e.g., BTC/USDT']
+  timeframe varchar [not null, note: 'e.g., 1h, 4h, 1d']
+  active boolean [default: true]
+  
+  indexes {
+    (strategy_id, symbol, timeframe) [unique]
+  }
+  
+  note: 'Symbol-timeframe combinations for each strategy'
+}
+
+// ========================================
+// BACKTESTING TABLES
+// ========================================
+
+Table backtest_runs {
+  id integer [pk, increment]
+  run_id varchar [unique, not null, note: 'e.g., BTC_4h_20251005_175506']
+  strategy_id integer [ref: > strategies.id]
+  symbol varchar [not null]
+  timeframe varchar [not null]
+  start_date datetime [not null]
+  end_date datetime [not null]
+  initial_capital decimal(20,8) [not null]
+  final_capital decimal(20,8)
+  status varchar [not null, note: 'running, completed, failed']
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  completed_at datetime
+  
+  indexes {
+    strategy_id
+    symbol
+    status
+    created_at
+  }
+  
+  note: 'Individual backtest execution records'
+}
+
+Table backtest_trades {
+  id integer [pk, increment]
+  backtest_run_id integer [ref: > backtest_runs.id]
+  trade_id varchar [not null, note: 'e.g., TRD_000001']
+  symbol varchar [not null]
+  entry_time datetime [not null]
+  exit_time datetime
+  side varchar [not null, note: 'LONG or SHORT']
+  entry_price decimal(20,8) [not null]
+  exit_price decimal(20,8)
+  quantity decimal(20,8) [not null]
+  commission decimal(20,8) [default: 0]
+  slippage decimal(20,8) [default: 0]
+  pnl decimal(20,8) [note: 'Profit and loss']
+  net_pnl decimal(20,8) [note: 'PnL after fees']
+  return_pct decimal(10,6) [note: 'Percentage return']
+  bars_held integer [note: 'Number of bars position was held']
+  entry_reason varchar [note: 'buy_signal, manual, etc.']
+  exit_reason varchar [note: 'sell_signal, stop_loss, take_profit']
+  
+  indexes {
+    backtest_run_id
+    entry_time
+    exit_time
+    symbol
+  }
+  
+  note: 'Individual trades executed during backtesting'
+}
+
+Table backtest_performance {
+  id integer [pk, increment]
+  backtest_run_id integer [unique, ref: > backtest_runs.id]
+  total_return decimal(10,6)
+  annualized_return decimal(10,6)
+  sharpe_ratio decimal(10,4)
+  sortino_ratio decimal(10,4)
+  max_drawdown decimal(10,6)
+  win_rate decimal(10,6)
+  profit_factor decimal(10,4)
+  total_trades integer
+  winning_trades integer
+  losing_trades integer
+  avg_win decimal(20,8)
+  avg_loss decimal(20,8)
+  largest_win decimal(20,8)
+  largest_loss decimal(20,8)
+  consecutive_wins integer
+  consecutive_losses integer
+  recovery_factor decimal(10,4)
+  calmar_ratio decimal(10,4)
+  var_95 decimal(10,6) [note: 'Value at Risk 95%']
+  cvar_95 decimal(10,6) [note: 'Conditional VaR 95%']
+  
+  note: 'Comprehensive performance metrics for backtest runs'
+}
+
+Table equity_curves {
+  id integer [pk, increment]
+  backtest_run_id integer [ref: > backtest_runs.id]
+  timestamp datetime [not null]
+  equity decimal(20,8) [not null]
+  drawdown decimal(10,6)
+  returns decimal(10,6)
+  cumulative_returns decimal(10,6)
+  
+  indexes {
+    (backtest_run_id, timestamp)
+  }
+  
+  note: 'Time series of portfolio equity during backtesting'
+}
+
+// ========================================
+// LIVE TRADING TABLES
+// ========================================
+
+Table positions {
+  id integer [pk, increment]
+  position_id varchar [unique, not null]
+  strategy_id integer [ref: > strategies.id]
+  symbol varchar [not null]
+  side varchar [not null, note: 'LONG or SHORT']
+  quantity decimal(20,8) [not null]
+  entry_price decimal(20,8) [not null]
+  entry_time datetime [not null]
+  current_price decimal(20,8)
+  unrealized_pnl decimal(20,8)
+  status varchar [not null, note: 'open, closed, liquidated']
+  stop_loss decimal(20,8)
+  take_profit decimal(20,8)
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  updated_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    strategy_id
+    symbol
+    status
+  }
+  
+  note: 'Current and historical trading positions'
+}
+
+Table orders {
+  id integer [pk, increment]
+  order_id varchar [unique, not null]
+  position_id integer [ref: > positions.id]
+  strategy_id integer [ref: > strategies.id]
+  symbol varchar [not null]
+  side varchar [not null, note: 'BUY or SELL']
+  order_type varchar [not null, note: 'MARKET, LIMIT, STOP, STOP_LIMIT']
+  quantity decimal(20,8) [not null]
+  price decimal(20,8)
+  stop_price decimal(20,8)
+  status varchar [not null, note: 'pending, filled, cancelled, rejected']
+  filled_quantity decimal(20,8) [default: 0]
+  avg_fill_price decimal(20,8)
+  commission decimal(20,8)
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  filled_at datetime
+  
+  indexes {
+    position_id
+    strategy_id
+    symbol
+    status
+    created_at
+  }
+  
+  note: 'Order execution records'
+}
+
+Table signals {
+  id integer [pk, increment]
+  strategy_id integer [ref: > strategies.id]
+  symbol varchar [not null]
+  timeframe varchar [not null]
+  signal_type varchar [not null, note: 'BUY, SELL, HOLD']
+  signal_strength varchar [note: 'STRONG_BUY, BUY, NEUTRAL, SELL, STRONG_SELL']
+  conditions_met text [note: 'JSON array of triggered conditions']
+  price decimal(20,8) [not null]
+  timestamp datetime [not null]
+  acted_upon boolean [default: false]
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    strategy_id
+    symbol
+    timestamp
+    signal_type
+  }
+  
+  note: 'Generated trading signals'
+}
+
+// ========================================
+// REPORTING TABLES
+// ========================================
+
+Table reports {
+  id integer [pk, increment]
+  report_id varchar [unique, not null]
+  report_type varchar [not null, note: 'backtest, live_performance, strategy_analysis']
+  backtest_run_id integer [ref: > backtest_runs.id]
+  format varchar [not null, note: 'pdf, json, csv']
+  file_path text [not null]
+  metadata json
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    report_type
+    backtest_run_id
+    created_at
+  }
+  
+  note: 'Generated report records'
+}
+
+Table llm_analysis {
+  id integer [pk, increment]
+  backtest_run_id integer [ref: > backtest_runs.id]
+  analysis_type varchar [not null, note: 'strategy_optimization, market_analysis, risk_assessment']
+  prompt text [not null]
+  response text [not null]
+  model_used varchar [not null]
+  tokens_used integer
+  cost decimal(10,6)
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    backtest_run_id
+    analysis_type
+    created_at
+  }
+  
+  note: 'LLM-generated analysis and insights'
+}
+
+// ========================================
+// SYSTEM TABLES
+// ========================================
+
+Table system_logs {
+  id integer [pk, increment]
+  log_level varchar [not null, note: 'DEBUG, INFO, WARNING, ERROR, CRITICAL']
+  module varchar [not null]
+  message text [not null]
+  details json
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  
+  indexes {
+    log_level
+    module
+    created_at
+  }
+  
+  note: 'System operation logs'
+}
+
+Table api_keys {
+  id integer [pk, increment]
+  exchange varchar [not null]
+  key_name varchar [not null]
+  api_key_encrypted text [not null]
+  api_secret_encrypted text [not null]
+  permissions json [note: 'Trading permissions']
+  is_active boolean [default: true]
+  created_at datetime [default: 'CURRENT_TIMESTAMP']
+  last_used datetime
+  
+  indexes {
+    exchange
+    is_active
+  }
+  
+  note: 'Exchange API credentials (encrypted)'
+}
+
+// ========================================
+// VIEWS
+// ========================================
+
+View ohlcv_ichimoku_view {
+  note: '''
+    Combined view of OHLCV and Ichimoku data
+    Joins ohlcv_data with ichimoku_data for easy analysis
+  '''
+}
+
+View latest_data_view {
+  note: '''
+    Latest data summary per timeframe
+    Shows most recent timestamp and data coverage
+  '''
+}
+
+View ichimoku_signals_view {
+  note: '''
+    Current Ichimoku signals and trading recommendations
+    Combines multiple indicators into actionable signals
+  '''
+}
+
+View portfolio_summary {
+  note: '''
+    Current portfolio status across all strategies
+    Shows open positions, P&L, and exposure
+  '''
+}
+
+View strategy_performance {
+  note: '''
+    Strategy performance comparison
+    Aggregates metrics across all backtests and live trading
+  '''
+}

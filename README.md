@@ -1,6 +1,6 @@
 # Ichimoku Cloud Trading Assistant
 
-A Python-based assistant that implements Ichimoku Cloud trading strategies with fast backtesting, rich PDF reporting, and LLM-powered optimization that can auto-generate updated strategy YAMLs.
+A Python-based assistant that implements Ichimoku Cloud trading strategies with fast backtesting, PDF reporting, and LLM-powered optimization that can auto-generate updated strategy YAMLs.
 
 ## Overview
 
