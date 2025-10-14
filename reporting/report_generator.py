@@ -302,8 +302,7 @@ Supports PDF and data export formats.
             
             # Page 4 removed (Risk Analysis merged into Trading Analysis)
             
-            # Next page: Trade Details
-            self._create_trade_details_page(pdf, results)
+            # Trade Details page removed per user preference (keep report to three pages)
             
             # Save PDF metadata
             d = pdf.infodict()
