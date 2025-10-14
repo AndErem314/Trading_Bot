@@ -297,12 +297,11 @@ Supports PDF and data export formats.
             # Page 2: Performance Overview
             self._create_performance_overview_page(pdf, results)
             
-            # Page 3: Trading Analysis (now includes Underwater Chart)
+            # Page 3: Trading Analysis (includes Underwater Chart)
             self._create_trading_analysis_page(pdf, results)
-            
-            # Page 4 removed (Risk Analysis merged into Trading Analysis)
-            
-            # Trade Details page removed per user preference (keep report to three pages)
+
+            # Page 4: Trade Details (Top 20 by Absolute P&L)
+            self._create_trade_details_page(pdf, results)
             
             # Save PDF metadata
             d = pdf.infodict()
@@ -472,39 +471,6 @@ Key Insights:
             ax_bottom.set_ylabel('Drawdown (%)')
             ax_bottom.grid(True, alpha=0.3)
         
-        plt.tight_layout()
-        pdf.savefig(fig, bbox_inches='tight')
-        plt.close()
-        
-        """Create risk analysis page"""
-        fig = plt.figure(figsize=(8.5, 11))
-        fig.suptitle('Risk Analysis', fontsize=18, y=0.98)
-        
-        equity_curve = results.get('equity_curve', pd.DataFrame())
-        
-        # Create subplots: only rolling volatility and underwater chart
-        gs = fig.add_gridspec(2, 1, hspace=0.3)
-        
-        # 1. Rolling volatility
-        ax1 = fig.add_subplot(gs[0, 0])
-        if 'returns' in equity_curve.columns:
-            rolling_vol = equity_curve['returns'].rolling(30).std() * np.sqrt(252)
-            ax1.plot(rolling_vol.index, rolling_vol, 'b-', linewidth=1.5)
-            ax1.set_title('30-Day Rolling Volatility (Annualized)')
-            ax1.set_xlabel('Date')
-            ax1.set_ylabel('Volatility')
-            ax1.grid(True, alpha=0.3)
-            
-        # 2. Underwater chart
-        ax2 = fig.add_subplot(gs[1, 0])
-        if 'drawdown' in equity_curve.columns:
-            ax2.fill_between(equity_curve.index, equity_curve['drawdown'], 0, 
-                           color='red', alpha=0.5)
-            ax2.set_title('Underwater Chart (Drawdown from Peak)')
-            ax2.set_xlabel('Date')
-            ax2.set_ylabel('Drawdown (%)')
-            ax2.grid(True, alpha=0.3)
-            
         plt.tight_layout()
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()

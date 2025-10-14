@@ -650,10 +650,42 @@ class StrategyBacktestRunner:
             prompt = build_prompt(payload, variant=prompt_variant)
             cfg = load_llm_config()
             client = LLMClient(cfg)
+
+            # Determine effective provider/model to use for token estimation
+            effective_provider = (llm_provider or cfg.provider or 'openai').lower()
+            if effective_provider not in ('openai', 'gemini'):
+                effective_provider = 'openai' if cfg.openai_api_key else 'gemini'
+            if effective_provider == 'openai':
+                effective_model = llm_model_override or cfg.openai_model or 'gpt-4o-mini'
+            else:
+                effective_model = llm_model_override or cfg.gemini_model or 'gemini-2.5-pro'
+
+            # Token counts for prompt and (later) output
+            try:
+                from llm_analysis.token_utils import count_tokens as _count_tokens
+                prompt_tokens = _count_tokens(prompt, effective_provider, effective_model)
+            except Exception:
+                prompt_tokens = 0
+
             raw = client.generate(prompt, provider=llm_provider, model_override=llm_model_override)
+
+            try:
+                from llm_analysis.token_utils import count_tokens as _count_tokens
+                output_tokens = _count_tokens(raw or '', effective_provider, effective_model)
+            except Exception:
+                output_tokens = 0
+
             json_obj, memo = parse_llm_output(raw)
             title = 'Strategy Settings Optimization — Executive Summary' if prompt_variant == 'analyst' else 'Risk-Focused Optimization'
             final_text = build_final_text(title, json_obj, memo)
+
+            # Prepend usage header to the final text
+            usage_header = (
+                f"Provider: {effective_provider} | Model: {effective_model} | "
+                f"Prompt tokens: {prompt_tokens} | Output tokens: {output_tokens} | Total: {prompt_tokens + output_tokens}"
+            )
+            final_text = usage_header + "\n\n" + final_text
+
             pdf_path = write_llm_pdf(
                 output_dir=output_dir,
                 filename_prefix=f"{symbol_short}_{timeframe}",
@@ -859,10 +891,42 @@ class StrategyBacktestRunner:
                 # Generate with configured provider
                 cfg = load_llm_config()
                 client = LLMClient(cfg)
+
+                # Determine effective provider/model to use for token estimation
+                effective_provider = (llm_provider or cfg.provider or 'openai').lower()
+                if effective_provider not in ('openai', 'gemini'):
+                    effective_provider = 'openai' if cfg.openai_api_key else 'gemini'
+                if effective_provider == 'openai':
+                    effective_model = llm_model_override or cfg.openai_model or 'gpt-4o-mini'
+                else:
+                    effective_model = llm_model_override or cfg.gemini_model or 'gemini-2.5-pro'
+
+                # Token counts for prompt and (later) output
+                try:
+                    from llm_analysis.token_utils import count_tokens as _count_tokens
+                    prompt_tokens = _count_tokens(prompt, effective_provider, effective_model)
+                except Exception:
+                    prompt_tokens = 0
+
                 raw = client.generate(prompt, provider=llm_provider, model_override=llm_model_override)
+
+                try:
+                    from llm_analysis.token_utils import count_tokens as _count_tokens
+                    output_tokens = _count_tokens(raw or '', effective_provider, effective_model)
+                except Exception:
+                    output_tokens = 0
+
                 json_obj, memo = parse_llm_output(raw)
                 title = 'Strategy Settings Optimization — Executive Summary' if prompt_variant == 'analyst' else 'Risk-Focused Optimization'
                 final_text = build_final_text(title, json_obj, memo)
+
+                # Prepend usage header to the final text
+                usage_header = (
+                    f"Provider: {effective_provider} | Model: {effective_model} | "
+                    f"Prompt tokens: {prompt_tokens} | Output tokens: {output_tokens} | Total: {prompt_tokens + output_tokens}"
+                )
+                final_text = usage_header + "\n\n" + final_text
+
                 llm_pdf_path = write_llm_pdf(
                     output_dir=output_dir,
                     filename_prefix=f"{symbol_short}_{timeframe}",

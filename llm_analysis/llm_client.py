@@ -60,5 +60,5 @@ class LLMClient:
             model = model_override or self.config.openai_model or "gpt-4o-mini"
             return self._gen_openai(prompt, model)
         else:
-            model = model_override or self.config.gemini_model or "gemini-1.5-pro"
+            model = model_override or self.config.gemini_model or "gemini-2.5-pro"
             return self._gen_gemini(prompt, model)
