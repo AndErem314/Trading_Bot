@@ -686,6 +686,21 @@ class StrategyBacktestRunner:
             )
             final_text = usage_header + "\n\n" + final_text
 
+            # Optionally write optimized YAML config derived from LLM JSON
+            try:
+                # Save YAML into project config/llm_strategy_config (project root = parents[1])
+                proj_root = Path(__file__).resolve().parents[1]
+                yaml_dir = proj_root / 'config' / 'llm_strategy_config'
+                opt_yaml = self._write_llm_optimized_yaml(
+                    base_strategy_config=strategy_config,
+                    llm_json=json_obj,
+                    symbol_short=symbol_short,
+                    timeframe=timeframe,
+                    output_dir=str(yaml_dir)
+                )
+            except Exception:
+                opt_yaml = None
+
             pdf_path = write_llm_pdf(
                 output_dir=output_dir,
                 filename_prefix=f"{symbol_short}_{timeframe}",
@@ -697,8 +712,88 @@ class StrategyBacktestRunner:
             logger.error(f"LLM optimization generation failed: {e}")
             return None
 
-    def run_strategy_backtest(self,
-                              strategy_config: Dict,
+    def _write_llm_optimized_yaml(self, *, base_strategy_config: Dict[str, Any], llm_json: Dict[str, Any], symbol_short: str, timeframe: str, output_dir: Union[str, Path]) -> Optional[str]:
+        """Build and write an optimized strategy YAML (single strategy) based on LLM JSON suggestions.
+
+        The YAML structure matches strategies.yaml with a single key under 'strategies'.
+        """
+        try:
+            import yaml  # lazy import
+        except Exception:
+            return None
+        from pathlib import Path as _P
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        key_base = base_strategy_config.get('name', 'strategy').lower().replace(' ', '_')
+        strat_key = f"{key_base}_llm_{symbol_short.lower()}_{timeframe}"
+
+        # Start from the original strategy config to preserve fields
+        sc = json.loads(json.dumps(base_strategy_config)) if isinstance(base_strategy_config, dict) else {}
+
+        pc = (llm_json or {}).get('parameter_changes', {}) if isinstance(llm_json, dict) else {}
+        # Ichimoku params
+        ichi = pc.get('ichimoku', {}) or {}
+        if 'ichimoku_parameters' not in sc:
+            sc['ichimoku_parameters'] = {}
+        for p in ('tenkan_period','kijun_period','senkou_b_period','chikou_offset','senkou_offset'):
+            if p in ichi and isinstance(ichi[p], dict) and 'suggested' in ichi[p] and isinstance(ichi[p]['suggested'], (int, float)):
+                sc['ichimoku_parameters'][p] = int(ichi[p]['suggested']) if isinstance(ichi[p]['suggested'], float) and p.endswith('period') else ichi[p]['suggested']
+
+        # Signal logic and conditions
+        sl = pc.get('signal_logic', {}) or {}
+        if 'signal_conditions' not in sc:
+            sc['signal_conditions'] = {'buy_conditions': [], 'sell_conditions': [], 'buy_logic': 'AND', 'sell_logic': 'AND'}
+        if 'buy_logic' in sl and isinstance(sl['buy_logic'], dict):
+            sc['signal_conditions']['buy_logic'] = sl['buy_logic'].get('suggested', sc['signal_conditions'].get('buy_logic', 'AND'))
+        if 'sell_logic' in sl and isinstance(sl['sell_logic'], dict):
+            sc['signal_conditions']['sell_logic'] = sl['sell_logic'].get('suggested', sc['signal_conditions'].get('sell_logic', 'AND'))
+        add_conditions = sl.get('add_conditions', []) or []
+        remove_conditions = set(sl.get('remove_conditions', []) or [])
+        if isinstance(add_conditions, list):
+            # Add to buy_conditions by default (keeps original semantics)
+            bc = list(sc['signal_conditions'].get('buy_conditions', []))
+            for c in add_conditions:
+                if c not in bc:
+                    bc.append(c)
+            sc['signal_conditions']['buy_conditions'] = bc
+        if remove_conditions:
+            for list_name in ('buy_conditions','sell_conditions'):
+                cur = [c for c in sc['signal_conditions'].get(list_name, []) if c not in remove_conditions]
+                sc['signal_conditions'][list_name] = cur
+
+        # Risk management
+        rm = pc.get('risk_management', {}) or {}
+        if 'risk_management' not in sc:
+            sc['risk_management'] = {}
+        for k in ('stop_loss_pct','take_profit_pct'):
+            v = rm.get(k)
+            if isinstance(v, dict) and 'suggested' in v and isinstance(v['suggested'], (int, float)):
+                sc['risk_management'][k] = float(v['suggested'])
+        # Position sizing suggestion
+        ps = rm.get('position_sizing')
+        if isinstance(ps, dict):
+            suggested = ps.get('suggested')
+            if suggested in ('fixed','volatility'):
+                sc.setdefault('position_sizing', {}).update({'method': suggested})
+
+        # Symbols and timeframe harmonization
+        sc['symbols'] = sc.get('symbols') or [f"{symbol_short}/USDT"]
+        if isinstance(sc.get('timeframes'), list):
+            if timeframe not in sc['timeframes']:
+                sc['timeframes'].append(timeframe)
+        else:
+            sc['timeframes'] = [timeframe]
+
+        # Build final YAML mapping
+        out = {'strategies': {strat_key: sc}}
+
+        out_dir = _P(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{strat_key}_{ts}.yaml"
+        with open(out_path, 'w') as f:
+            yaml.safe_dump(out, f, sort_keys=False)
+        return str(out_path)
+
+    def run_strategy_backtest(self, strategy_config: Dict,
                               data: pd.DataFrame,
                               initial_capital: float = 10000.0) -> BacktestResult:
         """
@@ -926,6 +1021,21 @@ class StrategyBacktestRunner:
                     f"Prompt tokens: {prompt_tokens} | Output tokens: {output_tokens} | Total: {prompt_tokens + output_tokens}"
                 )
                 final_text = usage_header + "\n\n" + final_text
+
+                # Optionally write optimized YAML config derived from LLM JSON
+                try:
+                    # Save YAML into project config/llm_strategy_config (project root = parents[1])
+                    proj_root = Path(__file__).resolve().parents[1]
+                    yaml_dir = proj_root / 'config' / 'llm_strategy_config'
+                    opt_yaml = self._write_llm_optimized_yaml(
+                        base_strategy_config=strategy_config,
+                        llm_json=json_obj,
+                        symbol_short=symbol_short,
+                        timeframe=timeframe,
+                        output_dir=str(yaml_dir)
+                    )
+                except Exception:
+                    opt_yaml = None
 
                 llm_pdf_path = write_llm_pdf(
                     output_dir=output_dir,

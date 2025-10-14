@@ -19,11 +19,11 @@ Required output (two parts):
 {{
   "parameter_changes": {{
     "ichimoku": {{
-      "tenkan_period": {{"current": <int>, "suggested": <int or [min,max]>, "rationale": "<1-2 sentences>"}},
-      "kijun_period": {{"current": <int>, "suggested": <int or [min,max]>, "rationale": "<1-2 sentences>"}},
-      "senkou_b_period": {{"current": <int>, "suggested": <int or [min,max]>, "rationale": "<1-2 sentences>"}},
-      "chikou_offset": {{"current": <int>, "suggested": <int or [min,max]>, "rationale": "<1-2 sentences>"}},
-      "senkou_offset": {{"current": <int>, "suggested": <int or [min,max]>, "rationale": "<1-2 sentences>"}}
+      "tenkan_period": {{"current": <int>, "suggested": <int>, "rationale": "<1-2 sentences>"}},
+      "kijun_period": {{"current": <int>, "suggested": <int>, "rationale": "<1-2 sentences>"}},
+      "senkou_b_period": {{"current": <int>, "suggested": <int>, "rationale": "<1-2 sentences>"}},
+      "chikou_offset": {{"current": <int>, "suggested": <int>, "rationale": "<1-2 sentences>"}},
+      "senkou_offset": {{"current": <int>, "suggested": <int>, "rationale": "<1-2 sentences>"}}
     }},
     "signal_logic": {{
       "buy_logic": {{"current": "AND|OR", "suggested": "AND|OR", "rationale": "<1-2 sentences>"}},
@@ -32,8 +32,8 @@ Required output (two parts):
       "remove_conditions": ["SignalType", ...]
     }},
     "risk_management": {{
-      "stop_loss_pct": {{"current": <float or null>, "suggested": <float or [min,max]>, "rationale": "<1-2 sentences>"}},
-      "take_profit_pct": {{"current": <float or null>, "suggested": <float or [min,max]>, "rationale": "<1-2 sentences>"}},
+      "stop_loss_pct": {{"current": <float or null>, "suggested": <float>, "rationale": "<1-2 sentences>"}},
+      "take_profit_pct": {{"current": <float or null>, "suggested": <float>, "rationale": "<1-2 sentences>"}},
       "position_sizing": {{"current": "fixed", "suggested": "fixed|volatility", "rationale": "<1-2 sentences>"}}
     }}
   }},
@@ -45,6 +45,7 @@ Required output (two parts):
 2) A short PDF-ready memo (max ~350 words) titled: “Strategy Settings Optimization — Executive Summary”. Use bullet points. Do not restate metrics; focus on adjustments and rationale.
 
 Output formatting rules:
+- All suggested numeric values must be single numbers only (no ranges). Do not output ranges like [min,max].
 - First print the JSON object (and nothing else).
 - Then print the memo text after a line with exactly: ---MEMO---
 """
@@ -69,6 +70,7 @@ Required output (two parts):
 2) After the JSON, print a brief PDF-ready memo (<= 250 words) titled: “Risk-Focused Optimization”. Bulleted and concise.
 
 Output formatting rules:
+- All suggested numeric values must be single numbers only (no ranges). Do not output ranges like [min,max].
 - First the JSON object.
 - Then a line with exactly: ---MEMO---
 - Then the memo text.
