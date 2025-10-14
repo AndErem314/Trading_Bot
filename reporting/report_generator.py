@@ -297,13 +297,12 @@ Supports PDF and data export formats.
             # Page 2: Performance Overview
             self._create_performance_overview_page(pdf, results)
             
-            # Page 3: Trading Analysis
+            # Page 3: Trading Analysis (now includes Underwater Chart)
             self._create_trading_analysis_page(pdf, results)
             
-            # Page 4: Risk Analysis
-            self._create_risk_analysis_page(pdf, results)
+            # Page 4 removed (Risk Analysis merged into Trading Analysis)
             
-            # Page 5: Trade Details
+            # Next page: Trade Details
             self._create_trade_details_page(pdf, results)
             
             # Save PDF metadata
@@ -428,93 +427,67 @@ Key Insights:
         plt.close()
         
     def _create_trading_analysis_page(self, pdf: PdfPages, results: Dict[str, Any]):
-        """Create trading analysis page"""
+        """Create trading analysis page (with underwater chart)"""
         fig = plt.figure(figsize=(8.5, 11))
         fig.suptitle('Trading Analysis', fontsize=18, y=0.98)
         
         trades = results.get('trades', pd.DataFrame())
+        equity_curve = results.get('equity_curve', pd.DataFrame())
         
-        if not trades.empty:
-            # Create subplots
-            gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
-            
-            # 1. Trade duration distribution
-            ax1 = fig.add_subplot(gs[0, 0])
-            if 'duration_hours' in trades.columns:
-                ax1.hist(trades['duration_hours'], bins=20, alpha=0.7, color='blue')
-                ax1.set_title('Trade Duration Distribution')
-                ax1.set_xlabel('Duration (hours)')
-                ax1.set_ylabel('Frequency')
-                ax1.grid(True, alpha=0.3)
-                
-            # 2. P&L by day of week
-            ax2 = fig.add_subplot(gs[0, 1])
-            if 'entry_time' in trades.columns and 'pnl' in trades.columns:
-                trades['dow'] = pd.to_datetime(trades['entry_time']).dt.dayofweek
-                dow_pnl = trades.groupby('dow')['pnl'].sum()
-                days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                ax2.bar(range(len(dow_pnl)), dow_pnl.values, alpha=0.7)
-                ax2.set_xticks(range(len(dow_pnl)))
-                ax2.set_xticklabels([days[i] for i in dow_pnl.index])
-                ax2.set_title('P&L by Day of Week')
-                ax2.set_ylabel('Total P&L ($)')
-                ax2.grid(True, alpha=0.3)
-                
-            # 3. Win rate over time
-            ax3 = fig.add_subplot(gs[1, :])
-            if 'exit_time' in trades.columns:
-                trades_sorted = trades.sort_values('exit_time')
-                trades_sorted['cumulative_win_rate'] = (
-                    (trades_sorted['pnl'] > 0).cumsum() / (trades_sorted.index + 1)
-                )
-                ax3.plot(pd.to_datetime(trades_sorted['exit_time']), 
-                        trades_sorted['cumulative_win_rate'], 'g-', linewidth=2)
-                ax3.axhline(y=0.5, color='r', linestyle='--', alpha=0.5)
-                ax3.set_title('Cumulative Win Rate Over Time')
-                ax3.set_xlabel('Date')
-                ax3.set_ylabel('Win Rate')
-                ax3.grid(True, alpha=0.3)
-                
-            # 4. Entry signal distribution (bar chart)
-            ax4 = fig.add_subplot(gs[2, 0])
-            if 'entry_signal' in trades.columns:
-                signal_counts = trades['entry_signal'].value_counts()
-                ax4.bar(signal_counts.index, signal_counts.values, alpha=0.7, color='blue')
-                ax4.set_title('Entry Signal Distribution')
-                ax4.set_xlabel('Signal Type')
-                ax4.set_ylabel('Count')
-                ax4.tick_params(axis='x', rotation=45)
-                ax4.grid(True, alpha=0.3)
-                
-            # 5. Exit reason distribution (bar chart)
-            ax5 = fig.add_subplot(gs[2, 1])
-            if 'exit_reason' in trades.columns:
-                exit_counts = trades['exit_reason'].value_counts()
-                colors = ['red' if 'stop_loss' in reason else 'green' for reason in exit_counts.index]
-                ax5.bar(exit_counts.index, exit_counts.values, alpha=0.7, color=colors)
-                ax5.set_title('Exit Reason Distribution')
-                ax5.set_xlabel('Exit Reason')
-                ax5.set_ylabel('Count')
-                ax5.tick_params(axis='x', rotation=45)
-                ax5.grid(True, alpha=0.3)
-                
+        # Layout: 2 rows, 2 columns. Top row has two charts side-by-side.
+        # Bottom row is the Underwater Chart spanning both columns.
+        gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.3)
+        
+        # Top-left: P&L by Day of Week
+        if not trades.empty and 'entry_time' in trades.columns and 'pnl' in trades.columns:
+            ax_tl = fig.add_subplot(gs[0, 0])
+            trades['dow'] = pd.to_datetime(trades['entry_time']).dt.dayofweek
+            dow_pnl = trades.groupby('dow')['pnl'].sum()
+            days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            ax_tl.bar(range(len(dow_pnl)), dow_pnl.values, alpha=0.7, color='tab:pink')
+            ax_tl.set_xticks(range(len(dow_pnl)))
+            ax_tl.set_xticklabels([days[i] for i in dow_pnl.index])
+            ax_tl.set_title('P&L by Day of Week')
+            ax_tl.set_ylabel('Total P&L ($)')
+            ax_tl.grid(True, alpha=0.3)
+        
+        # Top-right: Exit Reason Distribution
+        if not trades.empty and 'exit_reason' in trades.columns:
+            ax_tr = fig.add_subplot(gs[0, 1])
+            exit_counts = trades['exit_reason'].value_counts()
+            colors = ['red' if 'stop_loss' in reason else 'green' for reason in exit_counts.index]
+            ax_tr.bar(exit_counts.index, exit_counts.values, alpha=0.7, color=colors)
+            ax_tr.set_title('Exit Reason Distribution')
+            ax_tr.set_xlabel('Exit Reason')
+            ax_tr.set_ylabel('Count')
+            ax_tr.tick_params(axis='x', rotation=45)
+            ax_tr.grid(True, alpha=0.3)
+        
+        # Bottom: Underwater chart (Drawdown from Peak)
+        if not equity_curve.empty and 'drawdown' in equity_curve.columns:
+            ax_bottom = fig.add_subplot(gs[1, :])
+            ax_bottom.fill_between(equity_curve.index, equity_curve['drawdown'], 0, 
+                                color='red', alpha=0.5)
+            ax_bottom.set_title('Underwater Chart (Drawdown from Peak)')
+            ax_bottom.set_xlabel('Date')
+            ax_bottom.set_ylabel('Drawdown (%)')
+            ax_bottom.grid(True, alpha=0.3)
+        
         plt.tight_layout()
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()
         
-    def _create_risk_analysis_page(self, pdf: PdfPages, results: Dict[str, Any]):
         """Create risk analysis page"""
         fig = plt.figure(figsize=(8.5, 11))
         fig.suptitle('Risk Analysis', fontsize=18, y=0.98)
         
-        metrics = results.get('metrics', {}).get('performance_metrics', {})
         equity_curve = results.get('equity_curve', pd.DataFrame())
         
-        # Create subplots
-        gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+        # Create subplots: only rolling volatility and underwater chart
+        gs = fig.add_gridspec(2, 1, hspace=0.3)
         
         # 1. Rolling volatility
-        ax1 = fig.add_subplot(gs[0, :])
+        ax1 = fig.add_subplot(gs[0, 0])
         if 'returns' in equity_curve.columns:
             rolling_vol = equity_curve['returns'].rolling(30).std() * np.sqrt(252)
             ax1.plot(rolling_vol.index, rolling_vol, 'b-', linewidth=1.5)
@@ -523,42 +496,15 @@ Key Insights:
             ax1.set_ylabel('Volatility')
             ax1.grid(True, alpha=0.3)
             
-        # 2. Risk metrics table
-        ax2 = fig.add_subplot(gs[1, :])
-        ax2.axis('tight')
-        ax2.axis('off')
-        
-        risk_data = [
-            ['Metric', 'Value'],
-            ['Maximum Drawdown', f"{metrics.get('max_drawdown', 0):.2%}"],
-            ['Average Drawdown', f"{metrics.get('avg_drawdown', 0):.2%}"],
-            ['Drawdown Duration', f"{metrics.get('max_drawdown_duration_days', 0):.0f} days"],
-            ['Value at Risk (95%)', f"{metrics.get('var_95', 0):.2%}"],
-            ['Conditional VaR (95%)', f"{metrics.get('cvar_95', 0):.2%}"],
-            ['Downside Deviation', f"{metrics.get('downside_deviation', 0):.4f}"],
-            ['Sortino Ratio', f"{metrics.get('sortino_ratio', 0):.2f}"],
-            ['Calmar Ratio', f"{metrics.get('calmar_ratio', 0):.2f}"]
-        ]
-        
-        table = ax2.table(cellText=risk_data, loc='center', cellLoc='left')
-        table.auto_set_font_size(False)
-        table.set_fontsize(9)
-        table.scale(1.2, 1.5)
-        
-        # Style header row
-        for i in range(len(risk_data[0])):
-            table[(0, i)].set_facecolor('#40466e')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-            
-        # 3. Underwater chart
-        ax3 = fig.add_subplot(gs[2, :])
+        # 2. Underwater chart
+        ax2 = fig.add_subplot(gs[1, 0])
         if 'drawdown' in equity_curve.columns:
-            ax3.fill_between(equity_curve.index, equity_curve['drawdown'], 0, 
+            ax2.fill_between(equity_curve.index, equity_curve['drawdown'], 0, 
                            color='red', alpha=0.5)
-            ax3.set_title('Underwater Chart (Drawdown from Peak)')
-            ax3.set_xlabel('Date')
-            ax3.set_ylabel('Drawdown (%)')
-            ax3.grid(True, alpha=0.3)
+            ax2.set_title('Underwater Chart (Drawdown from Peak)')
+            ax2.set_xlabel('Date')
+            ax2.set_ylabel('Drawdown (%)')
+            ax2.grid(True, alpha=0.3)
             
         plt.tight_layout()
         pdf.savefig(fig, bbox_inches='tight')
