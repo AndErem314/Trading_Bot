@@ -943,16 +943,30 @@ class StrategyBacktestRunner:
             trades_df['pnl'] = trades_df['net_pnl']
         equity_df = result.equity_curve.copy() if isinstance(result.equity_curve, pd.DataFrame) else pd.DataFrame(result.equity_curve)
         
+        # Map backtester metrics into the format expected by ReportGenerator
+        perf_metrics = {
+            'total_return': (result.metrics.get('total_return_pct', 0) or 0) / 100.0,
+            'annual_return': (result.metrics.get('annual_return', 0) or 0) / 100.0 if 'annual_return' in result.metrics else None,
+            'cumulative_return': equity_df['cumulative_returns'].iloc[-1] if not equity_df.empty and 'cumulative_returns' in equity_df.columns else None,
+            'sharpe_ratio': result.metrics.get('sharpe_ratio', 0.0) or 0.0,
+            'max_drawdown': (result.metrics.get('max_drawdown_pct', 0) or 0) / 100.0,
+            'win_rate': (result.metrics.get('win_rate_pct', 0) or 0) / 100.0,
+            'profit_factor': result.metrics.get('profit_factor', 0.0) if np.isfinite(result.metrics.get('profit_factor', 0.0) or 0.0) else float('inf'),
+            'total_trades': result.metrics.get('total_trades', len(result.trades) if isinstance(result.trades, list) else 0),
+            # Optional fields used by risk/insights if available
+            'avg_win': result.metrics.get('avg_winning_trade', 0),
+            'avg_loss': result.metrics.get('avg_losing_trade', 0),
+            'loss_std': result.metrics.get('loss_std', 0),
+            'var_95': result.metrics.get('var_95', 0),
+            'cvar_95': result.metrics.get('cvar_95', 0)
+        }
+
         report_payload = {
             'data': data,
             'trades': trades_df,
             'equity_curve': equity_df,
             'metrics': {
-                'performance_metrics': {
-                    'total_return': result.metrics.get('total_return_pct', 0)/100.0,
-                    'annualized_return': None,
-                    'cumulative_return': equity_df['cumulative_returns'].iloc[-1] if not equity_df.empty and 'cumulative_returns' in equity_df.columns else None
-                }
+                'performance_metrics': perf_metrics
             },
             'strategy_config': {
                 'name': strategy_config.get('name'),
