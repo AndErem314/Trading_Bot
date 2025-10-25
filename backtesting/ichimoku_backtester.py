@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 class PositionSide(Enum):
     """Position side."""
     LONG = "long"
+    SHORT = "short"
     FLAT = "flat"
 
 
@@ -182,33 +183,44 @@ class IchimokuBacktester:
 
             # Check for signals
             if not in_position:
-                # Check for buy signal
-                if self._check_buy_signal(row):
-                    # Enter long position
-                    entry_price = self._calculate_entry_price(row, True)
+                # Check for LONG entry
+                if self._check_entry_signal(row, PositionSide.LONG):
+                    entry_price = self._calculate_fill_price(PositionSide.LONG, is_entry=True, row=row)
                     position_size = self._calculate_position_size(entry_price)
-
                     if position_size > 0:
                         current_position = self._enter_long(
                             symbol=self.strategy_config['symbols'][0],
                             timestamp=timestamp,
                             price=entry_price,
                             quantity=position_size,
-                            reason="buy_signal"
+                            reason="long_entry"
                         )
                         in_position = True
-                        logger.debug(f"Entered long position at {entry_price}")
+                        logger.debug(f"Entered LONG at {entry_price}")
+                # If not LONG, check SHORT entry
+                elif self._check_entry_signal(row, PositionSide.SHORT):
+                    entry_price = self._calculate_fill_price(PositionSide.SHORT, is_entry=True, row=row)
+                    position_size = self._calculate_position_size(entry_price)
+                    if position_size > 0:
+                        current_position = self._enter_short(
+                            symbol=self.strategy_config['symbols'][0],
+                            timestamp=timestamp,
+                            price=entry_price,
+                            quantity=position_size,
+                            reason="short_entry"
+                        )
+                        in_position = True
+                        logger.debug(f"Entered SHORT at {entry_price}")
 
             else:
-                # Check for sell signal or stop loss
+                # Check for exit signal or stop loss based on side
                 exit_signal = False
                 exit_reason = ""
 
-                # Check sell signal
-                if self._check_sell_signal(row):
+                # Exit on configured signal
+                if self._check_exit_signal(row, PositionSide(current_position['side'])):
                     exit_signal = True
-                    exit_reason = "sell_signal"
-
+                    exit_reason = "signal_exit"
                 # Check stop loss
                 elif self._check_stop_loss(row, current_position):
                     exit_signal = True
@@ -216,7 +228,8 @@ class IchimokuBacktester:
 
                 if exit_signal:
                     # Exit position
-                    exit_price = self._calculate_entry_price(row, False)
+                    side = PositionSide(current_position['side'])
+                    exit_price = self._calculate_fill_price(side, is_entry=False, row=row)
                     self._exit_position(
                         timestamp=timestamp,
                         price=exit_price,
@@ -226,70 +239,84 @@ class IchimokuBacktester:
                     current_position = None
                     logger.debug(f"Exited position at {exit_price} ({exit_reason})")
 
-    def _check_buy_signal(self, row: pd.Series) -> bool:
-        """Check if buy conditions are met."""
-        conditions = self.strategy_config['signal_conditions']['buy_conditions']
-        logic = self.strategy_config['signal_conditions'].get('buy_logic', 'AND')
-
-        signal_mapping = {
+    def _get_signal_mapping(self) -> Dict[str, str]:
+        """Map config condition names to DataFrame columns."""
+        return {
             'PriceAboveCloud': 'price_above_cloud',
             'PriceBelowCloud': 'price_below_cloud',
             'TenkanAboveKijun': 'tenkan_above_kijun',
             'TenkanBelowKijun': 'tenkan_below_kijun',
             'SpanAaboveSpanB': 'SpanAaboveSpanB',
-            'SpanAbelowSpanB': 'SpanAbelowSpanB'
+            'SpanAbelowSpanB': 'SpanAbelowSpanB',
+            'ChikouAbovePrice': 'chikou_above_price',
+            'ChikouBelowPrice': 'chikou_below_price',
+            'ChikouAboveCloud': 'chikou_above_cloud',
+            'ChikouBelowCloud': 'chikou_below_cloud',
         }
 
-        conditions_met = []
+    def _check_conditions(self, row: pd.Series, conditions: List[str], logic: str) -> bool:
+        """Generic condition checker with AND/OR logic."""
+        if not conditions:
+            return False
+        mapping = self._get_signal_mapping()
+        flags: List[bool] = []
+        for cond in conditions:
+            col = mapping.get(cond)
+            if col and col in row:
+                flags.append(bool(row[col]))
+        if not flags:
+            return False
+        if (logic or 'AND').upper() == 'OR':
+            return any(flags)
+        return all(flags)
 
-        for condition in conditions:
-            column_name = signal_mapping.get(condition)
-            if column_name and column_name in row:
-                if row[column_name]:
-                    conditions_met.append(True)
-                else:
-                    conditions_met.append(False)
-
-        if logic.upper() == "AND":
-            return all(conditions_met)
-        elif logic.upper() == "OR":
-            return any(conditions_met)
+    def _check_entry_signal(self, row: pd.Series, side: PositionSide) -> bool:
+        sc = self.strategy_config.get('signal_conditions', {})
+        if side == PositionSide.LONG:
+            conditions = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
+            logic = sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
         else:
-            return all(conditions_met)
+            conditions = sc.get('short_entry_conditions')
+            if not conditions:
+                base = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
+                conditions = self._mirror_conditions(base)
+            logic = sc.get('short_entry_logic') or sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
+        return self._check_conditions(row, conditions, logic)
 
-    def _check_sell_signal(self, row: pd.Series) -> bool:
-        """Check if sell conditions are met."""
-        conditions = self.strategy_config['signal_conditions']['sell_conditions']
-        logic = self.strategy_config['signal_conditions'].get('sell_logic', 'AND')
+    def _check_exit_signal(self, row: pd.Series, side: PositionSide) -> bool:
+        sc = self.strategy_config.get('signal_conditions', {})
+        if side == PositionSide.LONG:
+            conditions = sc.get('long_exit_conditions') or sc.get('sell_conditions') or []
+            logic = sc.get('long_exit_logic') or sc.get('sell_logic', 'AND')
+        else:
+            conditions = sc.get('short_exit_conditions')
+            if not conditions:
+                base = sc.get('long_exit_conditions') or sc.get('sell_conditions') or []
+                conditions = self._mirror_conditions(base)
+            logic = sc.get('short_exit_logic') or sc.get('long_exit_logic') or sc.get('sell_logic', 'AND')
+        return self._check_conditions(row, conditions, logic)
 
-        signal_mapping = {
-            'PriceAboveCloud': 'price_above_cloud',
-            'PriceBelowCloud': 'price_below_cloud',
-            'TenkanAboveKijun': 'tenkan_above_kijun',
-            'TenkanBelowKijun': 'tenkan_below_kijun',
-            'SpanAaboveSpanB': 'SpanAaboveSpanB',
-            'SpanAbelowSpanB': 'SpanAbelowSpanB'
+    def _mirror_condition(self, cond: str) -> Optional[str]:
+        """Return the opposite condition name for mirroring LONG<->SHORT."""
+        mirror_map = {
+            'PriceAboveCloud': 'PriceBelowCloud',
+            'PriceBelowCloud': 'PriceAboveCloud',
+            'TenkanAboveKijun': 'TenkanBelowKijun',
+            'TenkanBelowKijun': 'TenkanAboveKijun',
+            'SpanAaboveSpanB': 'SpanAbelowSpanB',
+            'SpanAbelowSpanB': 'SpanAaboveSpanB',
+            'ChikouAbovePrice': 'ChikouBelowPrice',
+            'ChikouBelowPrice': 'ChikouAbovePrice',
+            'ChikouAboveCloud': 'ChikouBelowCloud',
+            'ChikouBelowCloud': 'ChikouAboveCloud',
         }
+        return mirror_map.get(cond)
 
-        conditions_met = []
-
-        for condition in conditions:
-            column_name = signal_mapping.get(condition)
-            if column_name and column_name in row:
-                if row[column_name]:
-                    conditions_met.append(True)
-                else:
-                    conditions_met.append(False)
-
-        if logic.upper() == "AND":
-            return all(conditions_met)
-        elif logic.upper() == "OR":
-            return any(conditions_met)
-        else:
-            return all(conditions_met)
+    def _mirror_conditions(self, conditions: List[str]) -> List[str]:
+        return [self._mirror_condition(c) for c in conditions if self._mirror_condition(c)]
 
     def _check_stop_loss(self, row: pd.Series, position: Dict) -> bool:
-        """Check if stop loss condition is met."""
+        """Check if stop loss condition is met (based on closed bars)."""
         if not position:
             return False
 
@@ -299,23 +326,27 @@ class IchimokuBacktester:
 
         current_price = row['close']
         entry_price = position['entry_price']
+        side = PositionSide(position.get('side', PositionSide.LONG.value))
 
-        # Calculate stop loss price
-        stop_price = entry_price * (1 - stop_loss_pct / 100)
+        if side == PositionSide.LONG:
+            stop_price = entry_price * (1 - stop_loss_pct / 100)
+            return current_price <= stop_price
+        else:
+            stop_price = entry_price * (1 + stop_loss_pct / 100)
+            return current_price >= stop_price
 
-        return current_price <= stop_price
-
-    def _calculate_entry_price(self, row: pd.Series, is_buy: bool) -> float:
-        """Calculate entry/exit price with slippage."""
+    def _calculate_fill_price(self, side: PositionSide, is_entry: bool, row: pd.Series) -> float:
+        """Calculate trade fill price with slippage for LONG/SHORT entries and exits."""
         base_price = row['close']
         slippage = base_price * self.slippage_rate
-
-        if is_buy:
-            # Buy at ask price (higher)
-            return base_price + slippage
+        if side == PositionSide.LONG:
+            # Long entry buys (ask), exit sells (bid)
+            return base_price + slippage if is_entry else base_price - slippage
+        elif side == PositionSide.SHORT:
+            # Short entry sells (bid), exit buys (ask)
+            return base_price - slippage if is_entry else base_price + slippage
         else:
-            # Sell at bid price (lower)
-            return base_price - slippage
+            return base_price
 
     def _calculate_position_size(self, entry_price: float) -> float:
         """Calculate position size (100% of equity)."""
@@ -331,25 +362,38 @@ class IchimokuBacktester:
     def _enter_long(self, symbol: str, timestamp: datetime, price: float,
                     quantity: float, reason: str) -> Dict:
         """Enter a long position."""
-        # Calculate commission
         trade_value = price * quantity
         commission = trade_value * self.commission_rate
-
-        # Update cash
         self.cash -= (trade_value + commission)
-
-        # Create position
         position = {
             'symbol': symbol,
+            'side': PositionSide.LONG.value,
             'entry_time': timestamp,
             'entry_price': price,
             'quantity': quantity,
             'commission_paid': commission,
             'entry_reason': reason
         }
-
         self.positions[symbol] = position
+        return position
 
+    def _enter_short(self, symbol: str, timestamp: datetime, price: float,
+                     quantity: float, reason: str) -> Dict:
+        """Enter a short position."""
+        trade_value = price * quantity
+        commission = trade_value * self.commission_rate
+        # Receive proceeds from short sale minus commission
+        self.cash += (trade_value - commission)
+        position = {
+            'symbol': symbol,
+            'side': PositionSide.SHORT.value,
+            'entry_time': timestamp,
+            'entry_price': price,
+            'quantity': quantity,
+            'commission_paid': commission,
+            'entry_reason': reason
+        }
+        self.positions[symbol] = position
         return position
 
     def _exit_position(self, timestamp: datetime, price: float, reason: str):
@@ -359,23 +403,29 @@ class IchimokuBacktester:
 
         symbol = list(self.positions.keys())[0]
         position = self.positions[symbol]
+        side = PositionSide(position.get('side', PositionSide.LONG.value))
 
         # Calculate exit values
         exit_value = price * position['quantity']
-        commission = exit_value * self.commission_rate
-        net_proceeds = exit_value - commission
+        commission_exit = exit_value * self.commission_rate
 
-        # Update cash
-        self.cash += net_proceeds
-
-        # Calculate P&L
+        # Update cash and compute P&L based on side
         entry_value = position['entry_price'] * position['quantity']
-        gross_pnl = exit_value - entry_value
-        total_commission = position['commission_paid'] + commission
-        net_pnl = gross_pnl - total_commission
-        return_pct = (net_pnl / entry_value) * 100
+        commission_entry = position['commission_paid']
+        if side == PositionSide.LONG:
+            net_proceeds = exit_value - commission_exit
+            self.cash += net_proceeds
+            gross_pnl = exit_value - entry_value
+        else:  # SHORT
+            # Buy-to-cover reduces cash
+            self.cash -= (exit_value + commission_exit)
+            gross_pnl = entry_value - exit_value
 
-        # Calculate slippage
+        total_commission = commission_entry + commission_exit
+        net_pnl = gross_pnl - total_commission
+        return_pct = (net_pnl / entry_value) * 100 if entry_value != 0 else 0.0
+
+        # Calculate slippage (approximate, symmetric)
         base_price = (position['entry_price'] + price) / 2
         slippage_amount = base_price * self.slippage_rate * position['quantity']
 
@@ -388,7 +438,7 @@ class IchimokuBacktester:
             symbol=symbol,
             entry_time=position['entry_time'],
             exit_time=timestamp,
-            side=PositionSide.LONG,
+            side=side,
             entry_price=position['entry_price'],
             exit_price=price,
             quantity=position['quantity'],
@@ -420,10 +470,14 @@ class IchimokuBacktester:
 
     def _update_equity_curve(self, timestamp: datetime, price: float, position: Optional[Dict]):
         """Update equity curve with current portfolio value."""
-        # Calculate position value if any
-        position_value = 0
+        position_value = 0.0
         if position:
-            position_value = price * position['quantity']
+            qty = position['quantity']
+            side = PositionSide(position.get('side', PositionSide.LONG.value))
+            if side == PositionSide.LONG:
+                position_value = price * qty
+            else:  # SHORT
+                position_value = -price * qty
 
         total_value = self.cash + position_value
 
@@ -833,10 +887,12 @@ class StrategyBacktestRunner:
             logger.error("Missing required fields in strategy configuration")
             return False
 
-        # Validate signal conditions
+        # Validate signal conditions (support legacy buy/sell and new long/short)
         signal_conditions = config['signal_conditions']
-        if 'buy_conditions' not in signal_conditions:
-            logger.error("Missing buy_conditions in signal_conditions")
+        has_legacy = 'buy_conditions' in signal_conditions and 'sell_conditions' in signal_conditions
+        has_directional = ('long_entry_conditions' in signal_conditions and 'long_exit_conditions' in signal_conditions)
+        if not (has_legacy or has_directional):
+            logger.error("Missing entry/exit conditions in signal_conditions")
             return False
 
         # Validate position sizing
@@ -858,10 +914,11 @@ class StrategyBacktestRunner:
         # Preferred path as per user instruction
         base = Path(__file__).resolve().parents[1]
         candidates.extend([
-            base / 'config' / 'strategies.json',
+            # Prefer YAML first
             base / 'config' / 'strategies.yaml',
-            base / 'strategy' / 'config' / 'strategies.json',
+            base / 'config' / 'strategies.json',
             base / 'strategy' / 'config' / 'strategies.yaml',
+            base / 'strategy' / 'config' / 'strategies.json',
         ])
 
         data: Dict[str, Any] = {}
@@ -938,9 +995,17 @@ class StrategyBacktestRunner:
 
         # Prepare structures for reporting
         trades_df = pd.DataFrame([t.__dict__ for t in result.trades]) if result.trades else pd.DataFrame()
-        # Rename net_pnl to pnl for compatibility with ReportGenerator
-        if not trades_df.empty and 'net_pnl' in trades_df.columns:
-            trades_df['pnl'] = trades_df['net_pnl']
+        # Normalize columns for reporting
+        if not trades_df.empty:
+            # pnl alias
+            if 'net_pnl' in trades_df.columns:
+                trades_df['pnl'] = trades_df['net_pnl']
+            # direction string from side enum
+            if 'side' in trades_df.columns:
+                trades_df['direction'] = trades_df['side'].apply(lambda s: s.value if hasattr(s, 'value') else str(s).lower())
+            # entry_signal from entry_reason
+            if 'entry_reason' in trades_df.columns:
+                trades_df['entry_signal'] = trades_df['entry_reason']
         equity_df = result.equity_curve.copy() if isinstance(result.equity_curve, pd.DataFrame) else pd.DataFrame(result.equity_curve)
         
         # Map backtester metrics into the format expected by ReportGenerator

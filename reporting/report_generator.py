@@ -300,7 +300,8 @@ Supports PDF and data export formats.
             # Page 3: Trading Analysis (includes Underwater Chart)
             self._create_trading_analysis_page(pdf, results)
 
-            # Page 4: Trade Details (Top 20 by Absolute P&L)
+            # Pages 4-5+: Trade Details (Chronological by Entry Time, per side)
+            # This function will emit one or two pages depending on available directions.
             self._create_trade_details_page(pdf, results)
             
             # Save PDF metadata
@@ -476,65 +477,158 @@ Key Insights:
         plt.close()
         
     def _create_trade_details_page(self, pdf: PdfPages, results: Dict[str, Any]):
-        """Create trade details page"""
-        fig = plt.figure(figsize=(8.5, 11))
-        fig.suptitle('Trade Details', fontsize=18, y=0.98)
-        
+        """Create trade detail pages sorted by Entry Time ascending (per side).
+        Emits one page for LONG and another for SHORT if available. Paginates automatically.
+        """
         trades = results.get('trades', pd.DataFrame())
-        
-        if not trades.empty:
-            # Prepare trade summary table
+        if trades.empty:
+            fig = plt.figure(figsize=(8.5, 11))
+            fig.suptitle('Trade Details — LONG (Chronological)', fontsize=18, y=0.98)
             ax = fig.add_subplot(111)
-            ax.axis('tight')
             ax.axis('off')
-            
-            # Select top 20 trades by absolute P&L
-            trades_sorted = trades.reindex(trades['pnl'].abs().sort_values(ascending=False).index)
-            top_trades = trades_sorted.head(20)
-            
-            # Prepare data for table
-            table_data = [['Entry Time', 'Exit Time', 'Direction', 'Entry Price', 
-                          'Exit Price', 'P&L', 'Return %', 'Signal']]
-            
-            for _, trade in top_trades.iterrows():
-                entry_time = pd.to_datetime(trade.get('entry_time', '')).strftime('%Y-%m-%d %H:%M')
-                exit_time = pd.to_datetime(trade.get('exit_time', '')).strftime('%Y-%m-%d %H:%M')
-                direction = trade.get('direction', 'long')
-                entry_price = f"${trade.get('entry_price', 0):.2f}"
-                exit_price = f"${trade.get('exit_price', 0):.2f}"
-                pnl = trade.get('pnl', 0)
-                pnl_str = f"${pnl:.2f}"
-                return_pct = trade.get('return_pct', 0) * 100
-                return_str = f"{return_pct:.2f}%"
-                signal = trade.get('entry_signal', 'N/A')
-                
-                table_data.append([entry_time, exit_time, direction, entry_price, 
-                                 exit_price, pnl_str, return_str, signal])
-                
-            # Create table
-            table = ax.table(cellText=table_data, loc='center', cellLoc='center')
-            table.auto_set_font_size(False)
-            table.set_fontsize(7)
-            table.scale(1, 2)
-            
-            # Style header row
-            for i in range(len(table_data[0])):
-                table[(0, i)].set_facecolor('#40466e')
-                table[(0, i)].set_text_props(weight='bold', color='white')
-                
-            # Color code P&L cells
-            for i in range(1, len(table_data)):
-                pnl_val = float(table_data[i][5].replace('$', ''))
-                if pnl_val > 0:
-                    table[(i, 5)].set_facecolor('#90EE90')
-                else:
-                    table[(i, 5)].set_facecolor('#FFB6C1')
-                    
-            ax.set_title('Top 20 Trades by Absolute P&L', pad=20)
-            
-        plt.tight_layout()
-        pdf.savefig(fig, bbox_inches='tight')
-        plt.close()
+            ax.set_title('No trades', pad=12)
+            plt.tight_layout()
+            pdf.savefig(fig, bbox_inches='tight')
+            plt.close()
+            return
+
+        # Ensure direction and datetimes
+        if 'direction' not in trades.columns and 'side' in trades.columns:
+            trades['direction'] = trades['side'].apply(lambda s: s.value if hasattr(s, 'value') else str(s).lower())
+        if 'entry_time' in trades.columns:
+            trades['entry_time'] = pd.to_datetime(trades['entry_time'])
+        if 'exit_time' in trades.columns:
+            trades['exit_time'] = pd.to_datetime(trades['exit_time'])
+
+        def emit_side(side_label: str, side_filter: str):
+            side_df = trades[trades.get('direction', '').str.lower() == side_filter]
+            side_df = side_df.sort_values(by='entry_time', ascending=True)
+            headers = ['Entry Time', 'Exit Time', 'Direction', 'Entry Price', 'Exit Price', 'P&L', 'Return %', 'Signal']
+            if side_df.empty:
+                fig = plt.figure(figsize=(8.5, 11))
+                fig.suptitle(f'Trade Details — {side_label} (Chronological)', fontsize=18, y=0.98)
+                ax = fig.add_subplot(111)
+                ax.axis('off')
+                ax.set_title('No trades', pad=12)
+                plt.tight_layout()
+                pdf.savefig(fig, bbox_inches='tight')
+                plt.close()
+                return
+
+            max_rows_per_page = 40
+            total = len(side_df)
+            pages = (total + max_rows_per_page - 1) // max_rows_per_page
+            for p in range(pages):
+                chunk = side_df.iloc[p*max_rows_per_page:(p+1)*max_rows_per_page]
+                table_data = [headers]
+                for _, tr in chunk.iterrows():
+                    entry_time = tr['entry_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(tr.get('entry_time', None)) else ''
+                    exit_time = tr['exit_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(tr.get('exit_time', None)) else ''
+                    direction = tr.get('direction', side_filter)
+                    entry_price = f"${tr.get('entry_price', 0):.2f}"
+                    exit_price = f"${tr.get('exit_price', 0):.2f}"
+                    pnl = tr.get('pnl', 0)
+                    pnl_str = f"${pnl:.2f}"
+                    return_pct = tr.get('return_pct', 0) * 100
+                    return_str = f"{return_pct:.2f}%"
+                    signal = tr.get('entry_signal', tr.get('entry_reason', 'N/A'))
+                    table_data.append([entry_time, exit_time, direction, entry_price, exit_price, pnl_str, return_str, signal])
+
+                fig = plt.figure(figsize=(8.5, 11))
+                fig.suptitle(f'Trade Details — {side_label} (Chronological) — Page {p+1}/{pages}', fontsize=18, y=0.98)
+                ax = fig.add_subplot(111)
+                ax.axis('tight')
+                ax.axis('off')
+                table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+                table.auto_set_font_size(False)
+                table.set_fontsize(7)
+                table.scale(1, 2)
+                for i in range(len(table_data[0])):
+                    table[(0, i)].set_facecolor('#40466e')
+                    table[(0, i)].set_text_props(weight='bold', color='white')
+                for i in range(1, len(table_data)):
+                    pnl_cell = table_data[i][5]
+                    pnl_val = float(pnl_cell.replace('$', '')) if isinstance(pnl_cell, str) else 0
+                    table[(i, 5)].set_facecolor('#90EE90' if pnl_val > 0 else '#FFB6C1')
+                plt.tight_layout()
+                pdf.savefig(fig, bbox_inches='tight')
+                plt.close()
+
+        emit_side('LONG', 'long')
+        emit_side('SHORT', 'short')
+
+    def _create_trade_details_short_page(self, pdf: PdfPages, results: Dict[str, Any]):
+        """Deprecated: handled by _create_trade_details_page; kept for backward compatibility."""
+        self._create_trade_details_page(pdf, results)
+
+    def _create_trade_logs_pages(self, pdf: PdfPages, results: Dict[str, Any], max_rows_per_page: int = 40):
+        """Create chronological trade logs per side (LONG and SHORT), chunked across pages."""
+        trades = results.get('trades', pd.DataFrame())
+        if trades.empty:
+            return
+        # Ensure direction and clean types
+        if 'direction' not in trades.columns and 'side' in trades.columns:
+            trades['direction'] = trades['side'].apply(lambda s: s.value if hasattr(s, 'value') else str(s).lower())
+        # Normalize datetime
+        if 'entry_time' in trades.columns:
+            trades['entry_time'] = pd.to_datetime(trades['entry_time'])
+        if 'exit_time' in trades.columns:
+            trades['exit_time'] = pd.to_datetime(trades['exit_time'])
+
+        sides = [('LONG', 'long'), ('SHORT', 'short')]
+        for side_title, side_val in sides:
+            side_df = trades[trades.get('direction', '').str.lower() == side_val]
+            side_df = side_df.sort_values(by='entry_time', ascending=True)
+            if side_df.empty:
+                # Emit empty page for this side for consistency
+                fig = plt.figure(figsize=(8.5, 11))
+                fig.suptitle(f'Trade Log — {side_title} (Chronological)', fontsize=18, y=0.98)
+                ax = fig.add_subplot(111)
+                ax.axis('off')
+                ax.set_title(f'Trade Log — {side_title} (No trades)', pad=12)
+                plt.tight_layout()
+                pdf.savefig(fig, bbox_inches='tight')
+                plt.close()
+                continue
+
+            headers = ['Entry Time', 'Exit Time', 'Direction', 'Entry Price', 'Exit Price', 'P&L', 'Return %', 'Signal']
+            total = len(side_df)
+            pages = (total + max_rows_per_page - 1) // max_rows_per_page
+            for p in range(pages):
+                chunk = side_df.iloc[p*max_rows_per_page:(p+1)*max_rows_per_page]
+                table_data = [headers]
+                for _, tr in chunk.iterrows():
+                    entry_time = tr['entry_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(tr.get('entry_time', None)) else ''
+                    exit_time = tr['exit_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(tr.get('exit_time', None)) else ''
+                    direction = tr.get('direction', side_val)
+                    entry_price = f"${tr.get('entry_price', 0):.2f}"
+                    exit_price = f"${tr.get('exit_price', 0):.2f}"
+                    pnl = tr.get('pnl', 0)
+                    pnl_str = f"${pnl:.2f}"
+                    return_pct = tr.get('return_pct', 0) * 100
+                    return_str = f"{return_pct:.2f}%"
+                    signal = tr.get('entry_signal', tr.get('entry_reason', 'N/A'))
+                    table_data.append([entry_time, exit_time, direction, entry_price, exit_price, pnl_str, return_str, signal])
+
+                fig = plt.figure(figsize=(8.5, 11))
+                fig.suptitle(f'Trade Log — {side_title} (Chronological) — Page {p+1}/{pages}', fontsize=18, y=0.98)
+                ax = fig.add_subplot(111)
+                ax.axis('tight')
+                ax.axis('off')
+                table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+                table.auto_set_font_size(False)
+                table.set_fontsize(7)
+                table.scale(1, 2)
+                for i in range(len(table_data[0])):
+                    table[(0, i)].set_facecolor('#40466e')
+                    table[(0, i)].set_text_props(weight='bold', color='white')
+                for i in range(1, len(table_data)):
+                    pnl_cell = table_data[i][5]
+                    pnl_val = float(pnl_cell.replace('$', '')) if isinstance(pnl_cell, str) else 0
+                    table[(i, 5)].set_facecolor('#90EE90' if pnl_val > 0 else '#FFB6C1')
+                plt.tight_layout()
+                pdf.savefig(fig, bbox_inches='tight')
+                plt.close()
         
     def _create_recommendations_page(self, pdf: PdfPages, results: Dict[str, Any]):
         """Create optimization recommendations page"""
