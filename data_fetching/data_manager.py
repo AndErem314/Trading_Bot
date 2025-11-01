@@ -366,25 +366,33 @@ class DataManager:
             has_psar = cur.fetchone() is not None
         except Exception:
             has_psar = False
+        # Build WHERE clauses safely, then add ORDER BY at the very end
+        where_clauses = []
         if has_psar:
-            query = """
-                SELECT 
-                    o.id, o.timestamp, o.open, o.high, o.low, o.close, o.volume, o.timeframe,
-                    i.tenkan_sen, i.kijun_sen, i.senkou_span_a, i.senkou_span_b, i.chikou_span,
-                    i.cloud_color, i.cloud_thickness, i.price_position, i.trend_strength, i.tk_cross,
-                    p.psar, p.psar_trend, p.psar_reversal
-                FROM ohlcv_data o
-                LEFT JOIN ichimoku_data i ON o.id = i.ohlcv_id
-                LEFT JOIN psar_data p ON o.id = p.ohlcv_id
-                WHERE o.timeframe = ?
-                ORDER BY o.timestamp
-            """
+            base_select = (
+                "SELECT o.id, o.timestamp, o.open, o.high, o.low, o.close, o.volume, o.timeframe, "
+                "i.tenkan_sen, i.kijun_sen, i.senkou_span_a, i.senkou_span_b, i.chikou_span, "
+                "i.cloud_color, i.cloud_thickness, i.price_position, i.trend_strength, i.tk_cross, "
+                "p.psar, p.psar_trend, p.psar_reversal "
+                "FROM ohlcv_data o "
+                "LEFT JOIN ichimoku_data i ON o.id = i.ohlcv_id "
+                "LEFT JOIN psar_data p ON o.id = p.ohlcv_id "
+            )
+            where_clauses.append("o.timeframe = ?")
         else:
-            query = """
-                SELECT * FROM ohlcv_ichimoku_view 
-                WHERE timeframe = ?
-                ORDER BY timestamp
-            """
+            base_select = "SELECT * FROM ohlcv_ichimoku_view "
+            where_clauses.append("timeframe = ?")
+
+        if start_date:
+            where_clauses.append("timestamp >= ?")
+            params.append(start_date.isoformat() if isinstance(start_date, datetime) else start_date)
+        if end_date:
+            where_clauses.append("timestamp <= ?")
+            params.append(end_date.isoformat() if isinstance(end_date, datetime) else end_date)
+
+        where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+        order_sql = " ORDER BY o.timestamp" if has_psar else " ORDER BY timestamp"
+        query = base_select + where_sql + order_sql
         
         if start_date:
             query += " AND timestamp >= ?"
