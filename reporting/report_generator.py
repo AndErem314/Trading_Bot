@@ -249,6 +249,20 @@ Supports PDF and data export formats.
             insights.append("Low trading frequency may limit profit potential")
         elif avg_trades_per_month > 20:
             insights.append("High trading frequency increases transaction cost impact")
+
+        # PSAR confirmation insights (if present)
+        if 'psar_confirmation_rate_long' in metrics or 'psar_confirmation_rate_short' in metrics:
+            rl = metrics.get('psar_signals_raw_long') or 0
+            cl = metrics.get('psar_signals_confirmed_long') or 0
+            rs = metrics.get('psar_signals_raw_short') or 0
+            cs = metrics.get('psar_signals_confirmed_short') or 0
+            rll = metrics.get('psar_confirmation_rate_long')
+            rls = metrics.get('psar_confirmation_rate_short')
+            msg = f"PSAR confirmation: long {cl}/{rl} ({rll:.1f}% if rll else 0%), short {cs}/{rs} ({rls:.1f}% if rls else 0%)"
+            try:
+                insights.append(msg)
+            except Exception:
+                pass
             
         return insights
         
@@ -418,6 +432,18 @@ Key Insights:
             ax4.set_title('Trade P&L Distribution')
             ax4.set_xlabel('P&L ($)')
             ax4.set_ylabel('Frequency')
+
+        # Overlay PSAR confirmation summary as figure text if present
+        m = results.get('metrics', {}).get('performance_metrics', {})
+        if 'psar_signals_raw_long' in m or 'psar_signals_raw_short' in m:
+            rl = m.get('psar_signals_raw_long', 0)
+            cl = m.get('psar_signals_confirmed_long', 0)
+            rll = m.get('psar_confirmation_rate_long') or 0
+            rs = m.get('psar_signals_raw_short', 0)
+            cs = m.get('psar_signals_confirmed_short', 0)
+            rls = m.get('psar_confirmation_rate_short') or 0
+            txt = f"PSAR Confirmation — Long: {cl}/{rl} ({rll:.1f}%) | Short: {cs}/{rs} ({rls:.1f}%)"
+            fig.text(0.5, 0.02, txt, ha='center', fontsize=9)
             ax4.legend()
             ax4.grid(True, alpha=0.3)
             
@@ -1165,6 +1191,19 @@ for improving strategy performance:
             ('Expected Shortfall (95%)', f"{metrics.get('cvar_95', 0):.2%}")
         ]
         
+        # PSAR rows if available
+        if 'psar_signals_raw_long' in metrics or 'psar_signals_raw_short' in metrics:
+            rl = metrics.get('psar_signals_raw_long', 0)
+            cl = metrics.get('psar_signals_confirmed_long', 0)
+            rll = metrics.get('psar_confirmation_rate_long')
+            rs = metrics.get('psar_signals_raw_short', 0)
+            cs = metrics.get('psar_signals_confirmed_short', 0)
+            rls = metrics.get('psar_confirmation_rate_short')
+            metric_rows.extend([
+                ('PSAR Long Confirmed/Raw', f"{cl}/{rl} ({(rll or 0):.1f}%)"),
+                ('PSAR Short Confirmed/Raw', f"{cs}/{rs} ({(rls or 0):.1f}%)"),
+            ])
+
         # Create HTML table
         html = '<table><tr><th>Metric</th><th>Value</th></tr>'
         for metric, value in metric_rows:

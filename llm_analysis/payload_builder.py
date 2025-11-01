@@ -119,6 +119,15 @@ def build_llm_payload(
         "net_profit": float(m.get("net_profit", 0) or 0),
         "total_commission": float(m.get("total_commission", 0) or 0),
         "total_slippage": float(m.get("total_slippage", 0) or 0),
+        # PSAR confirmation (if present)
+        "psar_confirmation_rate_long": float(m.get("psar_confirmation_rate_long", 0) or 0),
+        "psar_confirmation_rate_short": float(m.get("psar_confirmation_rate_short", 0) or 0),
+        "psar_signals_raw_long": int(m.get("psar_signals_raw_long", 0) or 0),
+        "psar_signals_raw_short": int(m.get("psar_signals_raw_short", 0) or 0),
+        "psar_signals_confirmed_long": int(m.get("psar_signals_confirmed_long", 0) or 0),
+        "psar_signals_confirmed_short": int(m.get("psar_signals_confirmed_short", 0) or 0),
+        "psar_signals_filtered_long": int(m.get("psar_signals_filtered_long", 0) or 0),
+        "psar_signals_filtered_short": int(m.get("psar_signals_filtered_short", 0) or 0),
     }
 
     # Trades aggregates

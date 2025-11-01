@@ -113,6 +113,17 @@ class IchimokuBacktester:
         # Strategy reference
         self.strategy_config = None
 
+        # PSAR confirmation stats
+        self._psar_stats = {
+            'psar_available': False,
+            'raw_long': 0,
+            'raw_short': 0,
+            'confirmed_long': 0,
+            'confirmed_short': 0,
+            'filtered_long': 0,
+            'filtered_short': 0,
+        }
+
         logger.info("Ichimoku Backtester initialized with fixed position sizing")
 
     def run_backtest(self,
@@ -177,14 +188,21 @@ class IchimokuBacktester:
         in_position = False
         current_position = None
 
+        # Determine if PSAR columns are available for confirmation stats
+        self._psar_stats['psar_available'] = ('psar_trend' in data.columns) or ('psar_uptrend' in data.columns)
+
         for i, (timestamp, row) in enumerate(data.iterrows()):
             # Update equity curve
             self._update_equity_curve(timestamp, row['close'], current_position)
 
             # Check for signals
             if not in_position:
-                # Check for LONG entry
-                if self._check_entry_signal(row, PositionSide.LONG):
+                # Evaluate LONG
+                base_long, confirmed_long = self._evaluate_entry_signal(row, PositionSide.LONG)
+                if base_long:
+                    self._psar_stats['raw_long'] += 1
+                if confirmed_long:
+                    self._psar_stats['confirmed_long'] += 1
                     entry_price = self._calculate_fill_price(PositionSide.LONG, is_entry=True, row=row)
                     position_size = self._calculate_position_size(entry_price)
                     if position_size > 0:
@@ -197,20 +215,29 @@ class IchimokuBacktester:
                         )
                         in_position = True
                         logger.debug(f"Entered LONG at {entry_price}")
-                # If not LONG, check SHORT entry
-                elif self._check_entry_signal(row, PositionSide.SHORT):
-                    entry_price = self._calculate_fill_price(PositionSide.SHORT, is_entry=True, row=row)
-                    position_size = self._calculate_position_size(entry_price)
-                    if position_size > 0:
-                        current_position = self._enter_short(
-                            symbol=self.strategy_config['symbols'][0],
-                            timestamp=timestamp,
-                            price=entry_price,
-                            quantity=position_size,
-                            reason="short_entry"
-                        )
-                        in_position = True
-                        logger.debug(f"Entered SHORT at {entry_price}")
+                elif base_long and self._psar_stats['psar_available']:
+                    self._psar_stats['filtered_long'] += 1
+                # If not LONG, evaluate SHORT
+                if not in_position:
+                    base_short, confirmed_short = self._evaluate_entry_signal(row, PositionSide.SHORT)
+                    if base_short:
+                        self._psar_stats['raw_short'] += 1
+                    if confirmed_short:
+                        self._psar_stats['confirmed_short'] += 1
+                        entry_price = self._calculate_fill_price(PositionSide.SHORT, is_entry=True, row=row)
+                        position_size = self._calculate_position_size(entry_price)
+                        if position_size > 0:
+                            current_position = self._enter_short(
+                                symbol=self.strategy_config['symbols'][0],
+                                timestamp=timestamp,
+                                price=entry_price,
+                                quantity=position_size,
+                                reason="short_entry"
+                            )
+                            in_position = True
+                            logger.debug(f"Entered SHORT at {entry_price}")
+                    elif base_short and self._psar_stats['psar_available']:
+                        self._psar_stats['filtered_short'] += 1
 
             else:
                 # Check for exit signal or stop loss based on side
@@ -238,6 +265,32 @@ class IchimokuBacktester:
                     in_position = False
                     current_position = None
                     logger.debug(f"Exited position at {exit_price} ({exit_reason})")
+
+    def _evaluate_entry_signal(self, row: pd.Series, side: PositionSide) -> Tuple[bool, bool]:
+        """Return (base_ok, confirmed_ok) for entry on this bar without look-ahead.
+
+        base_ok: only configured signal conditions
+        confirmed_ok: base_ok AND PSAR confirmation if PSAR columns present
+        """
+        sc = self.strategy_config.get('signal_conditions', {})
+        if side == PositionSide.LONG:
+            conditions = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
+            logic = sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
+        else:
+            conditions = sc.get('short_entry_conditions')
+            if not conditions:
+                base = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
+                conditions = self._mirror_conditions(base)
+            logic = sc.get('short_entry_logic') or sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
+        base_ok = self._check_conditions(row, conditions, logic)
+        # PSAR confirmation
+        if side == PositionSide.LONG:
+            psar_ok = (('psar_uptrend' in row and bool(row['psar_uptrend'])) or ('psar_trend' in row and row['psar_trend'] == 1))
+        else:
+            psar_ok = (('psar_downtrend' in row and bool(row['psar_downtrend'])) or ('psar_trend' in row and row['psar_trend'] == -1))
+        if (('psar_uptrend' in row) or ('psar_trend' in row)):
+            return base_ok, (base_ok and psar_ok)
+        return base_ok, base_ok
 
     def _get_signal_mapping(self) -> Dict[str, str]:
         """Map config condition names to DataFrame columns."""
@@ -273,26 +326,9 @@ class IchimokuBacktester:
         return all(flags)
 
     def _check_entry_signal(self, row: pd.Series, side: PositionSide) -> bool:
-        sc = self.strategy_config.get('signal_conditions', {})
-        if side == PositionSide.LONG:
-            conditions = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
-            logic = sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
-        else:
-            conditions = sc.get('short_entry_conditions')
-            if not conditions:
-                base = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
-                conditions = self._mirror_conditions(base)
-            logic = sc.get('short_entry_logic') or sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
-        base_ok = self._check_conditions(row, conditions, logic)
-        # PSAR confirmation (no look-ahead; assumed precomputed on closed bar)
-        if side == PositionSide.LONG:
-            psar_ok = (('psar_uptrend' in row and bool(row['psar_uptrend'])) or ('psar_trend' in row and row['psar_trend'] == 1))
-        else:
-            psar_ok = (('psar_downtrend' in row and bool(row['psar_downtrend'])) or ('psar_trend' in row and row['psar_trend'] == -1))
-        # If PSAR columns are not present, don't block entries
-        if (('psar_uptrend' in row) or ('psar_trend' in row)):
-            return base_ok and psar_ok
-        return base_ok
+        # Backward-compatible wrapper
+        _, confirmed = self._evaluate_entry_signal(row, side)
+        return confirmed
 
     def _check_exit_signal(self, row: pd.Series, side: PositionSide) -> bool:
         sc = self.strategy_config.get('signal_conditions', {})
@@ -569,8 +605,28 @@ class IchimokuBacktester:
             'total_slippage': trades_df['slippage'].sum(),
             'net_profit': trades_df['net_pnl'].sum(),
             'gross_profit': gross_profit,
-            'gross_loss': gross_loss
+'gross_loss': gross_loss
         }
+
+        # PSAR confirmation metrics
+        raw_l = self._psar_stats.get('raw_long', 0)
+        raw_s = self._psar_stats.get('raw_short', 0)
+        conf_l = self._psar_stats.get('confirmed_long', 0)
+        conf_s = self._psar_stats.get('confirmed_short', 0)
+        filt_l = self._psar_stats.get('filtered_long', 0)
+        filt_s = self._psar_stats.get('filtered_short', 0)
+        psar_avail = self._psar_stats.get('psar_available', False)
+        if psar_avail and (raw_l + raw_s) > 0:
+            metrics.update({
+                'psar_signals_raw_long': raw_l,
+                'psar_signals_raw_short': raw_s,
+                'psar_signals_confirmed_long': conf_l,
+                'psar_signals_confirmed_short': conf_s,
+                'psar_signals_filtered_long': filt_l,
+                'psar_signals_filtered_short': filt_s,
+                'psar_confirmation_rate_long': (conf_l / raw_l) * 100 if raw_l > 0 else None,
+                'psar_confirmation_rate_short': (conf_s / raw_s) * 100 if raw_s > 0 else None,
+            })
 
         # Create equity curve DataFrame
         equity_df = pd.DataFrame(self.equity_curve)
