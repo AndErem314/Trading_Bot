@@ -348,7 +348,7 @@ class DataManager:
     def get_ichimoku_data(self, timeframe: str, start_date: Optional[datetime] = None,
                           end_date: Optional[datetime] = None) -> pd.DataFrame:
         """
-        Retrieve OHLCV data with Ichimoku indicators.
+        Retrieve OHLCV data with Ichimoku indicators and PSAR if available.
         
         Args:
             timeframe: Timeframe to retrieve
@@ -358,11 +358,33 @@ class DataManager:
         Returns:
             DataFrame with OHLCV and Ichimoku data
         """
-        query = """
-            SELECT * FROM ohlcv_ichimoku_view 
-            WHERE timeframe = ?
-        """
+        # Prefer dynamic join to include PSAR data when table exists; fallback to view otherwise
         params = [timeframe]
+        try:
+            conn = self.get_connection()
+            cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='psar_data'")
+            has_psar = cur.fetchone() is not None
+        except Exception:
+            has_psar = False
+        if has_psar:
+            query = """
+                SELECT 
+                    o.id, o.timestamp, o.open, o.high, o.low, o.close, o.volume, o.timeframe,
+                    i.tenkan_sen, i.kijun_sen, i.senkou_span_a, i.senkou_span_b, i.chikou_span,
+                    i.cloud_color, i.cloud_thickness, i.price_position, i.trend_strength, i.tk_cross,
+                    p.psar, p.psar_trend, p.psar_reversal
+                FROM ohlcv_data o
+                LEFT JOIN ichimoku_data i ON o.id = i.ohlcv_id
+                LEFT JOIN psar_data p ON o.id = p.ohlcv_id
+                WHERE o.timeframe = ?
+                ORDER BY o.timestamp
+            """
+        else:
+            query = """
+                SELECT * FROM ohlcv_ichimoku_view 
+                WHERE timeframe = ?
+                ORDER BY timestamp
+            """
         
         if start_date:
             query += " AND timestamp >= ?"
@@ -371,8 +393,6 @@ class DataManager:
         if end_date:
             query += " AND timestamp <= ?"
             params.append(end_date.isoformat() if isinstance(end_date, datetime) else end_date)
-        
-        query += " ORDER BY timestamp"
         
         try:
             conn = self.get_connection()
@@ -388,6 +408,52 @@ class DataManager:
             self.logger.error(f"Failed to retrieve Ichimoku data: {e}")
             return pd.DataFrame()
     
+    def save_psar_data(self, df: pd.DataFrame) -> Dict[str, int]:
+        """Save PSAR indicator data to the database.
+
+        Expects columns: ohlcv_id, psar, psar_trend, psar_reversal, optional: step, max_step
+        """
+        if df.empty:
+            return {'inserted': 0, 'updated': 0, 'errors': 0}
+        required_columns = ['ohlcv_id', 'psar']
+        missing = set(required_columns) - set(df.columns)
+        if missing:
+            raise ValueError(f"Missing required columns for PSAR save: {missing}")
+        inserted = 0
+        updated = 0
+        errors = 0
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            for _, row in df.iterrows():
+                try:
+                    cur.execute('''
+                        INSERT OR REPLACE INTO psar_data
+                        (ohlcv_id, psar, psar_trend, psar_reversal, step, max_step)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (
+                        int(row['ohlcv_id']),
+                        float(row['psar']) if pd.notna(row['psar']) else None,
+                        int(row['psar_trend']) if pd.notna(row.get('psar_trend')) else None,
+                        int(bool(row.get('psar_reversal'))) if row.get('psar_reversal') is not None else None,
+                        float(row.get('step')) if row.get('step') is not None else None,
+                        float(row.get('max_step')) if row.get('max_step') is not None else None,
+                    ))
+                    if cur.rowcount > 0:
+                        inserted += 1
+                except sqlite3.Error as e:
+                    self.logger.error(f"Error saving PSAR data: {e}")
+                    errors += 1
+            if not self._transaction_active:
+                conn.commit()
+            self.logger.info(f"PSAR data saved for {self.symbol}: {inserted} records, {errors} errors")
+        except Exception as e:
+            self.logger.error(f"Failed to save PSAR data: {e}")
+            if not self._transaction_active:
+                conn.rollback()
+            raise
+        return {'inserted': inserted, 'updated': updated, 'errors': errors}
+
     def get_latest_signals(self, timeframe: str = None, limit: int = 10) -> pd.DataFrame:
         """
         Get the latest Ichimoku trading signals.

@@ -5,6 +5,7 @@
 -- Purpose: Store OHLCV data and Ichimoku indicators for a specific symbol
 
 -- Drop existing tables if they exist (for clean setup)
+DROP TABLE IF EXISTS psar_data;
 DROP TABLE IF EXISTS ichimoku_data;
 DROP TABLE IF EXISTS ohlcv_data;
 
@@ -56,6 +57,22 @@ CREATE TABLE ichimoku_data (
     UNIQUE(ohlcv_id)
 );
 
+-- Table 3: Parabolic SAR Data (Calculated PSAR indicator)
+CREATE TABLE IF NOT EXISTS psar_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ohlcv_id INTEGER NOT NULL,
+    psar DECIMAL(20, 8),
+    psar_trend INTEGER CHECK(psar_trend IN (-1, 0, 1)), -- -1=down, 1=up
+    psar_reversal INTEGER CHECK(psar_reversal IN (0,1)), -- 1 on reversal bars
+    step DECIMAL(10, 6),
+    max_step DECIMAL(10, 6),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (ohlcv_id) REFERENCES ohlcv_data(id) ON DELETE CASCADE,
+    UNIQUE(ohlcv_id)
+);
+
 -- Metadata table to store symbol-specific information
 CREATE TABLE IF NOT EXISTS metadata (
     key TEXT PRIMARY KEY,
@@ -71,6 +88,9 @@ CREATE INDEX idx_ichimoku_ohlcv ON ichimoku_data(ohlcv_id);
 CREATE INDEX idx_ichimoku_cloud_color ON ichimoku_data(cloud_color);
 CREATE INDEX idx_ichimoku_trend ON ichimoku_data(trend_strength);
 CREATE INDEX idx_ichimoku_updated ON ichimoku_data(updated_at);
+CREATE INDEX IF NOT EXISTS idx_psar_ohlcv ON psar_data(ohlcv_id);
+CREATE INDEX IF NOT EXISTS idx_psar_trend ON psar_data(psar_trend);
+CREATE INDEX IF NOT EXISTS idx_psar_updated ON psar_data(updated_at);
 
 -- Create views for easy access to combined data
 -- View 1: Complete OHLCV and Ichimoku data
@@ -99,6 +119,42 @@ SELECT
     i.updated_at as ichimoku_updated_at
 FROM ohlcv_data o
 LEFT JOIN ichimoku_data i ON o.id = i.ohlcv_id
+ORDER BY o.timeframe, o.timestamp DESC;
+
+-- View 1b: OHLCV with Ichimoku and PSAR data
+CREATE VIEW IF NOT EXISTS ohlcv_with_indicators AS
+SELECT
+    o.id,
+    o.timestamp,
+    o.open,
+    o.high,
+    o.low,
+    o.close,
+    o.volume,
+    o.timeframe,
+    i.tenkan_sen,
+    i.kijun_sen,
+    i.senkou_span_a,
+    i.senkou_span_b,
+    i.chikou_span,
+    i.cloud_color,
+    i.cloud_thickness,
+    i.price_position,
+    i.trend_strength,
+    i.tk_cross,
+    p.psar,
+    p.psar_trend,
+    p.psar_reversal,
+    p.step as psar_step,
+    p.max_step as psar_max_step,
+    o.created_at as ohlcv_created_at,
+    i.created_at as ichimoku_created_at,
+    i.updated_at as ichimoku_updated_at,
+    p.created_at as psar_created_at,
+    p.updated_at as psar_updated_at
+FROM ohlcv_data o
+LEFT JOIN ichimoku_data i ON o.id = i.ohlcv_id
+LEFT JOIN psar_data p ON o.id = p.ohlcv_id
 ORDER BY o.timeframe, o.timestamp DESC;
 
 -- View 2: Latest data per timeframe
@@ -189,18 +245,25 @@ WHERE i.trend_strength IS NOT NULL
 ORDER BY o.timeframe, o.timestamp DESC;
 
 -- Trigger to update the updated_at timestamp in ichimoku_data
-CREATE TRIGGER update_ichimoku_timestamp
+CREATE TRIGGER IF NOT EXISTS update_ichimoku_timestamp
 AFTER UPDATE ON ichimoku_data
 FOR EACH ROW
 BEGIN
     UPDATE ichimoku_data SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
+-- Trigger to update the updated_at timestamp in psar_data
+CREATE TRIGGER IF NOT EXISTS update_psar_timestamp
+AFTER UPDATE ON psar_data
+FOR EACH ROW
+BEGIN
+    UPDATE psar_data SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 -- Trigger to update metadata timestamp
-CREATE TRIGGER update_metadata_timestamp
+CREATE TRIGGER IF NOT EXISTS update_metadata_timestamp
 AFTER UPDATE ON metadata
 FOR EACH ROW
 BEGIN
     UPDATE metadata SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
 END;
-(END)

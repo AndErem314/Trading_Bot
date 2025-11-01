@@ -252,6 +252,8 @@ class IchimokuBacktester:
             'ChikouBelowPrice': 'chikou_below_price',
             'ChikouAboveCloud': 'chikou_above_cloud',
             'ChikouBelowCloud': 'chikou_below_cloud',
+            'PSARUptrend': 'psar_uptrend',
+            'PSARDowntrend': 'psar_downtrend',
         }
 
     def _check_conditions(self, row: pd.Series, conditions: List[str], logic: str) -> bool:
@@ -281,7 +283,16 @@ class IchimokuBacktester:
                 base = sc.get('long_entry_conditions') or sc.get('buy_conditions') or []
                 conditions = self._mirror_conditions(base)
             logic = sc.get('short_entry_logic') or sc.get('long_entry_logic') or sc.get('buy_logic', 'AND')
-        return self._check_conditions(row, conditions, logic)
+        base_ok = self._check_conditions(row, conditions, logic)
+        # PSAR confirmation (no look-ahead; assumed precomputed on closed bar)
+        if side == PositionSide.LONG:
+            psar_ok = (('psar_uptrend' in row and bool(row['psar_uptrend'])) or ('psar_trend' in row and row['psar_trend'] == 1))
+        else:
+            psar_ok = (('psar_downtrend' in row and bool(row['psar_downtrend'])) or ('psar_trend' in row and row['psar_trend'] == -1))
+        # If PSAR columns are not present, don't block entries
+        if (('psar_uptrend' in row) or ('psar_trend' in row)):
+            return base_ok and psar_ok
+        return base_ok
 
     def _check_exit_signal(self, row: pd.Series, side: PositionSide) -> bool:
         sc = self.strategy_config.get('signal_conditions', {})
@@ -968,6 +979,22 @@ class StrategyBacktestRunner:
                 return df
             df = analyzer.calculate_ichimoku_components(df, params)
             df = analyzer.detect_boolean_signals(df, params)
+            # Compute PSAR in-memory for confirmation
+            try:
+                from strategy.psar_indicator import compute_psar
+                psar_df = compute_psar(df[['high','low','close']])
+                df['psar'] = psar_df['psar']
+                df['psar_trend'] = psar_df['psar_trend']
+                df['psar_reversal'] = psar_df['psar_reversal']
+            except Exception:
+                pass
+            # Derive boolean PSAR signals on closed bars
+            if 'psar_trend' in df.columns:
+                closed_mask = df.index.to_series().notna()
+                if len(df) > 0:
+                    closed_mask.iloc[-1] = False
+                df['psar_uptrend'] = (df['psar_trend'] == 1) & closed_mask
+                df['psar_downtrend'] = (df['psar_trend'] == -1) & closed_mask
             return df
 
         # Default path: use SQL ichimoku view if present, otherwise OHLCV and compute missing
@@ -984,6 +1011,25 @@ class StrategyBacktestRunner:
             df = analyzer.calculate_ichimoku_components(df, params)
         # Add boolean signals
         df = analyzer.detect_boolean_signals(df, params)
+
+        # Ensure PSAR columns present; if not, compute in-memory
+        psar_present = 'psar' in df.columns
+        if not psar_present:
+            try:
+                from strategy.psar_indicator import compute_psar
+                psar_df = compute_psar(df[['high','low','close']])
+                df['psar'] = psar_df['psar']
+                df['psar_trend'] = psar_df['psar_trend']
+                df['psar_reversal'] = psar_df['psar_reversal']
+            except Exception:
+                pass
+        # Derive boolean PSAR signals on closed bars
+        if 'psar_trend' in df.columns:
+            closed_mask = df.index.to_series().notna()
+            if len(df) > 0:
+                closed_mask.iloc[-1] = False
+            df['psar_uptrend'] = (df['psar_trend'] == 1) & closed_mask
+            df['psar_downtrend'] = (df['psar_trend'] == -1) & closed_mask
         return df
 
     def run_from_json(self, strategy_key: str, symbol_short: str, timeframe: str,
