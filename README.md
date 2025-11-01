@@ -44,10 +44,12 @@ Trading_Bot/
 │
 ├── strategy/            # Trading strategy implementation
 │   ├── compute_ichimoku_to_sql.py  # Ichimoku calculations
+│   ├── compute_psar_to_sql.py      # Parabolic SAR calculations and persistence
+│   ├── psar_indicator.py           # PSAR computation utility
 │   └── ichimoku_strategy.py        # Strategy logic
 │
 ├── backtesting/         # Backtesting engine
-│   └── ichimoku_backtester.py      # Main backtester
+│   └── ichimoku_backtester.py      # Main backtester (applies PSAR confirmation)
 │
 ├── llm_analysis/        # LLM integration for optimization
 │   ├── __init__.py
@@ -98,6 +100,7 @@ The project uses SQLite databases with a per-symbol architecture. Each cryptocur
 ### Views
 
 - `ohlcv_ichimoku_view`: Combined OHLCV and Ichimoku data
+- `ohlcv_with_indicators`: Combined OHLCV with Ichimoku + PSAR (if present)
 - `latest_data_view`: Summary of available data per timeframe
 - `ichimoku_signals_view`: Trading signals based on Ichimoku
 
@@ -161,12 +164,36 @@ The main menu provides three options:
    - Optionally set a start date
    - Review generated reports in the `reports/` directory
 
+### Computing Parabolic SAR (PSAR)
+
+PSAR is persisted per candle and used as a trend-confirmation filter in backtests. To compute and save PSAR for all symbols/timeframes:
+
+```bash
+python strategy/compute_psar_to_sql.py
+```
+
+Defaults: step=0.02, max_step=0.2 (configurable in `strategy/psar_indicator.py`). Data loaders automatically join PSAR where available; no extra config needed.
+
 3. **LLM Optimization** (Optional):
    - After backtesting, choose to generate the LLM optimization report
    - Select prompt variant (analyst or risk-focused)
    - Choose LLM provider (OpenAI or Gemini). Leave blank to use default from .env
    - The PDF starts with a usage header showing provider, model, and token counts
    - A YAML with optimized settings is also written to config/llm_strategy_config/
+
+## Parabolic SAR (PSAR)
+
+- Persistence (table `psar_data`):
+  - `ohlcv_id` → FK to `ohlcv_data`
+  - `psar` (float), `psar_trend` (int: 1 up, -1 down), `psar_reversal` (0/1)
+  - `step`, `max_step` recorded for traceability
+- Backtesting usage:
+  - PSAR acts as a trend confirmation for entries: LONG requires uptrend; SHORT requires downtrend.
+  - Enforcement avoids look-ahead (uses prior closed bar’s PSAR state when evaluating entries).
+  - Metrics surfaced in reports: raw vs confirmed vs filtered signals and confirmation rates.
+- Strategy config (optional explicit use):
+  - You may add `PSARUptrend` (and `PSARDowntrend` for shorts) to `signal_conditions` to make the dependency explicit.
+  - Even without adding these, the backtester applies PSAR confirmation implicitly.
 
 ## Trading Strategies
 
@@ -212,6 +239,7 @@ Backtest PDF (reports/*.pdf):
 - Page 1: Title and Executive Summary (metrics, insights)
 - Page 2: Performance Overview
   - Equity curve, Monthly returns, Drawdown chart, P&L distribution
+  - PSAR confirmation summary (Long/Short confirmed vs raw and confirmation rates)
 - Page 3: Trading Analysis
   - P&L by Day of Week, Exit Reason Distribution, Underwater Chart (Drawdown from Peak)
 - Page 4: Trade Details — Top 20 Trades by Absolute P&L
@@ -219,6 +247,7 @@ Backtest PDF (reports/*.pdf):
 LLM Optimization PDF (reports/*_llm.pdf):
 - Header line shows provider, model, and token usage (prompt, output, total)
 - Memo plus structured suggestions parsed from the model output
+- Payload includes PSAR confirmation metrics so PSAR’s effect is considered in suggestions
 
 ## Notes
 
