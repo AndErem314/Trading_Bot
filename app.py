@@ -206,6 +206,10 @@ class WorkflowCLI:
         start_date = self.get_user_input("Start date (YYYY-MM-DD) or empty for all", default="", input_type=str)
         start_date = start_date.strip().strip('()') if start_date else None
 
+        # Ask whether to recompute Ichimoku with strategy parameters
+        recompute_ans = self.get_user_input("Recompute Ichimoku with strategy params? [Y/n]", default="Y", input_type=str)
+        force_recompute = str(recompute_ans).strip().lower() in ['y', 'yes', '']
+
         # Run backtest
         print(f"\n{Colors.BLUE}Running backtest for {symbol_short}/USDT {timeframe} using {strategy_key}{Colors.ENDC}")
         backtester = IchimokuBacktester()
@@ -220,7 +224,8 @@ class WorkflowCLI:
                     end=None,
                     initial_capital=10000.0,
                     report_formats='pdf',
-                    output_dir=reports_dir
+                    output_dir=reports_dir,
+                    force_recompute_ichimoku=force_recompute
                 )
                 print(f"{Colors.GREEN}Backtest completed. Reports:{Colors.ENDC}")
                 for k, v in outcome['reports'].items():

@@ -1,122 +1,37 @@
 strategies:
-  # Group 1: Sell Condition - TenkanBelowKijun only
-  strategy_01_tk_sell:
-    name: "Cloud-TK Base TK Exit"
-    description: "Price above cloud + TK cross, exit on TK cross down"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun"]
-      sell_conditions: ["TenkanBelowKijun"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_02_tk_sell:
-    name: "Cloud-TK-SpanA Base TK Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB, exit on TK cross down"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB"]
-      sell_conditions: ["TenkanBelowKijun"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_03_tk_sell:
-    name: "Cloud-TK-SpanA-ChikouPrice Base TK Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Price, exit on TK cross down"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAbovePrice"]
-      sell_conditions: ["TenkanBelowKijun"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_04_tk_sell:
-    name: "Cloud-TK-SpanA-ChikouCloud Base TK Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Cloud, exit on TK cross down"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud"]
-      sell_conditions: ["TenkanBelowKijun"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_05_tk_sell:
-    name: "Full Confirmation TK Exit"
+  strategy_01:
+    name: "Full Confirmation TK Exit default with 3% SL"
     description: "All conditions + Chikou confirmations, exit on TK cross down"
     enabled: true
-    timeframes: ["1h", "4h"]
+    timeframes: [ "1h", "4h", "1d" ]
+    symbols: [ "BTC/USDT" ]
+    signal_conditions:
+      buy_conditions: [ "PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice" ]
+      sell_conditions: [ "TenkanBelowKijun" ]
+      buy_logic: "AND"
+      sell_logic: "AND"
+    ichimoku_parameters:
+      tenkan_period: 9
+      kijun_period: 26
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 3.0
+      take_profit_pct: null
+      close_on_sell_signal: true
+      trailing_stop: false
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 3.0
+    position_sizing:
+      method: "fixed"
+      fixed_size: 1000
+
+  strategy_02:
+    name: "Full Confirmation TK Exit modified with 3% SL"
+    description: "All conditions + Chikou confirmations, exit on TK cross down"
+    enabled: true
+    timeframes: [ "1h", "4h", "1d" ]
     symbols: ["BTC/USDT"]
     signal_conditions:
       buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice"]
@@ -124,32 +39,31 @@ strategies:
       buy_logic: "AND"
       sell_logic: "AND"
     ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
+      tenkan_period: 11
+      kijun_period: 22
+      senkou_b_period: 56
       chikou_offset: 26
       senkou_offset: 26
     risk_management:
-      stop_loss_pct: 5.0
+      stop_loss_pct: 3.0
       take_profit_pct: null
       close_on_sell_signal: true
       trailing_stop: false
       max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
+      risk_per_trade_pct: 3.0
     position_sizing:
       method: "fixed"
       fixed_size: 1000
 
-  # Group 2: Sell Condition - SpanAbelowSpanB only
-  strategy_06_span_sell:
-    name: "Cloud-TK Base Span Exit"
-    description: "Price above cloud + TK cross, exit on SpanA<SpanB"
+  strategy_03_SL-3:
+    name: "Full Confirmation TK Exit SL 3%"
+    description: "All conditions + Chikou confirmations, exit on TK cross down"
     enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
+    timeframes: [ "1h", "4h" ]
+    symbols: [ "BTC/USDT" ]
     signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun"]
-      sell_conditions: ["SpanAbelowSpanB"]
+      buy_conditions: [ "PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice" ]
+      sell_conditions: [ "TenkanBelowKijun" ]
       buy_logic: "AND"
       sell_logic: "AND"
     ichimoku_parameters:
@@ -169,15 +83,43 @@ strategies:
       method: "fixed"
       fixed_size: 1000
 
-  strategy_07_span_sell:
-    name: "Cloud-TK-SpanA Base Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB, exit on SpanA<SpanB"
+  strategy_04_SL-4_90:
+    name: "Full Confirmation TK Exit SL 4% with position size 90%"
+    description: "All conditions + Chikou confirmations, exit on TK cross down"
     enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
+    timeframes: [ "1h", "4h" ]
+    symbols: [ "BTC/USDT" ]
     signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB"]
-      sell_conditions: ["SpanAbelowSpanB"]
+      buy_conditions: [ "PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice" ]
+      sell_conditions: [ "TenkanBelowKijun" ]
+      buy_logic: "AND"
+      sell_logic: "AND"
+    ichimoku_parameters:
+      tenkan_period: 9
+      kijun_period: 26
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 4.0
+      take_profit_pct: null
+      close_on_sell_signal: true
+      trailing_stop: false
+      max_position_size_pct: 90.0
+      risk_per_trade_pct: 5.0
+    position_sizing:
+      method: "fixed"
+      fixed_size: 1000
+
+  strategy_05_SL-3_90:
+    name: "Full Confirmation TK Exit SL 3% with position size 90%"
+    description: "All conditions + Chikou confirmations, exit on TK cross down"
+    enabled: true
+    timeframes: [ "1h", "4h" ]
+    symbols: [ "BTC/USDT" ]
+    signal_conditions:
+      buy_conditions: [ "PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice" ]
+      sell_conditions: [ "TenkanBelowKijun" ]
       buy_logic: "AND"
       sell_logic: "AND"
     ichimoku_parameters:
@@ -191,226 +133,29 @@ strategies:
       take_profit_pct: null
       close_on_sell_signal: true
       trailing_stop: false
-      max_position_size_pct: 100.0
+      max_position_size_pct: 90.0
       risk_per_trade_pct: 5.0
     position_sizing:
       method: "fixed"
       fixed_size: 1000
 
-  strategy_08_span_sell:
-    name: "Cloud-TK-SpanA-ChikouPrice Base Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Price, exit on SpanA<SpanB"
+  strategy_06_modifd:
+    name: "Full Confirmation TK Exit with modified parameters"
+    description: "All conditions + Chikou confirmations, exit on TK cross down"
     enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
+    timeframes: [ "1h", "4h" ]
+    symbols: [ "BTC/USDT" ]
     signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAbovePrice"]
-      sell_conditions: ["SpanAbelowSpanB"]
+      buy_conditions: [ "PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice" ]
+      sell_conditions: [ "TenkanBelowKijun" ]
       buy_logic: "AND"
       sell_logic: "AND"
     ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_09_span_sell:
-    name: "Cloud-TK-SpanA-ChikouCloud Base Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Cloud, exit on SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud"]
-      sell_conditions: ["SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_10_span_sell:
-    name: "Full Confirmation Span Exit"
-    description: "All conditions + Chikou confirmations, exit on SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice"]
-      sell_conditions: ["SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  # Group 3: Sell Condition - TenkanBelowKijun AND SpanAbelowSpanB
-  strategy_11_tk_span_sell:
-    name: "Cloud-TK Base TK+Span Exit"
-    description: "Price above cloud + TK cross, exit on TK cross down AND SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun"]
-      sell_conditions: ["TenkanBelowKijun", "SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_12_tk_span_sell:
-    name: "Cloud-TK-SpanA Base TK+Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB, exit on TK cross down AND SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB"]
-      sell_conditions: ["TenkanBelowKijun", "SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_13_tk_span_sell:
-    name: "Cloud-TK-SpanA-ChikouPrice Base TK+Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Price, exit on TK cross down AND SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAbovePrice"]
-      sell_conditions: ["TenkanBelowKijun", "SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_14_tk_span_sell:
-    name: "Cloud-TK-SpanA-ChikouCloud Base TK+Span Exit"
-    description: "Price above cloud + TK cross + SpanA>SpanB + Chikou>Cloud, exit on TK cross down AND SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud"]
-      sell_conditions: ["TenkanBelowKijun", "SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
-    risk_management:
-      stop_loss_pct: 5.0
-      take_profit_pct: null
-      close_on_sell_signal: true
-      trailing_stop: false
-      max_position_size_pct: 100.0
-      risk_per_trade_pct: 5.0
-    position_sizing:
-      method: "fixed"
-      fixed_size: 1000
-
-  strategy_15_tk_span_sell:
-    name: "Full Confirmation TK+Span Exit"
-    description: "All conditions + Chikou confirmations, exit on TK cross down AND SpanA<SpanB"
-    enabled: true
-    timeframes: ["1h", "4h"]
-    symbols: ["BTC/USDT"]
-    signal_conditions:
-      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice"]
-      sell_conditions: ["TenkanBelowKijun", "SpanAbelowSpanB"]
-      buy_logic: "AND"
-      sell_logic: "AND"
-    ichimoku_parameters:
-      tenkan_period: 9
-      kijun_period: 26
-      senkou_b_period: 52
-      chikou_offset: 26
-      senkou_offset: 26
+      tenkan_period: 7
+      kijun_period: 20
+      senkou_b_period: 48
+      chikou_offset: 20
+      senkou_offset: 20
     risk_management:
       stop_loss_pct: 5.0
       take_profit_pct: null

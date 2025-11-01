@@ -946,12 +946,31 @@ class StrategyBacktestRunner:
     def fetch_sql_data_with_signals(self, symbol_short: str, timeframe: str,
                                     start: Optional[str] = None,
                                     end: Optional[str] = None,
-                                    ichimoku_params: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
-        """Fetch OHLCV+Ichimoku from per-symbol DB and add boolean signals columns."""
+                                    ichimoku_params: Optional[Dict[str, Any]] = None,
+                                    force_recompute: bool = False) -> pd.DataFrame:
+        """Fetch OHLCV+Ichimoku and add boolean signals.
+
+        If force_recompute=True, ignore any precomputed Ichimoku in SQL and recompute
+        components using the provided ichimoku_params purely in-memory.
+        """
         dm = DataManager(symbol=symbol_short)
         start_dt = pd.to_datetime(start) if start else None
         end_dt = pd.to_datetime(end) if end else None
-        # Prefer combined view with Ichimoku if present
+
+        analyzer = UnifiedIchimokuAnalyzer()
+        params = IchimokuStrategyConfig.create_parameters(**(ichimoku_params or {}))
+
+        if force_recompute:
+            # Load raw OHLCV only and recompute all components with strategy params
+            df = dm.get_ohlcv_data(timeframe=timeframe, start_date=start_dt, end_date=end_dt)
+            dm.close_connection()
+            if df.empty:
+                return df
+            df = analyzer.calculate_ichimoku_components(df, params)
+            df = analyzer.detect_boolean_signals(df, params)
+            return df
+
+        # Default path: use SQL ichimoku view if present, otherwise OHLCV and compute missing
         try:
             df = dm.get_ichimoku_data(timeframe=timeframe, start_date=start_dt, end_date=end_dt)
         except Exception:
@@ -961,8 +980,6 @@ class StrategyBacktestRunner:
             return df
 
         # If Ichimoku components are not present, compute them from price data using analyzer
-        analyzer = UnifiedIchimokuAnalyzer()
-        params = IchimokuStrategyConfig.create_parameters(**(ichimoku_params or {}))
         if not set(['tenkan_sen','kijun_sen','senkou_span_a','senkou_span_b','chikou_span']).issubset(df.columns):
             df = analyzer.calculate_ichimoku_components(df, params)
         # Add boolean signals
@@ -979,7 +996,8 @@ class StrategyBacktestRunner:
                        analysis_start: Optional[str] = None,
                        analysis_end: Optional[str] = None,
                        llm_model_override: Optional[str] = None,
-                       prompt_variant: str = 'analyst') -> Dict[str, Any]:
+                       prompt_variant: str = 'analyst',
+                       force_recompute_ichimoku: bool = False) -> Dict[str, Any]:
         """Load strategy by key, fetch data, run backtest, and generate report.
 
         If with_llm_optimization=True, an LLM-only optimization PDF is generated AFTER the standard report.
@@ -987,7 +1005,8 @@ class StrategyBacktestRunner:
         strategy_config = self.load_strategy_from_json(strategy_key)
         data = self.fetch_sql_data_with_signals(symbol_short, timeframe,
                                                 start, end,
-                                                strategy_config.get('ichimoku_parameters'))
+                                                strategy_config.get('ichimoku_parameters'),
+                                                force_recompute=force_recompute_ichimoku)
         if data.empty:
             raise ValueError("No data available for backtest")
 
